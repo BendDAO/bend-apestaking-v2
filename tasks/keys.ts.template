@@ -1,0 +1,9 @@
+export function findPrivateKey(publicKey: string): string {
+  switch (publicKey.toLowerCase()) {
+    case "":
+      return "";
+
+    default:
+      throw new Error("No private key found");
+  }
+}
