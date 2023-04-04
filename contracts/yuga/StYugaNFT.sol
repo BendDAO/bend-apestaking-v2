@@ -15,25 +15,25 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
     IERC721Metadata private _yugaNft;
     IYugaVault public _yugaVault;
 
-    // Mapping from staker_ to list of staked token IDs
+    // Mapping from staker to list of staked token IDs
     mapping(address => mapping(uint256 => uint256)) private _stakedTokens;
 
-    // Mapping from token ID to index of the staker_ tokens list
+    // Mapping from token ID to index of the staker tokens list
     mapping(uint256 => uint256) private _stakedTokensIndex;
 
-    // Mapping from staker_ to total staked amount of tokens
+    // Mapping from staker to total staked amount of tokens
     mapping(address => uint256) public totalStaked;
 
     // Mapping from token ID to minter
     mapping(uint256 => address) public override minterOf;
 
     constructor(
-        IERC721Metadata yugaNFT_,
+        IERC721Metadata yugaNft_,
         IYugaVault yugaVault_,
         string memory name_,
         string memory symbol_
     ) ERC721(name_, symbol_) {
-        _yugaNft = yugaNFT_;
+        _yugaNft = yugaNft_;
         _yugaVault = yugaVault_;
     }
 
@@ -96,7 +96,7 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
 
     function burn(uint256 tokenId_) external override {
         require(_msgSender() == ownerOf(tokenId_), "sYugaNFT: only owner can burn");
-        require(address(_yugaNft) == _yugaNft.ownerOf(tokenId_), "sYugaNFT: invalid tokenId_");
+        require(address(_yugaVault) == _yugaNft.ownerOf(tokenId_), "sYugaNFT: invalid tokenId_");
         uint256[] memory tokenIds = new uint256[](1);
         tokenIds[0] = tokenId_;
         _yugaVault.withdrawNFT(address(_yugaNft), tokenIds);
@@ -109,6 +109,27 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
         _removeTokenFromStakerEnumeration(stakerOf(tokenId_), tokenId_);
 
         _burn(tokenId_);
+    }
+
+    function burn(uint256[] calldata tokenIds_) external override {
+        uint256 tokenId_;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            require(_msgSender() == ownerOf(tokenId_), "sYugaNFT: only owner can burn");
+            require(address(_yugaVault) == _yugaNft.ownerOf(tokenId_), "sYugaNFT: invalid tokenId_");
+        }
+
+        _yugaVault.withdrawNFT(address(_yugaNft), tokenIds_);
+
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            require(address(this) == _yugaNft.ownerOf(tokenId_), "sYugaNFT: invalid tokenId_");
+            _yugaNft.safeTransferFrom(address(this), _msgSender(), tokenId_);
+            // clear minter
+            delete minterOf[tokenId_];
+            _removeTokenFromStakerEnumeration(stakerOf(tokenId_), tokenId_);
+            _burn(tokenId_);
+        }
     }
 
     function stakerOf(uint256 tokenId_) public view override returns (address) {
@@ -144,7 +165,7 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
     }
 
     function tokenOfStakerByIndex(address staker_, uint256 index) external view override returns (uint256) {
-        require(index < totalStaked[staker_], "sYugaNFT: staker_ index out of bounds");
+        require(index < totalStaked[staker_], "sYugaNFT: staker index out of bounds");
         return _stakedTokens[staker_][index];
     }
 

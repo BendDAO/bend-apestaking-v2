@@ -20,6 +20,8 @@ interface IStakedNFT is IERC721Metadata, IERC721Receiver, IERC721Enumerable {
 
     function burn(uint256 tokenId) external;
 
+    function burn(uint256[] calldata tokenIds) external;
+
     /**
      * @dev Returns the staker of the `tokenId` token.
      */

@@ -4,11 +4,24 @@ import {IApeCoinStaking} from "./IApeCoinStaking.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 interface IYugaVault is IERC721Receiver {
+    struct Refund {
+        uint256 principal;
+        uint256 reward;
+    }
+    struct Position {
+        uint256 stakedAmount;
+        int256 rewardsDebt;
+    }
+
     function stakerOf(address nft_, uint256 tokenId_) external view returns (address);
 
     function ownerOf(address nft_, uint256 tokenId_) external view returns (address);
 
-    function refundOf(address staker_, address nft_) external view returns (uint256 principal, uint256 reward);
+    function refundOf(address nft_, address staker_) external view returns (Refund memory);
+
+    function positionOf(address nft_, address staker_) external view returns (Position memory);
+
+    function pendingRewards(address nft_, address staker_) external view returns (uint256);
 
     // deposit nft
     function depositNFT(
@@ -34,24 +47,28 @@ interface IYugaVault is IERC721Receiver {
     ) external;
 
     // unstake
-    function unstakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_) external;
+    function unstakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
+        external
+        returns (uint256 principal, uint256 rewards);
 
-    function unstakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_) external;
+    function unstakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
+        external
+        returns (uint256 principal, uint256 rewards);
 
     function unstakeBakcPool(
         IApeCoinStaking.PairNftWithdrawWithAmount[] calldata baycPairs_,
         IApeCoinStaking.PairNftWithdrawWithAmount[] calldata maycPairs_,
         address recipient_
-    ) external;
+    ) external returns (uint256 principal, uint256 rewards);
 
     // claim rewards
-    function claimBaycPool(uint256[] calldata tokenIds_, address recipient_) external;
+    function claimBaycPool(uint256[] calldata tokenIds_, address recipient_) external returns (uint256 rewards);
 
-    function claimMaycPool(uint256[] calldata tokenIds_, address recipient_) external;
+    function claimMaycPool(uint256[] calldata tokenIds_, address recipient_) external returns (uint256 rewards);
 
     function claimBakcPool(
         IApeCoinStaking.PairNft[] calldata baycPairs_,
         IApeCoinStaking.PairNft[] calldata maycPairs_,
         address recipient_
-    ) external;
+    ) external returns (uint256 rewards);
 }

@@ -74,6 +74,12 @@ interface IApeCoinStaking {
 
     function nftContracts(uint256 poolId_) external view returns (address);
 
+    function rewardsBy(
+        uint256 poolId_,
+        uint256 from_,
+        uint256 to_
+    ) external view returns (uint256, uint256);
+
     function apeCoin() external view returns (address);
 
     function getCurrentTimeRangeIndex(Pool memory pool_) external view returns (uint256);
