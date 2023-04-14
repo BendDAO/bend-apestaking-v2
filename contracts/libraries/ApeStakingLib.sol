@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.8.9;
 import {IApeCoinStaking} from "../interfaces/IApeCoinStaking.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 library ApeStakingLib {
     uint256 internal constant APE_COIN_PRECISION = 1e18;
@@ -49,6 +51,31 @@ library ApeStakingLib {
         uint256 to_
     ) internal view returns (uint256, uint256) {
         return apeCoinStaking_.rewardsBy(getNftPoolId(apeCoinStaking_, nft_), from_, to_);
+    }
+
+    function isYugaNFT(IApeCoinStaking apeCoinStaking_, address nft_) internal view returns (bool) {
+        if (nft_ == address(bayc(apeCoinStaking_))) {
+            return true;
+        }
+        if (nft_ == address(mayc(apeCoinStaking_))) {
+            return true;
+        }
+        if (nft_ == address(bakc(apeCoinStaking_))) {
+            return true;
+        }
+        return false;
+    }
+
+    function bayc(IApeCoinStaking apeCoinStaking_) internal view returns (IERC721) {
+        return IERC721(apeCoinStaking_.nftContracts(BAYC_POOL_ID));
+    }
+
+    function mayc(IApeCoinStaking apeCoinStaking_) internal view returns (IERC721) {
+        return IERC721(apeCoinStaking_.nftContracts(MAYC_POOL_ID));
+    }
+
+    function bakc(IApeCoinStaking apeCoinStaking_) internal view returns (IERC721) {
+        return IERC721(apeCoinStaking_.nftContracts(BAKC_POOL_ID));
     }
 
     function getPreviousTimestampHour() internal view returns (uint256) {

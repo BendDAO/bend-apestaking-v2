@@ -36,40 +36,14 @@ contract YugaVault is IYugaVault, Ownable {
         apeCoinStaking = apeCoinStaking_;
     }
 
-    function _bayc() internal view returns (IERC721) {
-        return IERC721(apeCoinStaking.nftContracts(ApeStakingLib.BAYC_POOL_ID));
-    }
-
-    function _mayc() internal view returns (IERC721) {
-        return IERC721(apeCoinStaking.nftContracts(ApeStakingLib.MAYC_POOL_ID));
-    }
-
-    function _bakc() internal view returns (IERC721) {
-        return IERC721(apeCoinStaking.nftContracts(ApeStakingLib.BAKC_POOL_ID));
-    }
-
     function onERC721Received(
         address,
         address,
         uint256,
         bytes calldata
     ) external view override returns (bytes4) {
-        require(_isYugaNFT(_msgSender()), "YugaVault: nft not acceptable");
+        require(apeCoinStaking.isYugaNFT(_msgSender()), "YugaVault: nft not acceptable");
         return IERC721Receiver.onERC721Received.selector;
-    }
-
-    function _isYugaNFT(address nft_) internal view returns (bool) {
-        if (nft_ == address(_bayc())) {
-            return true;
-        }
-        if (nft_ == address(_mayc())) {
-            return true;
-        }
-        if (nft_ == address(_bakc())) {
-            return true;
-        }
-
-        return false;
     }
 
     function stakerOf(address nft_, uint256 tokenId_) external view returns (address) {
@@ -129,7 +103,7 @@ contract YugaVault is IYugaVault, Ownable {
         uint256[] calldata tokenIds_,
         address staker
     ) external override {
-        require(_isYugaNFT(yugaNFT), "YugaVault: not yuga nft");
+        require(apeCoinStaking.isYugaNFT(yugaNFT), "YugaVault: not yuga nft");
 
         IApeCoinStaking.Position memory position_;
 
@@ -157,7 +131,10 @@ contract YugaVault is IYugaVault, Ownable {
     }
 
     function _refundSinglePool(address yugaNFT, uint256[] calldata tokenIds_) internal {
-        require(address(_bayc()) == yugaNFT || address(_mayc()) == yugaNFT, "YugaVault: not bayc or mayc");
+        require(
+            address(apeCoinStaking.bayc()) == yugaNFT || address(apeCoinStaking.mayc()) == yugaNFT,
+            "YugaVault: not bayc or mayc"
+        );
         require(tokenIds_.length > 0, "YugaVault: invalid tokenIds");
         RefundSinglePoolVars memory vars;
 
@@ -171,7 +148,7 @@ contract YugaVault is IYugaVault, Ownable {
             memory pairingNftsContainer_ = new IApeCoinStaking.PairNftWithdrawWithAmount[](tokenIds_.length);
 
         vars.poolId = ApeStakingLib.BAYC_POOL_ID;
-        if (address(_mayc()) == yugaNFT) {
+        if (address(apeCoinStaking.mayc()) == yugaNFT) {
             vars.poolId = ApeStakingLib.MAYC_POOL_ID;
         }
 
@@ -215,7 +192,7 @@ contract YugaVault is IYugaVault, Ownable {
             for (uint256 i = 0; i < vars.singleNftSize; i++) {
                 singleNfts_[i] = singleNftsContainer_[i];
             }
-            if (address(_bayc()) == yugaNFT) {
+            if (address(apeCoinStaking.bayc()) == yugaNFT) {
                 apeCoinStaking.withdrawBAYC(singleNfts_, address(this));
             } else {
                 apeCoinStaking.withdrawMAYC(singleNfts_, address(this));
@@ -238,7 +215,7 @@ contract YugaVault is IYugaVault, Ownable {
             apeCoinBalance = _apeCoin().balanceOf(address(this));
             IApeCoinStaking.PairNftWithdrawWithAmount[] memory emptyNfts;
 
-            if (address(_bayc()) == yugaNFT) {
+            if (address(apeCoinStaking.bayc()) == yugaNFT) {
                 apeCoinStaking.withdrawBAKC(pairingNfts_, emptyNfts);
             } else {
                 apeCoinStaking.withdrawBAKC(emptyNfts, pairingNfts_);
@@ -246,7 +223,7 @@ contract YugaVault is IYugaVault, Ownable {
             vars.totalPairingReward = _apeCoin().balanceOf(address(this)) - apeCoinBalance - vars.totalPairingPrincipal;
 
             // refund ape coin for paring nft
-            Refund storage _refund = _refunds[address(_bakc())][vars.staker];
+            Refund storage _refund = _refunds[address(apeCoinStaking.bakc())][vars.staker];
             _refund.principal += vars.totalPairingPrincipal;
             _refund.reward += vars.totalPairingReward;
         }
@@ -266,7 +243,7 @@ contract YugaVault is IYugaVault, Ownable {
         require(tokenIds_.length > 0, "YugaVault: invalid tokenIds");
         RefundPairingPoolVars memory vars;
 
-        vars.staker = _stakerOf(address(_bakc()), tokenIds_[0]);
+        vars.staker = _stakerOf(address(apeCoinStaking.bakc()), tokenIds_[0]);
         uint256 apeCoinBalance = _apeCoin().balanceOf(address(this));
 
         IApeCoinStaking.PairNftWithdrawWithAmount[]
@@ -277,8 +254,14 @@ contract YugaVault is IYugaVault, Ownable {
 
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             uint256 tokenId_ = tokenIds_[i];
-            require(_msgSender() == _ownerOf(address(_bakc()), tokenId_), "YugaVault: caller must be nft owner");
-            require(vars.staker == _stakerOf(address(_bakc()), tokenId_), "YugaVault: staker must be same");
+            require(
+                _msgSender() == _ownerOf(address(apeCoinStaking.bakc()), tokenId_),
+                "YugaVault: caller must be nft owner"
+            );
+            require(
+                vars.staker == _stakerOf(address(apeCoinStaking.bakc()), tokenId_),
+                "YugaVault: staker must be same"
+            );
 
             uint256 stakedAmount = apeCoinStaking.nftPosition(ApeStakingLib.BAKC_POOL_ID, tokenId_).stakedAmount;
             if (stakedAmount > 0) {
@@ -329,7 +312,7 @@ contract YugaVault is IYugaVault, Ownable {
             vars.totalReward = _apeCoin().balanceOf(address(this)) - apeCoinBalance - vars.totalPrincipal;
             // refund ape coin for bakc
             if (vars.staker != address(0)) {
-                Refund storage _refund = _refunds[address(_bakc())][vars.staker];
+                Refund storage _refund = _refunds[address(apeCoinStaking.bakc())][vars.staker];
                 _refund.principal += vars.totalPrincipal;
                 _refund.reward += vars.totalReward;
             }
@@ -347,11 +330,11 @@ contract YugaVault is IYugaVault, Ownable {
     }
 
     function _refundApeCoin(address yugaNFT, uint256[] calldata tokenIds_) internal {
-        require(_isYugaNFT(yugaNFT), "YugaVault: not yuga nft");
+        require(apeCoinStaking.isYugaNFT(yugaNFT), "YugaVault: not yuga nft");
         require(tokenIds_.length > 0, "YugaVault: invalid tokenIds");
-        if (address(_bayc()) == yugaNFT || address(_mayc()) == yugaNFT) {
+        if (address(apeCoinStaking.bayc()) == yugaNFT || address(apeCoinStaking.mayc()) == yugaNFT) {
             _refundSinglePool(yugaNFT, tokenIds_);
-        } else if (address(_bakc()) == yugaNFT) {
+        } else if (address(apeCoinStaking.bakc()) == yugaNFT) {
             _refundPairingPool(tokenIds_);
         }
     }
@@ -369,8 +352,8 @@ contract YugaVault is IYugaVault, Ownable {
         uint256 stakedAmount_
     ) private {
         Position storage position_ = _positions[nft_][staker_];
-        position_.stakedAmount -= stakedAmount_;
-        position_.rewardsDebt -= (stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare)
+        position_.stakedAmount += stakedAmount_;
+        position_.rewardsDebt += (stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare)
             .toInt256();
     }
 
@@ -380,8 +363,8 @@ contract YugaVault is IYugaVault, Ownable {
         uint256 stakedAmount_
     ) private {
         Position storage position_ = _positions[nft_][staker_];
-        position_.stakedAmount += stakedAmount_;
-        position_.rewardsDebt += (stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare)
+        position_.stakedAmount -= stakedAmount_;
+        position_.rewardsDebt -= (stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare)
             .toInt256();
     }
 
@@ -400,7 +383,7 @@ contract YugaVault is IYugaVault, Ownable {
         for (uint256 i = 0; i < nfts_.length; i++) {
             singleNft_ = nfts_[i];
             require(
-                _msgSender() == _stakerOf(address(_bayc()), singleNft_.tokenId),
+                _msgSender() == _stakerOf(address(apeCoinStaking.bayc()), singleNft_.tokenId),
                 "YugaVault: caller must be bayc staker"
             );
             totalStakedAmount += singleNft_.amount;
@@ -408,7 +391,7 @@ contract YugaVault is IYugaVault, Ownable {
         _apeCoin().safeTransferFrom(_msgSender(), address(this), totalStakedAmount);
         apeCoinStaking.depositBAYC(nfts_);
 
-        _increasePosition(address(_bayc()), _msgSender(), totalStakedAmount);
+        _increasePosition(address(apeCoinStaking.bayc()), _msgSender(), totalStakedAmount);
     }
 
     function stakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override {
@@ -417,14 +400,14 @@ contract YugaVault is IYugaVault, Ownable {
         for (uint256 i = 0; i < nfts_.length; i++) {
             singleNft_ = nfts_[i];
             require(
-                _msgSender() == _stakerOf(address(_mayc()), singleNft_.tokenId),
+                _msgSender() == _stakerOf(address(apeCoinStaking.mayc()), singleNft_.tokenId),
                 "YugaVault: caller must be mayc staker"
             );
             totalApeCoinAmount += singleNft_.amount;
         }
         _apeCoin().safeTransferFrom(_msgSender(), address(this), totalApeCoinAmount);
         apeCoinStaking.depositMAYC(nfts_);
-        _increasePosition(address(_mayc()), _msgSender(), totalApeCoinAmount);
+        _increasePosition(address(apeCoinStaking.mayc()), _msgSender(), totalApeCoinAmount);
     }
 
     function stakeBakcPool(
@@ -436,8 +419,8 @@ contract YugaVault is IYugaVault, Ownable {
         for (uint256 i = 0; i < baycPairs_.length; i++) {
             pair = baycPairs_[i];
             require(
-                _msgSender() == _stakerOf(address(_bayc()), pair.mainTokenId) &&
-                    _msgSender() == _stakerOf(address(_bakc()), pair.bakcTokenId),
+                _msgSender() == _stakerOf(address(apeCoinStaking.bayc()), pair.mainTokenId) &&
+                    _msgSender() == _stakerOf(address(apeCoinStaking.bakc()), pair.bakcTokenId),
                 "YugaVault: caller must be nft staker"
             );
             totalStakedAmount += pair.amount;
@@ -446,8 +429,8 @@ contract YugaVault is IYugaVault, Ownable {
         for (uint256 i = 0; i < maycPairs_.length; i++) {
             pair = maycPairs_[i];
             require(
-                _msgSender() == _stakerOf(address(_mayc()), pair.mainTokenId) &&
-                    _msgSender() == _stakerOf(address(_bakc()), pair.bakcTokenId),
+                _msgSender() == _stakerOf(address(apeCoinStaking.mayc()), pair.mainTokenId) &&
+                    _msgSender() == _stakerOf(address(apeCoinStaking.bakc()), pair.bakcTokenId),
                 "YugaVault: caller must be nft staker"
             );
             totalStakedAmount += pair.amount;
@@ -455,7 +438,7 @@ contract YugaVault is IYugaVault, Ownable {
         _apeCoin().safeTransferFrom(_msgSender(), address(this), totalStakedAmount);
         apeCoinStaking.depositBAKC(baycPairs_, maycPairs_);
 
-        _increasePosition(address(_bakc()), _msgSender(), totalStakedAmount);
+        _increasePosition(address(apeCoinStaking.bakc()), _msgSender(), totalStakedAmount);
     }
 
     function unstakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
@@ -463,7 +446,7 @@ contract YugaVault is IYugaVault, Ownable {
         override
         returns (uint256 principal, uint256 rewards)
     {
-        address nft_ = address(_bayc());
+        address nft_ = address(apeCoinStaking.bayc());
         IApeCoinStaking.SingleNft memory singleNft_;
         for (uint256 i = 0; i < nfts_.length; i++) {
             singleNft_ = nfts_[i];
@@ -487,7 +470,7 @@ contract YugaVault is IYugaVault, Ownable {
         override
         returns (uint256 principal, uint256 rewards)
     {
-        address nft_ = address(_mayc());
+        address nft_ = address(apeCoinStaking.mayc());
         IApeCoinStaking.SingleNft memory singleNft_;
         for (uint256 i = 0; i < nfts_.length; i++) {
             singleNft_ = nfts_[i];
@@ -511,13 +494,13 @@ contract YugaVault is IYugaVault, Ownable {
         IApeCoinStaking.PairNftWithdrawWithAmount[] calldata maycPairs_,
         address recipient_
     ) external override returns (uint256 principal, uint256 rewards) {
-        address nft_ = address(_bakc());
+        address nft_ = address(apeCoinStaking.bakc());
         IApeCoinStaking.Position memory position_;
         IApeCoinStaking.PairNftWithdrawWithAmount memory pair;
         for (uint256 i = 0; i < baycPairs_.length; i++) {
             pair = baycPairs_[i];
             require(
-                _msgSender() == _stakerOf(address(_bayc()), pair.mainTokenId) &&
+                _msgSender() == _stakerOf(address(apeCoinStaking.bayc()), pair.mainTokenId) &&
                     _msgSender() == _stakerOf(nft_, pair.bakcTokenId),
                 "YugaVault: caller must be nft staker"
             );
@@ -528,7 +511,7 @@ contract YugaVault is IYugaVault, Ownable {
         for (uint256 i = 0; i < maycPairs_.length; i++) {
             pair = maycPairs_[i];
             require(
-                _msgSender() == _stakerOf(address(_mayc()), pair.mainTokenId) &&
+                _msgSender() == _stakerOf(address(apeCoinStaking.mayc()), pair.mainTokenId) &&
                     _msgSender() == _stakerOf(nft_, pair.bakcTokenId),
                 "YugaVault: caller must be nft staker"
             );
@@ -551,7 +534,7 @@ contract YugaVault is IYugaVault, Ownable {
         override
         returns (uint256 rewards)
     {
-        address nft_ = address(_bayc());
+        address nft_ = address(apeCoinStaking.bayc());
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(_msgSender() == _stakerOf(nft_, tokenIds_[i]), "YugaVault: caller must be nft staker");
         }
@@ -568,7 +551,7 @@ contract YugaVault is IYugaVault, Ownable {
         override
         returns (uint256 rewards)
     {
-        address nft_ = address(_mayc());
+        address nft_ = address(apeCoinStaking.mayc());
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(_msgSender() == _stakerOf(nft_, tokenIds_[i]), "YugaVault: caller must be nft staker");
         }
@@ -585,12 +568,12 @@ contract YugaVault is IYugaVault, Ownable {
         IApeCoinStaking.PairNft[] calldata maycPairs_,
         address recipient_
     ) external override returns (uint256 rewards) {
-        address nft_ = address(_bakc());
+        address nft_ = address(apeCoinStaking.bakc());
         IApeCoinStaking.PairNft memory pair;
         for (uint256 i = 0; i < baycPairs_.length; i++) {
             pair = baycPairs_[i];
             require(
-                _msgSender() == _stakerOf(address(_bayc()), pair.mainTokenId) &&
+                _msgSender() == _stakerOf(address(apeCoinStaking.bayc()), pair.mainTokenId) &&
                     _msgSender() == _stakerOf(nft_, pair.bakcTokenId),
                 "YugaVault: caller must be nft staker"
             );
@@ -599,8 +582,8 @@ contract YugaVault is IYugaVault, Ownable {
         for (uint256 i = 0; i < maycPairs_.length; i++) {
             pair = maycPairs_[i];
             require(
-                _msgSender() == _stakerOf(address(_mayc()), pair.mainTokenId) &&
-                    _msgSender() == _stakerOf(address(_bakc()), pair.bakcTokenId),
+                _msgSender() == _stakerOf(address(apeCoinStaking.mayc()), pair.mainTokenId) &&
+                    _msgSender() == _stakerOf(address(apeCoinStaking.bakc()), pair.bakcTokenId),
                 "YugaVault: caller must be nft staker"
             );
         }
