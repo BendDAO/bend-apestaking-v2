@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.18;
 import {IApeCoinStaking} from "./IApeCoinStaking.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-interface IYugaVault is IERC721Receiver {
+interface INftVault is IERC721Receiver {
     struct Refund {
         uint256 principal;
         uint256 reward;
@@ -22,6 +22,15 @@ interface IYugaVault is IERC721Receiver {
     function positionOf(address nft_, address staker_) external view returns (Position memory);
 
     function pendingRewards(address nft_, address staker_) external view returns (uint256);
+
+    // delegate.cash
+
+    function setDelegateCash(
+        address delegate,
+        address nft_,
+        uint256[] calldata tokenIds,
+        bool value
+    ) external;
 
     // deposit nft
     function depositNFT(

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.18;
 import {IApeCoinStaking} from "../interfaces/IApeCoinStaking.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -13,6 +13,36 @@ library ApeStakingLib {
     uint256 internal constant BAYC_POOL_ID = 1;
     uint256 internal constant MAYC_POOL_ID = 2;
     uint256 internal constant BAKC_POOL_ID = 3;
+
+    function getCurrentTimeRange(IApeCoinStaking apeCoinStaking_, uint256 poolId)
+        internal
+        view
+        returns (IApeCoinStaking.TimeRange memory)
+    {
+        (
+            IApeCoinStaking.PoolUI memory apeCoinPoolUI,
+            IApeCoinStaking.PoolUI memory baycPoolUI,
+            IApeCoinStaking.PoolUI memory maycPoolUI,
+            IApeCoinStaking.PoolUI memory bakcPoolUI
+        ) = apeCoinStaking_.getPoolsUI();
+
+        if (poolId == APE_COIN_POOL_ID && poolId == apeCoinPoolUI.poolId) {
+            return apeCoinPoolUI.currentTimeRange;
+        }
+
+        if (poolId == BAYC_POOL_ID && poolId == baycPoolUI.poolId) {
+            return baycPoolUI.currentTimeRange;
+        }
+
+        if (poolId == MAYC_POOL_ID && poolId == maycPoolUI.poolId) {
+            return maycPoolUI.currentTimeRange;
+        }
+        if (poolId == BAKC_POOL_ID && poolId == bakcPoolUI.poolId) {
+            return bakcPoolUI.currentTimeRange;
+        }
+
+        revert("invalid pool id");
+    }
 
     function getNftPoolId(IApeCoinStaking apeCoinStaking_, address nft_) internal view returns (uint256) {
         if (nft_ == apeCoinStaking_.nftContracts(BAYC_POOL_ID)) {
