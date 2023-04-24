@@ -7,3 +7,6 @@ typechain-types
 .history
 deployments
 tasks/x2y2
+cache_forge
+out
+lib

@@ -47,6 +47,7 @@
     "@commitlint/cli": "^17.0.2",
     "@commitlint/config-conventional": "^16.2.1",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.4",
+    "@nomicfoundation/hardhat-foundry": "^1.0.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.1.0",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",

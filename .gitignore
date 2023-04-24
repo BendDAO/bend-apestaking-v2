@@ -117,6 +117,10 @@ cache
 artifacts
 abis/
 
+# Foundry files
+cache_forge
+out
+
 # Others 
 lib
 
