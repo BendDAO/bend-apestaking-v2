@@ -1,24 +1,16 @@
-// SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.18;
 
 import {IERC721Metadata} from "@openzeppelin/contracts/interfaces/IERC721Metadata.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/interfaces/IERC721Receiver.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
 
-interface IStakedNFT is IERC721Metadata, IERC721Receiver, IERC721Enumerable {
-    function mint(
-        address staker,
-        address to,
-        uint256 tokenId
-    ) external;
-
+interface IStakedNft is IERC721Metadata, IERC721Receiver, IERC721Enumerable {
     function mint(
         address staker,
         address to,
         uint256[] calldata tokenIds
     ) external;
-
-    function burn(uint256 tokenId) external;
 
     function burn(uint256[] calldata tokenIds) external;
 
@@ -45,4 +37,10 @@ interface IStakedNFT is IERC721Metadata, IERC721Receiver, IERC721Enumerable {
     function totalStaked(address staker) external view returns (uint256);
 
     function underlyingAsset() external view returns (address);
+
+    function setDelegateCash(
+        address delegate,
+        uint256[] calldata tokenIds,
+        bool value
+    ) external;
 }

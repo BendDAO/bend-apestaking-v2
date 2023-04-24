@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.18;
 
 import {ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -8,12 +8,12 @@ import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/I
 import {IERC165} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/interfaces/IERC721Receiver.sol";
 
-import {IStakedNFT} from "../interfaces/IStakedNFT.sol";
-import {IYugaVault} from "../interfaces/IYugaVault.sol";
+import {IStakedNft} from "../interfaces/IStakedNft.sol";
+import {INftVault} from "../interfaces/INftVault.sol";
 
-abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
-    IERC721Metadata private _yugaNft;
-    IYugaVault public _yugaVault;
+abstract contract StNft is IStakedNft, ERC721Enumerable, Ownable {
+    IERC721Metadata private _nft;
+    INftVault public nftVault;
 
     // Mapping from staker to list of staked token IDs
     mapping(address => mapping(uint256 => uint256)) private _stakedTokens;
@@ -28,13 +28,13 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
     mapping(uint256 => address) public override minterOf;
 
     constructor(
-        IERC721Metadata yugaNft_,
-        IYugaVault yugaVault_,
+        IERC721Metadata nft_,
+        INftVault nftVault_,
         string memory name_,
         string memory symbol_
     ) ERC721(name_, symbol_) {
-        _yugaNft = yugaNft_;
-        _yugaVault = yugaVault_;
+        _nft = nft_;
+        nftVault = nftVault_;
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -44,7 +44,7 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
         override(IERC165, ERC721Enumerable)
         returns (bool)
     {
-        return interfaceId == type(IStakedNFT).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IStakedNft).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function onERC721Received(
@@ -53,26 +53,8 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
         uint256,
         bytes calldata
     ) external view override returns (bytes4) {
-        require(_msgSender() == address(_yugaNft), "StYugaNFT: nft not acceptable");
+        require(_msgSender() == address(_nft), "StNft: nft not acceptable");
         return IERC721Receiver.onERC721Received.selector;
-    }
-
-    function mint(
-        address staker_,
-        address to_,
-        uint256 tokenId_
-    ) external override {
-        uint256[] memory tokenIds = new uint256[](1);
-        tokenIds[0] = tokenId_;
-        _yugaNft.safeTransferFrom(_msgSender(), address(this), tokenId_);
-        _yugaVault.depositNFT(address(_yugaNft), tokenIds, staker_);
-
-        // set minter
-        minterOf[tokenId_] = _msgSender();
-
-        _addTokenToStakerEnumeration(staker_, tokenId_);
-
-        _safeMint(to_, tokenId_);
     }
 
     function mint(
@@ -81,9 +63,9 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
         uint256[] calldata tokenIds_
     ) external override {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            _yugaNft.safeTransferFrom(_msgSender(), address(this), tokenIds_[i]);
+            _nft.safeTransferFrom(_msgSender(), address(this), tokenIds_[i]);
         }
-        _yugaVault.depositNFT(address(_yugaNft), tokenIds_, staker_);
+        nftVault.depositNFT(address(_nft), tokenIds_, staker_);
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             // set minter
             minterOf[tokenIds_[i]] = _msgSender();
@@ -94,37 +76,20 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
         }
     }
 
-    function burn(uint256 tokenId_) external override {
-        require(_msgSender() == ownerOf(tokenId_), "sYugaNFT: only owner can burn");
-        require(address(_yugaVault) == _yugaNft.ownerOf(tokenId_), "sYugaNFT: invalid tokenId_");
-        uint256[] memory tokenIds = new uint256[](1);
-        tokenIds[0] = tokenId_;
-        _yugaVault.withdrawNFT(address(_yugaNft), tokenIds);
-        require(address(this) == _yugaNft.ownerOf(tokenId_), "sYugaNFT: invalid tokenId_");
-        _yugaNft.safeTransferFrom(address(this), _msgSender(), tokenId_);
-
-        // clear minter
-        delete minterOf[tokenId_];
-
-        _removeTokenFromStakerEnumeration(stakerOf(tokenId_), tokenId_);
-
-        _burn(tokenId_);
-    }
-
     function burn(uint256[] calldata tokenIds_) external override {
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            require(_msgSender() == ownerOf(tokenId_), "sYugaNFT: only owner can burn");
-            require(address(_yugaVault) == _yugaNft.ownerOf(tokenId_), "sYugaNFT: invalid tokenId_");
+            require(_msgSender() == ownerOf(tokenId_), "stNFT: only owner can burn");
+            require(address(nftVault) == _nft.ownerOf(tokenId_), "stNFT: invalid tokenId_");
         }
 
-        _yugaVault.withdrawNFT(address(_yugaNft), tokenIds_);
+        nftVault.withdrawNFT(address(_nft), tokenIds_);
 
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            require(address(this) == _yugaNft.ownerOf(tokenId_), "sYugaNFT: invalid tokenId_");
-            _yugaNft.safeTransferFrom(address(this), _msgSender(), tokenId_);
+            require(address(this) == _nft.ownerOf(tokenId_), "stNFT: invalid tokenId_");
+            _nft.safeTransferFrom(address(this), _msgSender(), tokenId_);
             // clear minter
             delete minterOf[tokenId_];
             _removeTokenFromStakerEnumeration(stakerOf(tokenId_), tokenId_);
@@ -133,7 +98,7 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
     }
 
     function stakerOf(uint256 tokenId_) public view override returns (address) {
-        return _yugaVault.stakerOf(address(_yugaNft), tokenId_);
+        return nftVault.stakerOf(address(_nft), tokenId_);
     }
 
     function _addTokenToStakerEnumeration(address staker_, uint256 tokenId_) private {
@@ -165,15 +130,26 @@ abstract contract StYugaNFT is IStakedNFT, ERC721Enumerable, Ownable {
     }
 
     function tokenOfStakerByIndex(address staker_, uint256 index) external view override returns (uint256) {
-        require(index < totalStaked[staker_], "sYugaNFT: staker index out of bounds");
+        require(index < totalStaked[staker_], "stNFT: staker index out of bounds");
         return _stakedTokens[staker_][index];
     }
 
     function underlyingAsset() external view override returns (address) {
-        return address(_yugaNft);
+        return address(_nft);
     }
 
     function tokenURI(uint256 tokenId_) public view override(ERC721, IERC721Metadata) returns (string memory) {
-        return _yugaNft.tokenURI(tokenId_);
+        return _nft.tokenURI(tokenId_);
+    }
+
+    function setDelegateCash(
+        address delegate_,
+        uint256[] calldata tokenIds_,
+        bool value_
+    ) external override {
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            require(_msgSender() == ownerOf(tokenIds_[i]), "stNFT: only owner can delegate");
+        }
+        nftVault.setDelegateCash(delegate_, address(_nft), tokenIds_, value_);
     }
 }
