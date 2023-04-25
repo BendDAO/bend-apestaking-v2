@@ -34,6 +34,7 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
     ) ERC721(name_, symbol_) {
         _nft = nft_;
         nftVault = nftVault_;
+        IERC721Metadata(_nft).setApprovalForAll(address(nftVault), true);
     }
 
     function supportsInterface(bytes4 interfaceId)

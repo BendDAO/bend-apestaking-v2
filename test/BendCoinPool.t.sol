@@ -11,8 +11,6 @@ contract BendCoinPoolTest is SetupHelper {
         address user = users[0];
         vm.startPrank(user);
 
-        IApeCoinStaking.PoolWithoutTimeRange memory pool = IApeCoinStaking(address(mockApeStaking)).pools(1);
-
         uint256 depositAmount = 1000000 * 10**18;
         mockApeCoin.mint(depositAmount);
         mockApeCoin.approve(address(coinPool), depositAmount);
@@ -24,7 +22,7 @@ contract BendCoinPoolTest is SetupHelper {
         address user = users[0];
         vm.startPrank(user);
 
-        vm.expectRevert("hahah");
+        vm.expectRevert("ERC20: insufficient allowance");
         coinPool.deposit(1000 * 10**18, user);
     }
 }

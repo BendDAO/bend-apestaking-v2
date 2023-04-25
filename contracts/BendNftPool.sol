@@ -47,15 +47,21 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     ) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
+
         staker = staker_;
         coinPool = coinPool_;
         delegation = delegation_;
+
         bayc = stBayc.underlyingAsset();
         mayc = stMayc.underlyingAsset();
         bakc = stBakc.underlyingAsset();
         poolStates[bayc].stakedNft = stBayc;
         poolStates[mayc].stakedNft = stMayc;
         poolStates[bakc].stakedNft = stBakc;
+
+        IERC721Upgradeable(bayc).setApprovalForAll(address(stBayc), true);
+        IERC721Upgradeable(mayc).setApprovalForAll(address(stMayc), true);
+        IERC721Upgradeable(bakc).setApprovalForAll(address(stBakc), true);
     }
 
     function deposit(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {
@@ -71,10 +77,13 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         }
 
         pool.stakedNft.mint(address(staker), _msgSender(), tokenIds_);
+
+        emit NftDeposited(nft_, tokenIds_, _msgSender());
     }
 
     function withdraw(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {
         _claim(_msgSender(), _msgSender(), nft_, tokenIds_);
+
         PoolState storage pool = poolStates[nft_];
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -82,6 +91,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             pool.stakedNft.safeTransferFrom(_msgSender(), address(this), tokenId_);
         }
         pool.stakedNft.burn(tokenIds_);
+
+        emit NftWithdrawn(nft_, tokenIds_, _msgSender());
     }
 
     function _claim(
@@ -109,6 +120,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             }
         }
         coinPool.safeTransfer(receiver_, claimableRewards);
+
+        emit RewardClaimed(nft_, tokenIds_, receiver_, claimableRewards);
     }
 
     function claim(
@@ -171,5 +184,15 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
                 amount += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]);
             }
         }
+    }
+
+    function onERC721Received(
+        address, /*operator*/
+        address, /*from*/
+        uint256, /*tokenId*/
+        bytes calldata /*data*/
+    ) external view returns (bytes4) {
+        require(bayc == msg.sender || mayc == msg.sender || bakc == msg.sender, "BendNftPool: not ape nft");
+        return this.onERC721Received.selector;
     }
 }
