@@ -14,7 +14,7 @@ import {IDelegationRegistry} from "./interfaces/IDelegationRegistry.sol";
 
 import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
 
-contract BendApePool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable {
+contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeERC20Upgradeable for ICoinPool;
     using ApeStakingLib for IApeCoinStaking;
@@ -28,12 +28,12 @@ contract BendApePool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     address public bakc;
 
     modifier onlyApe(address nft_) {
-        require(nft_ == bayc || nft_ == mayc || nft_ == bakc, "BendApePool: not ape");
+        require(bayc == nft_ || mayc == nft_ || bakc == nft_, "BendNftPool: not ape");
         _;
     }
 
     modifier onlyStaker() {
-        require(_msgSender() == address(staker), "BendApePool: caller is not staker");
+        require(_msgSender() == address(staker), "BendNftPool: caller is not staker");
         _;
     }
 
@@ -100,7 +100,7 @@ contract BendApePool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
                 pool.stakedNft.ownerOf(tokenId_) == owner_ &&
                     pool.stakedNft.minterOf(tokenId_) == address(this) &&
                     pool.stakedNft.stakerOf(tokenId_) == address(staker),
-                "BendApePool: invalid token id"
+                "BendNftPool: invalid token id"
             );
 
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
@@ -129,7 +129,7 @@ contract BendApePool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
                     address(pool.stakedNft),
                     tokenId_
                 );
-                require(isDelegateValid, "BendApePool: invalid delegate-vault pairing");
+                require(isDelegateValid, "BendNftPool: invalid delegate-vault pairing");
             }
 
             owner = delegateVault_;

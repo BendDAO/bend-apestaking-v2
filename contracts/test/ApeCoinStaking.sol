@@ -40,7 +40,7 @@ violation of any applicable law or regulation, (b) inform such third parties of 
 responsible to such third parties for any and all liability, claims or damages relating to such party’s provision of
 access to the Smart Contract.
 */
-pragma solidity 0.8.10;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";

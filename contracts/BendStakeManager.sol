@@ -665,7 +665,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         }
     }
 
-    function compund(CompoundArgs calldata args_) external override onlyBot {
+    function compound(CompoundArgs calldata args_) external override onlyBot {
         address nft_ = address(apeCoinStaking.bayc());
         (uint256 principal, ) = _refundOf(address(nft_));
         if (principal > 0) {

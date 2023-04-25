@@ -88,5 +88,5 @@ interface IStakeManager {
         uint256 coinStakeThreshold;
     }
 
-    function compund(CompoundArgs calldata args_) external;
+    function compound(CompoundArgs calldata args_) external;
 }
