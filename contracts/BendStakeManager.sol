@@ -72,10 +72,17 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _;
     }
 
-    function initialize(IApeCoinStaking apeStaking_, ICoinPool coinPool_) external initializer {
+    function initialize(
+        IApeCoinStaking apeStaking_,
+        ICoinPool coinPool_,
+        INftPool nftPool_,
+        INftVault nftVault_
+    ) external initializer {
         __Ownable_init();
         apeCoinStaking = apeStaking_;
         coinPool = coinPool_;
+        nftPool = nftPool_;
+        nftVault = nftVault_;
         apeCoin = IERC20Upgradeable(apeCoinStaking.apeCoin());
     }
 
@@ -258,19 +265,18 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         rewardsStrategies[nft_] = rewardsStrategy_;
     }
 
-    function totalStakedApeCoin() external view override returns (uint256) {
-        return
-            _stakedApeCoin(ApeStakingLib.APE_COIN_POOL_ID) +
-            _stakedApeCoin(ApeStakingLib.BAYC_POOL_ID) +
-            _stakedApeCoin(ApeStakingLib.MAYC_POOL_ID) +
-            _stakedApeCoin(ApeStakingLib.BAKC_POOL_ID);
+    function totalStakedApeCoin() external view override returns (uint256 amount) {
+        amount += _stakedApeCoin(ApeStakingLib.APE_COIN_POOL_ID);
+        amount += _stakedApeCoin(ApeStakingLib.BAYC_POOL_ID);
+        amount += _stakedApeCoin(ApeStakingLib.MAYC_POOL_ID);
+        amount += _stakedApeCoin(ApeStakingLib.BAKC_POOL_ID);
     }
 
     function totalPendingRewards() external view override returns (uint256 amount) {
-        amount = (_pendingRewards(ApeStakingLib.APE_COIN_POOL_ID) +
-            _pendingRewards(ApeStakingLib.BAYC_POOL_ID) +
-            _pendingRewards(ApeStakingLib.MAYC_POOL_ID) +
-            _pendingRewards(ApeStakingLib.BAKC_POOL_ID));
+        amount += _pendingRewards(ApeStakingLib.APE_COIN_POOL_ID);
+        amount += _pendingRewards(ApeStakingLib.BAYC_POOL_ID);
+        amount += _pendingRewards(ApeStakingLib.MAYC_POOL_ID);
+        amount += _pendingRewards(ApeStakingLib.BAKC_POOL_ID);
         if (fee > 0) {
             amount = amount.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
         }

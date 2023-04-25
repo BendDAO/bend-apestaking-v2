@@ -69,7 +69,7 @@ library ApeStakingLib {
     function getNftPool(IApeCoinStaking apeCoinStaking_, address nft_)
         internal
         view
-        returns (IApeCoinStaking.Pool memory)
+        returns (IApeCoinStaking.PoolWithoutTimeRange memory)
     {
         return apeCoinStaking_.pools(getNftPoolId(apeCoinStaking_, nft_));
     }

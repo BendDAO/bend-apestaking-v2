@@ -10,7 +10,6 @@ import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/
  */
 contract MintableERC721 is ERC721Enumerable {
     string public baseURI;
-    mapping(address => uint256) public mintCounts;
 
     constructor(string memory name, string memory symbol) ERC721(name, symbol) {
         baseURI = "https://MintableERC721/";
@@ -23,9 +22,6 @@ contract MintableERC721 is ERC721Enumerable {
      */
     function mint(uint256 tokenId) public returns (bool) {
         require(tokenId < 10000, "exceed mint limit");
-
-        mintCounts[_msgSender()] += 1;
-        require(mintCounts[_msgSender()] <= 10, "exceed mint limit");
 
         _mint(_msgSender(), tokenId);
         return true;

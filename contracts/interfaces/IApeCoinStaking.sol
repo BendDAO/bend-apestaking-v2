@@ -43,6 +43,13 @@ interface IApeCoinStaking {
         uint96 capPerPosition;
     }
 
+    struct PoolWithoutTimeRange {
+        uint48 lastRewardedTimestampHour;
+        uint16 lastRewardsRangeIndex;
+        uint96 stakedAmount;
+        uint96 accumulatedRewardsPerShare;
+    }
+
     struct DashboardStake {
         uint256 poolId;
         uint256 tokenId;
@@ -100,7 +107,7 @@ interface IApeCoinStaking {
 
     function stakedTotal(address addr_) external view returns (uint256);
 
-    function pools(uint256 poolId_) external view returns (Pool memory);
+    function pools(uint256 poolId_) external view returns (PoolWithoutTimeRange memory);
 
     function nftPosition(uint256 poolId_, uint256 tokenId_) external view returns (Position memory);
 

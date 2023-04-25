@@ -91,7 +91,7 @@ contract NftVault is INftVault {
     }
 
     function pendingRewards(address nft_, address staker_) external view onlyApe(nft_) returns (uint256) {
-        IApeCoinStaking.Pool memory pool = apeCoinStaking.getNftPool(nft_);
+        IApeCoinStaking.PoolWithoutTimeRange memory pool = apeCoinStaking.getNftPool(nft_);
         Position memory position = _positions[nft_][staker_];
 
         (uint256 rewardsSinceLastCalculated, ) = apeCoinStaking.getNftRewardsBy(

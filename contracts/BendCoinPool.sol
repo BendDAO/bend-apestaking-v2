@@ -34,7 +34,11 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
     }
 
     function totalAssets() public view override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
-        return pendingApeCoin + staker.totalPendingRewards() + staker.totalStakedApeCoin() + staker.totalRefund();
+        uint256 amount = pendingApeCoin;
+        amount += staker.totalPendingRewards();
+        amount += staker.totalStakedApeCoin();
+        amount += staker.totalRefund();
+        return amount;
     }
 
     function _deposit(
