@@ -8,7 +8,7 @@ contract BendNftPoolTest is SetupHelper {
     }
 
     function test_deposit() public {
-        address user = users[0];
+        address user = testUsers[0];
         vm.startPrank(user);
 
         uint256 tokenId = 100;
@@ -17,6 +17,12 @@ contract BendNftPoolTest is SetupHelper {
 
         uint256[] memory tokenIds = new uint256[](1);
         tokenIds[0] = tokenId;
+
         nftPool.deposit(address(mockBAYC), tokenIds);
+
+        stBAYC.approve(address(nftPool), tokenId);
+        nftPool.withdraw(address(mockBAYC), tokenIds);
+
+        vm.stopPrank();
     }
 }

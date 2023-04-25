@@ -31,7 +31,9 @@ import "./helpers/UtilitiesHelper.sol";
 
 abstract contract SetupHelper is Test {
     UtilitiesHelper internal utilsHelper;
-    address payable[] internal users;
+    address payable[] internal testUsers;
+    address payable[] internal adminOwners;
+    address payable botAdmin;
 
     MintableERC20 internal mockApeCoin;
     MintableERC721 internal mockBAYC;
@@ -51,7 +53,8 @@ abstract contract SetupHelper is Test {
 
     function setUp() public virtual {
         utilsHelper = new UtilitiesHelper();
-        users = utilsHelper.createUsers(5);
+        testUsers = utilsHelper.createUsers(5);
+        adminOwners = utilsHelper.createUsers(5);
 
         mockDelegationRegistry = new DelegationRegistry();
 
@@ -105,9 +108,28 @@ abstract contract SetupHelper is Test {
         nftPool.initialize(IDelegationRegistry(mockDelegationRegistry), coinPool, stakeManager, stBAYC, stMAYC, stBAKC);
         stakeManager.initialize(IApeCoinStaking(address(mockApeStaking)), coinPool, nftPool, nftVault);
 
+        botAdmin = adminOwners[0];
+        stakeManager.updateBot(botAdmin);
+
         // mint some coins
         uint256 totalCoinRewards = 1000000 * 10**18;
         mockApeCoin.mint(totalCoinRewards);
         mockApeCoin.transfer(address(mockApeStaking), totalCoinRewards);
+
+        vm.warp(1669748400);
+        vm.roll(100);
+    }
+
+    function advanceTime(uint256 timeDelta) internal {
+        vm.warp(block.timestamp + timeDelta);
+    }
+
+    function advanceBlock(uint256 blockDelta) internal {
+        vm.roll(block.number + blockDelta);
+    }
+
+    function advanceTimeAndBlock(uint256 timeDelta, uint256 blockDelta) internal {
+        vm.warp(block.timestamp + timeDelta);
+        vm.roll(block.number + blockDelta);
     }
 }

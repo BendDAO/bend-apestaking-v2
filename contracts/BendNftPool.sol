@@ -85,11 +85,13 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         _claim(_msgSender(), _msgSender(), nft_, tokenIds_);
 
         PoolState storage pool = poolStates[nft_];
+
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
             pool.stakedNft.safeTransferFrom(_msgSender(), address(this), tokenId_);
         }
+
         pool.stakedNft.burn(tokenIds_);
 
         emit NftWithdrawn(nft_, tokenIds_, _msgSender());
@@ -119,9 +121,11 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
                 pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
             }
         }
-        coinPool.safeTransfer(receiver_, claimableRewards);
 
-        emit RewardClaimed(nft_, tokenIds_, receiver_, claimableRewards);
+        if (claimableRewards > 0) {
+            coinPool.safeTransfer(receiver_, claimableRewards);
+            emit RewardClaimed(nft_, tokenIds_, receiver_, claimableRewards);
+        }
     }
 
     function claim(
@@ -192,7 +196,13 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         uint256, /*tokenId*/
         bytes calldata /*data*/
     ) external view returns (bytes4) {
-        require(bayc == msg.sender || mayc == msg.sender || bakc == msg.sender, "BendNftPool: not ape nft");
+        bool isValidNFT = (bayc == msg.sender || mayc == msg.sender || bakc == msg.sender);
+        if (!isValidNFT) {
+            isValidNFT = (address(poolStates[bayc].stakedNft) == msg.sender ||
+                address(poolStates[mayc].stakedNft) == msg.sender ||
+                address(poolStates[bakc].stakedNft) == msg.sender);
+        }
+        require(isValidNFT, "BendNftPool: not ape nft");
         return this.onERC721Received.selector;
     }
 }

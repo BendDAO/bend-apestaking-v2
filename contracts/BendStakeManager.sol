@@ -84,6 +84,10 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         nftPool = nftPool_;
         nftVault = nftVault_;
         apeCoin = IERC20Upgradeable(apeCoinStaking.apeCoin());
+
+        apeCoin.approve(address(apeCoinStaking), type(uint256).max);
+        apeCoin.approve(address(coinPool), type(uint256).max);
+        apeCoin.approve(address(nftVault), type(uint256).max);
     }
 
     function updateFee(uint256 fee_) external onlyOwner {
@@ -672,6 +676,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function compound(CompoundArgs calldata args_) external override onlyBot {
+        // withdraw refunds which caused by users active burn the staked NFT
         address nft_ = address(apeCoinStaking.bayc());
         (uint256 principal, ) = _refundOf(address(nft_));
         if (principal > 0) {
@@ -687,9 +692,13 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         if (principal > 0) {
             _withdrawRefund(nft_);
         }
+
+        // claim rewards from coin pool
         if (args_.claimCoinPool) {
             _claimApeCoin();
         }
+
+        // claim rewards from NFT pool
         if (args_.claim.bayc.length > 0) {
             _claimBayc(args_.claim.bayc);
         }
@@ -699,6 +708,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         if (args_.claim.baycPairs.length > 0 || args_.claim.maycPairs.length > 0) {
             _claimBakc(args_.claim.baycPairs, args_.claim.maycPairs);
         }
+
+        // unstake some NFTs from NFT pool
         if (args_.unstake.bayc.length > 0) {
             _unstakeBayc(args_.unstake.bayc);
         }
@@ -708,6 +719,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         if (args_.unstake.baycPairs.length > 0 || args_.unstake.maycPairs.length > 0) {
             _unstakeBakc(args_.unstake.baycPairs, args_.unstake.maycPairs);
         }
+
+        // stake some NFTs to NFT pool
         if (args_.stake.bayc.length > 0) {
             _stakeBayc(args_.stake.bayc);
         }
@@ -717,9 +730,13 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         if (args_.stake.baycPairs.length > 0 || args_.stake.maycPairs.length > 0) {
             _stakeBakc(args_.stake.baycPairs, args_.stake.maycPairs);
         }
+
+        // stake ape coin to coin pool
         if (coinPool.pendingApeCoin() >= args_.coinStakeThreshold) {
             _stakeApeCoin(coinPool.pendingApeCoin());
         }
+
+        // transfer fee to recipient
         if (pendingFeeAmount > MAX_PENDING_FEE && feeRecipient != address(0)) {
             apeCoin.safeTransfer(feeRecipient, pendingFeeAmount);
             pendingFeeAmount = 0;
