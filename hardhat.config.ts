@@ -39,12 +39,7 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      chainId: 5,
       initialBaseFeePerGas: 0,
-      forking: {
-        url: NETWORKS_RPC_URL[Network.goerli],
-        blockNumber: 8076786,
-      },
       allowUnlimitedContractSize: true,
     },
     goerli: {

@@ -1,0 +1,262 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { ethers } from "hardhat";
+import {
+  MintableERC721,
+  MintableERC20,
+  IStakedNft,
+  INftVault,
+  ApeCoinStaking,
+  ICoinPool,
+  INftPool,
+  IStakeManager,
+  IDelegationRegistry,
+} from "../typechain-types";
+import { Contract, BigNumber } from "ethers";
+import { parseEther } from "ethers/lib/utils";
+
+export interface Env {
+  initialized: boolean;
+  fee: number;
+  accounts: SignerWithAddress[];
+  admin: SignerWithAddress;
+  chainId: number;
+}
+
+export interface Contracts {
+  initialized: boolean;
+  delegateCash: IDelegationRegistry;
+
+  // nft
+  bayc: MintableERC721;
+  mayc: MintableERC721;
+  bakc: MintableERC721;
+  // ape staking
+  apeCoin: MintableERC20;
+  apeStaking: ApeCoinStaking;
+  // staked nft
+  nftVault: INftVault;
+  stBayc: IStakedNft;
+  stMayc: IStakedNft;
+  stBakc: IStakedNft;
+  // bend ape staking v2
+  bendStakeManager: IStakeManager;
+  bendCoinPool: ICoinPool;
+  bendNftPool: INftPool;
+}
+
+export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
+  env.fee = 100;
+  env.accounts = (await ethers.getSigners()).slice(0, 6);
+  env.admin = env.accounts[0];
+  env.chainId = (await ethers.provider.getNetwork()).chainId;
+
+  for (const user of env.accounts) {
+    // Each user gets 100K ape coin
+    await contracts.apeCoin.connect(user).mint(parseEther("100000"));
+  }
+  await contracts.apeCoin.connect(env.admin).mint(parseEther("100000000"));
+  await contracts.apeCoin.connect(env.admin).transfer(contracts.apeStaking.address, parseEther("100000000"));
+  // ApeCoin pool
+  await contracts.apeStaking.addTimeRange(0, BigNumber.from("10500000000000000000000000"), 1669748400, 1677610800, 0);
+  await contracts.apeStaking.addTimeRange(0, BigNumber.from("9000000000000000000000000"), 1677610800, 1685559600, 0);
+  await contracts.apeStaking.addTimeRange(0, BigNumber.from("6000000000000000000000000"), 1685559600, 1693422000, 0);
+  await contracts.apeStaking.addTimeRange(0, BigNumber.from("4500000000000000000000000"), 1693422000, 1701284400, 0);
+  // BAYC pool
+  await contracts.apeStaking.addTimeRange(
+    1,
+    BigNumber.from("16486750000000000000000000"),
+    1669748400,
+    1677610800,
+    BigNumber.from("10094000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    1,
+    BigNumber.from("14131500000000000000000000"),
+    1677610800,
+    1685559600,
+    BigNumber.from("10094000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    1,
+    BigNumber.from("9421000000000000000000000"),
+    1685559600,
+    1693422000,
+    BigNumber.from("10094000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    1,
+    BigNumber.from("7065750000000000000000000"),
+    1693422000,
+    1701284400,
+    BigNumber.from("10094000000000000000000")
+  );
+  // MAYC pool
+  await contracts.apeStaking.addTimeRange(
+    2,
+    BigNumber.from("6671000000000000000000000"),
+    1669748400,
+    1677610800,
+    BigNumber.from("2042000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    2,
+    BigNumber.from("5718000000000000000000000"),
+    1677610800,
+    1685559600,
+    BigNumber.from("2042000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    2,
+    BigNumber.from("3812000000000000000000000"),
+    1685559600,
+    1693422000,
+    BigNumber.from("2042000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    2,
+    BigNumber.from("2859000000000000000000000"),
+    1693422000,
+    1701284400,
+    BigNumber.from("2042000000000000000000")
+  );
+  // BAKC pool
+  await contracts.apeStaking.addTimeRange(
+    3,
+    BigNumber.from("1342250000000000000000000"),
+    1669748400,
+    1677610800,
+    BigNumber.from("856000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    3,
+    BigNumber.from("1150500000000000000000000"),
+    1677610800,
+    1685559600,
+    BigNumber.from("856000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    3,
+    BigNumber.from("767000000000000000000000"),
+    1685559600,
+    1693422000,
+    BigNumber.from("856000000000000000000")
+  );
+  await contracts.apeStaking.addTimeRange(
+    3,
+    BigNumber.from("575250000000000000000000"),
+    1693422000,
+    1701284400,
+    BigNumber.from("856000000000000000000")
+  );
+}
+
+export async function setupContracts(): Promise<Contracts> {
+  const delegateCash = await deployContract<IDelegationRegistry>("DelegationRegistry", []);
+  // nft
+  const bayc = await deployContract<MintableERC721>("MintableERC721", ["BAYC", "BAYC"]);
+  const mayc = await deployContract<MintableERC721>("MintableERC721", ["MAYC", "MAYC"]);
+  const bakc = await deployContract<MintableERC721>("MintableERC721", ["BAKC", "BAKC"]);
+
+  // ape staking
+  const apeCoin = await deployContract<MintableERC20>("MintableERC20", ["ApeCoin", "ApeCoin", 18]);
+  const apeStaking = await deployContract<ApeCoinStaking>("ApeCoinStaking", [
+    apeCoin.address,
+    bayc.address,
+    mayc.address,
+    bakc.address,
+  ]);
+
+  //  staked nft
+  const nftVault = await deployContract<INftVault>("NftVault", [apeStaking.address, delegateCash.address]);
+  const stBayc = await deployContract<IStakedNft>("StBAYC", [bayc.address, nftVault.address]);
+  const stMayc = await deployContract<IStakedNft>("StMAYC", [mayc.address, nftVault.address]);
+  const stBakc = await deployContract<IStakedNft>("StBAKC", [bakc.address, nftVault.address]);
+
+  // bend staking v2
+  const bendStakeManager = await deployContract<IStakeManager>("BendStakeManager", []);
+  const bendCoinPool = await deployContract<ICoinPool>("BendCoinPool", []);
+  const bendNftPool = await deployContract<INftPool>("BendNftPool", []);
+
+  await (bendStakeManager as Contract).initialize(
+    apeStaking.address,
+    bendCoinPool.address,
+    bendNftPool.address,
+    nftVault.address
+  );
+  await (bendCoinPool as Contract).initialize(apeStaking.address, bendStakeManager.address);
+  await (bendNftPool as Contract).initialize(
+    delegateCash.address,
+    bendCoinPool.address,
+    bendStakeManager.address,
+    stBayc.address,
+    stMayc.address,
+    stBakc.address
+  );
+
+  return {
+    initialized: true,
+    delegateCash,
+    bayc,
+    mayc,
+    bakc,
+    apeCoin,
+    apeStaking,
+    nftVault,
+    stBayc,
+    stMayc,
+    stBakc,
+    bendStakeManager,
+    bendCoinPool,
+    bendNftPool,
+  } as Contracts;
+}
+
+async function deployContract<ContractType extends Contract>(contractName: string, args: any[]): Promise<ContractType> {
+  const instance = await (await ethers.getContractFactory(contractName)).deploy(...args);
+  return instance as ContractType;
+}
+
+export class Snapshots {
+  ids = new Map<string, string>();
+
+  async capture(tag: string): Promise<void> {
+    this.ids.set(tag, await this.evmSnapshot());
+  }
+
+  async revert(tag: string): Promise<void> {
+    await this.evmRevert(this.ids.get(tag) || "1");
+    await this.capture(tag);
+  }
+
+  async evmSnapshot(): Promise<any> {
+    return await ethers.provider.send("evm_snapshot", []);
+  }
+
+  async evmRevert(id: string): Promise<any> {
+    return await ethers.provider.send("evm_revert", [id]);
+  }
+}
+
+const contracts: Contracts = { initialized: false } as Contracts;
+const env: Env = { initialized: false } as Env;
+const snapshots = new Snapshots();
+export function makeSuite(name: string, tests: (contracts: Contracts, env: Env, snapshots: Snapshots) => void): void {
+  describe(name, () => {
+    let _id: any;
+    before(async () => {
+      if (!env.initialized && !contracts.initialized) {
+        Object.assign(contracts, await setupContracts());
+        await setupEnv(env, contracts);
+        env.initialized = true;
+        contracts.initialized = true;
+        snapshots.capture("setup");
+      }
+      _id = await snapshots.evmSnapshot();
+    });
+    tests(contracts, env, snapshots);
+    after(async () => {
+      await snapshots.evmRevert(_id);
+    });
+  });
+}

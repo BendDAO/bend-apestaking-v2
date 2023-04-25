@@ -634,13 +634,13 @@ contract ApeCoinStaking is Ownable {
             PoolUI memory
         )
     {
-        Pool memory coinPool = pools[0];
+        Pool memory apeCoinPool = pools[0];
         Pool memory baycPool = pools[1];
         Pool memory maycPool = pools[2];
         Pool memory bakcPool = pools[3];
-        uint256 current = getCurrentTimeRangeIndex(coinPool);
+        uint256 current = getCurrentTimeRangeIndex(apeCoinPool);
         return (
-            PoolUI(0, coinPool.stakedAmount, coinPool.timeRanges[current]),
+            PoolUI(0, apeCoinPool.stakedAmount, apeCoinPool.timeRanges[current]),
             PoolUI(1, baycPool.stakedAmount, baycPool.timeRanges[current]),
             PoolUI(2, maycPool.stakedAmount, maycPool.timeRanges[current]),
             PoolUI(3, bakcPool.stakedAmount, bakcPool.timeRanges[current])

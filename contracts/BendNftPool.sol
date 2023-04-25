@@ -18,8 +18,10 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeERC20Upgradeable for ICoinPool;
     using ApeStakingLib for IApeCoinStaking;
-    mapping(address => PoolState) public poolStates;
 
+    uint256 private constant APE_COIN_PRECISION = 1e18;
+
+    mapping(address => PoolState) public poolStates;
     IStakeManager public override staker;
     ICoinPool public coinPool;
     IDelegationRegistry public delegation;
@@ -117,7 +119,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             );
 
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
-                claimableRewards += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]);
+                claimableRewards += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
                 pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
             }
         }
@@ -161,7 +163,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             rewardsAmount_
         );
         PoolState storage pool = poolStates[nft_];
-        pool.accumulatedRewardsPerNft += (rewardsAmount_ / pool.stakedNft.totalStaked(address(staker)));
+        pool.accumulatedRewardsPerNft += ((rewardsAmount_ * APE_COIN_PRECISION) /
+            pool.stakedNft.totalStaked(address(staker)));
 
         coinPool.deposit(rewardsAmount_, address(this));
 
@@ -185,7 +188,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
-                amount += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]);
+                amount += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
             }
         }
     }

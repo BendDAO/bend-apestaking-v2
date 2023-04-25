@@ -33,14 +33,14 @@ interface INftVault is IERC721Receiver {
     ) external;
 
     // deposit nft
-    function depositNFT(
+    function depositNft(
         address yugaNFT,
         uint256[] calldata tokenIds_,
         address staker
     ) external;
 
     // withdraw nft
-    function withdrawNFT(address yugaNFT, uint256[] calldata tokenIds_) external;
+    function withdrawNft(address yugaNFT, uint256[] calldata tokenIds_) external;
 
     // staker withdraw ape coin
     function withdrawRefunds(address yugaNFT) external;

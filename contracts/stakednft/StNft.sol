@@ -65,7 +65,7 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             _nft.safeTransferFrom(_msgSender(), address(this), tokenIds_[i]);
         }
-        nftVault.depositNFT(address(_nft), tokenIds_, staker_);
+        nftVault.depositNft(address(_nft), tokenIds_, staker_);
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             // set minter
             minterOf[tokenIds_[i]] = _msgSender();
@@ -84,7 +84,7 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
             require(address(nftVault) == _nft.ownerOf(tokenId_), "stNFT: invalid tokenId_");
         }
 
-        nftVault.withdrawNFT(address(_nft), tokenIds_);
+        nftVault.withdrawNft(address(_nft), tokenIds_);
 
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];

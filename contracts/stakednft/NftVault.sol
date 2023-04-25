@@ -55,6 +55,7 @@ contract NftVault is INftVault {
         bayc = address(apeCoinStaking.bayc());
         mayc = address(apeCoinStaking.mayc());
         bakc = address(apeCoinStaking.bakc());
+        apeCoin.approve(address(apeCoinStaking), type(uint256).max);
     }
 
     function onERC721Received(
@@ -128,7 +129,7 @@ contract NftVault is INftVault {
         }
     }
 
-    function depositNFT(
+    function depositNft(
         address nft_,
         uint256[] calldata tokenIds_,
         address staker_
@@ -359,7 +360,7 @@ contract NftVault is INftVault {
         }
     }
 
-    function withdrawNFT(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {
+    function withdrawNft(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {
         require(tokenIds_.length > 0, "nftVault: invalid tokenIds");
         if (nft_ == bayc || nft_ == mayc) {
             _refundSinglePool(nft_, tokenIds_);
@@ -409,7 +410,7 @@ contract NftVault is INftVault {
         uint256 claimedRewardsAmount_
     ) private {
         Position storage position_ = _positions[nft_][staker_];
-        position_.rewardsDebt += (claimedRewardsAmount_).toInt256();
+        position_.rewardsDebt += (claimedRewardsAmount_ * ApeStakingLib.APE_COIN_PRECISION).toInt256();
     }
 
     function stakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override {
@@ -426,6 +427,47 @@ contract NftVault is INftVault {
         _increasePosition(bayc, msg.sender, totalStakedAmount);
     }
 
+    function unstakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
+        external
+        override
+        returns (uint256 principal, uint256 rewards)
+    {
+        address nft_ = bayc;
+        IApeCoinStaking.SingleNft memory singleNft_;
+        for (uint256 i = 0; i < nfts_.length; i++) {
+            singleNft_ = nfts_[i];
+            require(msg.sender == _stakerOf(nft_, singleNft_.tokenId), "nftVault: caller must be nft staker");
+            principal += singleNft_.amount;
+        }
+        rewards = apeCoin.balanceOf(recipient_);
+
+        apeCoinStaking.withdrawBAYC(nfts_, recipient_);
+
+        rewards = apeCoin.balanceOf(recipient_) - rewards - principal;
+        if (rewards > 0) {
+            _updateRewardsDebt(nft_, msg.sender, rewards);
+        }
+
+        _decreasePosition(nft_, msg.sender, principal);
+    }
+
+    function claimBaycPool(uint256[] calldata tokenIds_, address recipient_)
+        external
+        override
+        returns (uint256 rewards)
+    {
+        address nft_ = bayc;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            require(msg.sender == _stakerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft staker");
+        }
+        rewards = apeCoin.balanceOf(address(recipient_));
+        apeCoinStaking.claimBAYC(tokenIds_, recipient_);
+        rewards = apeCoin.balanceOf(recipient_) - rewards;
+        if (rewards > 0) {
+            _updateRewardsDebt(nft_, msg.sender, rewards);
+        }
+    }
+
     function stakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override {
         uint256 totalApeCoinAmount = 0;
         IApeCoinStaking.SingleNft memory singleNft_;
@@ -437,6 +479,47 @@ contract NftVault is INftVault {
         apeCoin.safeTransferFrom(msg.sender, address(this), totalApeCoinAmount);
         apeCoinStaking.depositMAYC(nfts_);
         _increasePosition(mayc, msg.sender, totalApeCoinAmount);
+    }
+
+    function unstakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
+        external
+        override
+        returns (uint256 principal, uint256 rewards)
+    {
+        address nft_ = mayc;
+        IApeCoinStaking.SingleNft memory singleNft_;
+        for (uint256 i = 0; i < nfts_.length; i++) {
+            singleNft_ = nfts_[i];
+            require(msg.sender == _stakerOf(nft_, singleNft_.tokenId), "nftVault: caller must be nft staker");
+            principal += singleNft_.amount;
+        }
+        rewards = apeCoin.balanceOf(recipient_);
+
+        apeCoinStaking.withdrawMAYC(nfts_, recipient_);
+
+        rewards = apeCoin.balanceOf(recipient_) - rewards - principal;
+        if (rewards > 0) {
+            _updateRewardsDebt(nft_, msg.sender, rewards);
+        }
+
+        _decreasePosition(nft_, msg.sender, principal);
+    }
+
+    function claimMaycPool(uint256[] calldata tokenIds_, address recipient_)
+        external
+        override
+        returns (uint256 rewards)
+    {
+        address nft_ = mayc;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            require(msg.sender == _stakerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft staker");
+        }
+        rewards = apeCoin.balanceOf(address(recipient_));
+        apeCoinStaking.claimMAYC(tokenIds_, recipient_);
+        rewards = apeCoin.balanceOf(recipient_) - rewards;
+        if (rewards > 0) {
+            _updateRewardsDebt(nft_, msg.sender, rewards);
+        }
     }
 
     function stakeBakcPool(
@@ -466,54 +549,6 @@ contract NftVault is INftVault {
         apeCoinStaking.depositBAKC(baycPairs_, maycPairs_);
 
         _increasePosition(bakc, msg.sender, totalStakedAmount);
-    }
-
-    function unstakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
-        external
-        override
-        returns (uint256 principal, uint256 rewards)
-    {
-        address nft_ = bayc;
-        IApeCoinStaking.SingleNft memory singleNft_;
-        for (uint256 i = 0; i < nfts_.length; i++) {
-            singleNft_ = nfts_[i];
-            require(msg.sender == _stakerOf(nft_, singleNft_.tokenId), "nftVault: caller must be nft staker");
-            principal += singleNft_.amount;
-        }
-        rewards = apeCoin.balanceOf(recipient_);
-
-        apeCoinStaking.withdrawBAYC(nfts_, recipient_);
-
-        rewards = apeCoin.balanceOf(recipient_) - rewards - principal;
-        if (rewards > 0) {
-            _updateRewardsDebt(nft_, msg.sender, rewards);
-        }
-
-        _decreasePosition(nft_, msg.sender, principal);
-    }
-
-    function unstakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
-        external
-        override
-        returns (uint256 principal, uint256 rewards)
-    {
-        address nft_ = mayc;
-        IApeCoinStaking.SingleNft memory singleNft_;
-        for (uint256 i = 0; i < nfts_.length; i++) {
-            singleNft_ = nfts_[i];
-            require(msg.sender == _stakerOf(nft_, singleNft_.tokenId), "nftVault: caller must be nft staker");
-            principal += singleNft_.amount;
-        }
-        rewards = apeCoin.balanceOf(recipient_);
-
-        apeCoinStaking.withdrawMAYC(nfts_, recipient_);
-
-        rewards = apeCoin.balanceOf(recipient_) - rewards - principal;
-        if (rewards > 0) {
-            _updateRewardsDebt(nft_, msg.sender, rewards);
-        }
-
-        _decreasePosition(nft_, msg.sender, principal);
     }
 
     function unstakeBakcPool(
@@ -552,40 +587,6 @@ contract NftVault is INftVault {
         _decreasePosition(nft_, msg.sender, principal);
 
         apeCoin.safeTransfer(recipient_, principal + rewards);
-    }
-
-    function claimBaycPool(uint256[] calldata tokenIds_, address recipient_)
-        external
-        override
-        returns (uint256 rewards)
-    {
-        address nft_ = bayc;
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            require(msg.sender == _stakerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft staker");
-        }
-        rewards = apeCoin.balanceOf(address(recipient_));
-        apeCoinStaking.claimBAYC(tokenIds_, recipient_);
-        rewards = apeCoin.balanceOf(recipient_) - rewards;
-        if (rewards > 0) {
-            _updateRewardsDebt(nft_, msg.sender, rewards);
-        }
-    }
-
-    function claimMaycPool(uint256[] calldata tokenIds_, address recipient_)
-        external
-        override
-        returns (uint256 rewards)
-    {
-        address nft_ = mayc;
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            require(msg.sender == _stakerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft staker");
-        }
-        rewards = apeCoin.balanceOf(address(recipient_));
-        apeCoinStaking.claimMAYC(tokenIds_, recipient_);
-        rewards = apeCoin.balanceOf(recipient_) - rewards;
-        if (rewards > 0) {
-            _updateRewardsDebt(nft_, msg.sender, rewards);
-        }
     }
 
     function claimBakcPool(
