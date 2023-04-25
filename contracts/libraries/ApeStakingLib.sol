@@ -83,19 +83,6 @@ library ApeStakingLib {
         return apeCoinStaking_.rewardsBy(getNftPoolId(apeCoinStaking_, nft_), from_, to_);
     }
 
-    function isYugaNFT(IApeCoinStaking apeCoinStaking_, address nft_) internal view returns (bool) {
-        if (nft_ == address(bayc(apeCoinStaking_))) {
-            return true;
-        }
-        if (nft_ == address(mayc(apeCoinStaking_))) {
-            return true;
-        }
-        if (nft_ == address(bakc(apeCoinStaking_))) {
-            return true;
-        }
-        return false;
-    }
-
     function bayc(IApeCoinStaking apeCoinStaking_) internal view returns (IERC721) {
         return IERC721(apeCoinStaking_.nftContracts(BAYC_POOL_ID));
     }

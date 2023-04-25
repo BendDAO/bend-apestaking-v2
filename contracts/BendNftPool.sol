@@ -28,7 +28,7 @@ contract BendApePool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     address public bakc;
 
     modifier onlyApe(address nft_) {
-        require(bayc == nft_ || mayc == nft_ || bakc == nft_, "BendApePool: not ape");
+        require(nft_ == bayc || nft_ == mayc || nft_ == bakc, "BendApePool: not ape");
         _;
     }
 

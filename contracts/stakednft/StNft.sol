@@ -2,7 +2,6 @@
 pragma solidity 0.8.18;
 
 import {ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import {IERC165} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -11,7 +10,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/interfaces/IERC721Receive
 import {IStakedNft} from "../interfaces/IStakedNft.sol";
 import {INftVault} from "../interfaces/INftVault.sol";
 
-abstract contract StNft is IStakedNft, ERC721Enumerable, Ownable {
+abstract contract StNft is IStakedNft, ERC721Enumerable {
     IERC721Metadata private _nft;
     INftVault public nftVault;
 
