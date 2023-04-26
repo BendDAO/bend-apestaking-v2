@@ -95,7 +95,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         fee = fee_;
     }
 
-    function updateFeeRecipient(address recipient_) external {
+    function updateFeeRecipient(address recipient_) external onlyOwner {
         feeRecipient = recipient_;
     }
 
@@ -343,7 +343,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         if (receivedApeCoin > amount_) {
             receivedApeCoin -= _collectFee(receivedApeCoin - amount_);
         }
-        coinPool.receiveApeCoin(receivedApeCoin);
+        uint256 rewardsAmount = receivedApeCoin - amount_;
+        coinPool.receiveApeCoin(amount_, rewardsAmount);
     }
 
     function unstakeApeCoin(uint256 amount_) external override onlyCoinPoolOrBot {
@@ -355,7 +356,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         apeCoinStaking.claimSelfApeCoin();
         rewardsAmount = apeCoin.balanceOf(address(this)) - rewardsAmount;
         rewardsAmount -= _collectFee(rewardsAmount);
-        coinPool.receiveApeCoin(rewardsAmount);
+        coinPool.receiveApeCoin(0, rewardsAmount);
     }
 
     function claimApeCoin() external override onlyCoinPoolOrBot {
@@ -399,7 +400,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         receivedAmount = apeCoin.balanceOf(address(this)) - receivedAmount;
         require(receivedAmount == (principalAmount + rewardsAmount), "BendStakeManager: unstake bayc error");
 
-        coinPool.receiveApeCoin(principalAmount);
+        coinPool.receiveApeCoin(principalAmount, 0);
         rewardsAmount -= _collectFee(rewardsAmount);
         _distributeRewards(nft_, rewardsAmount);
     }
@@ -459,7 +460,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         require(receivedAmount == (principalAmount + rewardsAmount), "BendStakeManager: unstake mayc error");
 
         // return principao to ape coin pool
-        coinPool.receiveApeCoin(principalAmount);
+        coinPool.receiveApeCoin(principalAmount, 0);
         rewardsAmount -= _collectFee(rewardsAmount);
         // distribute mayc rewardsAmount
         _distributeRewards(nft_, rewardsAmount);
@@ -569,7 +570,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         require(receivedAmount == (principalAmount + rewardsAmount), "BendStakeManager: unstake bakc error");
 
         // return principao to ape coin pool
-        coinPool.receiveApeCoin(principalAmount);
+        coinPool.receiveApeCoin(principalAmount, 0);
         rewardsAmount -= _collectFee(rewardsAmount);
         // distribute bakc rewardsAmount
         _distributeRewards(nft_, rewardsAmount);
@@ -606,7 +607,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         INftVault.Refund memory refund = nftVault.refundOf(address(apeCoinStaking.bayc()), address(this));
 
         if (refund.principal > 0) {
-            coinPool.receiveApeCoin(refund.principal);
+            coinPool.receiveApeCoin(refund.principal, 0);
         }
         if (refund.reward > 0) {
             uint256 rewardsAmount = refund.reward - _collectFee(refund.reward);
@@ -620,7 +621,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
         uint256 apeCoinPoolRewards = rewardsAmount - nftPoolRewards;
 
-        coinPool.receiveApeCoin(apeCoinPoolRewards);
+        coinPool.receiveApeCoin(0, apeCoinPoolRewards);
 
         nftPool.receiveApeCoin(nft_, nftPoolRewards);
     }

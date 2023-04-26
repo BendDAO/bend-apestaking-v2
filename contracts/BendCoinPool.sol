@@ -74,10 +74,13 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
         return convertToAssets(balanceOf(account));
     }
 
-    function receiveApeCoin(uint256 amount) external override onlyStaker {
-        IERC20Upgradeable(asset()).safeTransferFrom(_msgSender(), address(this), amount);
-        pendingApeCoin += amount;
-        emit RewardDistributed(amount);
+    function receiveApeCoin(uint256 principalAmount, uint256 rewardsAmount_) external override onlyStaker {
+        uint256 totalAmount = principalAmount + rewardsAmount_;
+        IERC20Upgradeable(asset()).safeTransferFrom(_msgSender(), address(this), totalAmount);
+        pendingApeCoin += totalAmount;
+        if (rewardsAmount_ > 0) {
+            emit RewardDistributed(rewardsAmount_);
+        }
     }
 
     function pullApeCoin(uint256 amount_) external override onlyStaker {
