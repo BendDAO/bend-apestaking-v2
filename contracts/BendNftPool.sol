@@ -96,6 +96,16 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
 
         pool.stakedNft.burn(tokenIds_);
 
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            IERC721Upgradeable(pool.stakedNft.underlyingAsset()).safeTransferFrom(
+                address(this),
+                _msgSender(),
+                tokenId_
+            );
+            delete pool.rewardsDebt[tokenId_];
+        }
+
         emit NftWithdrawn(nft_, tokenIds_, _msgSender());
     }
 

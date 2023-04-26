@@ -355,7 +355,7 @@ contract NftVault is INftVault {
                 if (vars.totalReward > 0) {
                     _updateRewardsDebt(bakc, vars.staker, vars.totalReward);
                 }
-                _decreasePosition(bakc, vars.staker, vars.totalReward);
+                _decreasePosition(bakc, vars.staker, vars.totalPrincipal);
             }
         }
     }
@@ -369,6 +369,7 @@ contract NftVault is INftVault {
         }
         // transfer nft to sender
         for (uint256 i = 0; i < tokenIds_.length; i++) {
+            require(msg.sender == _ownerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft owner");
             // transfer nft
             IERC721(nft_).safeTransferFrom(address(this), msg.sender, tokenIds_[i]);
             delete _nfts[nft_][tokenIds_[i]];
@@ -440,9 +441,7 @@ contract NftVault is INftVault {
             principal += singleNft_.amount;
         }
         rewards = apeCoin.balanceOf(recipient_);
-
         apeCoinStaking.withdrawBAYC(nfts_, recipient_);
-
         rewards = apeCoin.balanceOf(recipient_) - rewards - principal;
         if (rewards > 0) {
             _updateRewardsDebt(nft_, msg.sender, rewards);
