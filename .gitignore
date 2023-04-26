@@ -121,8 +121,7 @@ abis/
 cache_forge
 out
 
-# Others 
-lib
+# Others files
 
 storage_layout
 out.html
