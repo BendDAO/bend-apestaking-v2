@@ -32,7 +32,7 @@ interface IStakeManager {
     function withdrawApeCoin(uint256 required) external returns (uint256);
 
     // bot
-    function updateBot(address bot_) external;
+    function updateBotAdmin(address bot_) external;
 
     // strategy
     function updateRewardsStrategy(address nft_, IRewardsStrategy rewardsStrategy_) external;

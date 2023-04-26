@@ -42,10 +42,10 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     ICoinPool public coinPool;
     INftPool public nftPool;
     uint256 public apeCoinPoolStakedAmount;
-    address public bot;
+    address public botAdmin;
 
     modifier onlyBot() {
-        require(_msgSender() == bot, "BendStakeManager: caller is not bot");
+        require(_msgSender() == botAdmin, "BendStakeManager: caller is not bot admin");
         _;
     }
 
@@ -61,8 +61,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
     modifier onlyCoinPoolOrBot() {
         require(
-            _msgSender() == address(coinPool) || _msgSender() == bot,
-            "BendStakeManager: caller is not coin pool or bot"
+            _msgSender() == address(coinPool) || _msgSender() == botAdmin,
+            "BendStakeManager: caller is not coin pool or bot admin"
         );
         _;
     }
@@ -261,8 +261,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         withdrawn = _coinPoolChangedBalance(initBalance);
     }
 
-    function updateBot(address bot_) external override onlyOwner {
-        bot = bot_;
+    function updateBotAdmin(address botAdmin_) external override onlyOwner {
+        botAdmin = botAdmin_;
     }
 
     function updateRewardsStrategy(address nft_, IRewardsStrategy rewardsStrategy_) external override onlyOwner {

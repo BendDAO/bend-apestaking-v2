@@ -109,7 +109,7 @@ abstract contract SetupHelper is Test {
         stakeManager.initialize(IApeCoinStaking(address(mockApeStaking)), coinPool, nftPool, nftVault);
 
         botAdmin = adminOwners[0];
-        stakeManager.updateBot(botAdmin);
+        stakeManager.updateBotAdmin(botAdmin);
 
         // mint some coins
         uint256 totalCoinRewards = 1000000 * 10**18;
