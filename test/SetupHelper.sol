@@ -21,7 +21,7 @@ import "../contracts/interfaces/IStakeManager.sol";
 import "../contracts/stakednft/NftVault.sol";
 import "../contracts/stakednft/StBAYC.sol";
 import "../contracts/stakednft/StMAYC.sol";
-import "../contracts/stakednft/stBAKC.sol";
+import "../contracts/stakednft/StBAKC.sol";
 
 import "../contracts/BendCoinPool.sol";
 import "../contracts/BendNftPool.sol";
