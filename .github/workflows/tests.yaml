@@ -21,6 +21,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
@@ -37,6 +39,8 @@ jobs:
         run: yarn compile
       - name: Force Compile code (Hardhat)
         run: yarn compile:force
+      - name: Run forge tests
+        run: forge test -vvv
       - name: Run TypeScript/Waffle tests
         run: yarn test
         env:
