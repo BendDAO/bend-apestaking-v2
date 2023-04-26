@@ -82,18 +82,18 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
             tokenId_ = tokenIds_[i];
             require(_msgSender() == ownerOf(tokenId_), "stNFT: only owner can burn");
             require(address(nftVault) == _nft.ownerOf(tokenId_), "stNFT: invalid tokenId_");
+
+            // clear minter at here, cos we can't get staker after burn from vault
+            delete minterOf[tokenId_];
+            _removeTokenFromStakerEnumeration(stakerOf(tokenId_), tokenId_);
+            _burn(tokenId_);
         }
 
         nftVault.withdrawNft(address(_nft), tokenIds_);
 
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            require(address(this) == _nft.ownerOf(tokenId_), "stNFT: invalid tokenId_");
-            _nft.safeTransferFrom(address(this), _msgSender(), tokenId_);
-            // clear minter
-            delete minterOf[tokenId_];
-            _removeTokenFromStakerEnumeration(stakerOf(tokenId_), tokenId_);
-            _burn(tokenId_);
+            _nft.safeTransferFrom(address(this), _msgSender(), tokenIds_[i]);
         }
     }
 
