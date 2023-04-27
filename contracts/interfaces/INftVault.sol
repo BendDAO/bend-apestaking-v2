@@ -26,7 +26,7 @@ interface INftVault is IERC721Receiver {
     // delegate.cash
 
     function setDelegateCash(
-        address delegate,
+        address delegate_,
         address nft_,
         uint256[] calldata tokenIds,
         bool value
@@ -34,16 +34,16 @@ interface INftVault is IERC721Receiver {
 
     // deposit nft
     function depositNft(
-        address yugaNFT,
+        address nft_,
         uint256[] calldata tokenIds_,
-        address staker
+        address staker_
     ) external;
 
     // withdraw nft
-    function withdrawNft(address yugaNFT, uint256[] calldata tokenIds_) external;
+    function withdrawNft(address nft_, uint256[] calldata tokenIds_) external;
 
     // staker withdraw ape coin
-    function withdrawRefunds(address yugaNFT) external;
+    function withdrawRefunds(address nft_) external;
 
     // stake
     function stakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external;

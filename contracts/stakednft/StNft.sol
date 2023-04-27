@@ -80,8 +80,8 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            require(_msgSender() == ownerOf(tokenId_), "stNFT: only owner can burn");
-            require(address(nftVault) == _nft.ownerOf(tokenId_), "stNFT: invalid tokenId_");
+            require(_msgSender() == ownerOf(tokenId_), "stNft: only owner can burn");
+            require(address(nftVault) == _nft.ownerOf(tokenId_), "stNft: invalid tokenId_");
 
             // clear minter at here, cos we can't get staker after burn from vault
             delete minterOf[tokenId_];
@@ -130,7 +130,7 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
     }
 
     function tokenOfStakerByIndex(address staker_, uint256 index) external view override returns (uint256) {
-        require(index < totalStaked[staker_], "stNFT: staker index out of bounds");
+        require(index < totalStaked[staker_], "stNft: staker index out of bounds");
         return _stakedTokens[staker_][index];
     }
 
@@ -148,7 +148,7 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
         bool value_
     ) external override {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            require(_msgSender() == ownerOf(tokenIds_[i]), "stNFT: only owner can delegate");
+            require(_msgSender() == ownerOf(tokenIds_[i]), "stNft: only owner can delegate");
         }
         nftVault.setDelegateCash(delegate_, address(_nft), tokenIds_, value_);
     }

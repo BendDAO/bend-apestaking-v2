@@ -1,10 +1,10 @@
 import { expect } from "chai";
-import { Contracts, Env, makeSuite, Snapshots } from "./_setup";
-import { makeBN18, mintNft, randomUint, skipHourBlocks } from "./utils";
+import { Contracts, Env, makeSuite, Snapshots } from "../_setup";
+import { makeBN18, mintNft, randomUint, skipHourBlocks } from "../utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, constants } from "ethers";
-import { MintableERC721 } from "../typechain-types";
-import { advanceBlock, increaseBy } from "./helpers/block-traveller";
+import { MintableERC721 } from "../../typechain-types";
+import { advanceBlock, increaseBy } from "../helpers/block-traveller";
 
 /* eslint-disable no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
