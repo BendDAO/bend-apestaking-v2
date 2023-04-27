@@ -5,36 +5,41 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
-import "../contracts/test/MintableERC20.sol";
-import "../contracts/test/MintableERC721.sol";
-import "../contracts/test/ApeCoinStaking.sol";
-import "../contracts/test/DelegationRegistry.sol";
+import "../../contracts/test/MintableERC20.sol";
+import "../../contracts/test/MintableERC721.sol";
+import "../../contracts/test/ApeCoinStaking.sol";
+import "../../contracts/test/DelegationRegistry.sol";
 
-import "../contracts/interfaces/IDelegationRegistry.sol";
-import "../contracts/interfaces/IApeCoinStaking.sol";
-import "../contracts/interfaces/IStakedNft.sol";
-import "../contracts/interfaces/INftVault.sol";
-import "../contracts/interfaces/ICoinPool.sol";
-import "../contracts/interfaces/INftPool.sol";
-import "../contracts/interfaces/IStakeManager.sol";
+import "../../contracts/interfaces/IDelegationRegistry.sol";
+import "../../contracts/interfaces/IApeCoinStaking.sol";
+import "../../contracts/interfaces/IStakedNft.sol";
+import "../../contracts/interfaces/INftVault.sol";
+import "../../contracts/interfaces/ICoinPool.sol";
+import "../../contracts/interfaces/INftPool.sol";
+import "../../contracts/interfaces/IStakeManager.sol";
 
-import "../contracts/stakednft/NftVault.sol";
-import "../contracts/stakednft/StBAYC.sol";
-import "../contracts/stakednft/StMAYC.sol";
-import "../contracts/stakednft/StBAKC.sol";
+import "../../contracts/stakednft/NftVault.sol";
+import "../../contracts/stakednft/StBAYC.sol";
+import "../../contracts/stakednft/StMAYC.sol";
+import "../../contracts/stakednft/StBAKC.sol";
 
-import "../contracts/BendCoinPool.sol";
-import "../contracts/BendNftPool.sol";
-import "../contracts/BendStakeManager.sol";
+import "../../contracts/BendCoinPool.sol";
+import "../../contracts/BendNftPool.sol";
+import "../../contracts/BendStakeManager.sol";
 
-import "./helpers/UtilitiesHelper.sol";
+import "./UtilitiesHelper.sol";
 
 abstract contract SetupHelper is Test {
     UtilitiesHelper internal utilsHelper;
+
+    // mocked users
     address payable[] internal testUsers;
+    address payable testUser0;
     address payable[] internal adminOwners;
+    address payable poolOwner;
     address payable botAdmin;
 
+    // mocked contracts
     MintableERC20 internal mockApeCoin;
     MintableERC721 internal mockBAYC;
     MintableERC721 internal mockMAYC;
@@ -42,6 +47,7 @@ abstract contract SetupHelper is Test {
     ApeCoinStaking internal mockApeStaking;
     DelegationRegistry internal mockDelegationRegistry;
 
+    // tested contracts
     NftVault internal nftVault;
     StBAYC internal stBAYC;
     StMAYC internal stMAYC;
@@ -51,10 +57,21 @@ abstract contract SetupHelper is Test {
     BendNftPool internal nftPool;
     BendStakeManager internal stakeManager;
 
+    // mocked datas
+    uint256[] internal testBaycTokenIds;
+    uint256[] internal testMaycTokenIds;
+    uint256[] internal testBakcTokenIds;
+
     function setUp() public virtual {
+        // prepare test users
         utilsHelper = new UtilitiesHelper();
+
         testUsers = utilsHelper.createUsers(5);
+        testUser0 = testUsers[0];
+
         adminOwners = utilsHelper.createUsers(5);
+        poolOwner = adminOwners[0];
+        botAdmin = adminOwners[1];
 
         mockDelegationRegistry = new DelegationRegistry();
 
@@ -108,14 +125,23 @@ abstract contract SetupHelper is Test {
         nftPool.initialize(IDelegationRegistry(mockDelegationRegistry), coinPool, stakeManager, stBAYC, stMAYC, stBAKC);
         stakeManager.initialize(IApeCoinStaking(address(mockApeStaking)), coinPool, nftPool, nftVault);
 
-        botAdmin = adminOwners[0];
-        stakeManager.updateBotAdmin(botAdmin);
-
         // mint some coins
-        uint256 totalCoinRewards = 1000000 * 10**18;
+        uint256 totalCoinRewards = 100000000 * 1e18;
         mockApeCoin.mint(totalCoinRewards);
         mockApeCoin.transfer(address(mockApeStaking), totalCoinRewards);
 
+        // changing the owner and admin
+        vm.startPrank(coinPool.owner());
+        coinPool.transferOwnership(poolOwner);
+        nftPool.transferOwnership(poolOwner);
+        stakeManager.transferOwnership(poolOwner);
+        vm.stopPrank();
+
+        vm.startPrank(stakeManager.owner());
+        stakeManager.updateBotAdmin(botAdmin);
+        vm.stopPrank();
+
+        // update the block info
         vm.warp(1669748400);
         vm.roll(100);
     }
@@ -131,5 +157,69 @@ abstract contract SetupHelper is Test {
     function advanceTimeAndBlock(uint256 timeDelta, uint256 blockDelta) internal {
         vm.warp(block.timestamp + timeDelta);
         vm.roll(block.number + blockDelta);
+    }
+
+    function prepareAllApprovals(address user) internal virtual {
+        vm.startPrank(user);
+
+        mockApeCoin.approve(address(coinPool), type(uint256).max);
+
+        mockBAYC.setApprovalForAll(address(nftPool), true);
+        mockMAYC.setApprovalForAll(address(nftPool), true);
+        mockBAKC.setApprovalForAll(address(nftPool), true);
+
+        stBAYC.setApprovalForAll(address(nftPool), true);
+        stMAYC.setApprovalForAll(address(nftPool), true);
+        stBAKC.setApprovalForAll(address(nftPool), true);
+
+        vm.stopPrank();
+    }
+
+    function prepareMintCoins(address user, uint256 depositAmount) internal virtual {
+        vm.startPrank(user);
+        mockApeCoin.mint(depositAmount);
+        vm.stopPrank();
+    }
+
+    function prepareDepositCoins(address user, uint256 depositAmount) internal virtual {
+        prepareMintCoins(user, depositAmount);
+
+        vm.startPrank(user);
+        coinPool.deposit(depositAmount, user);
+        vm.stopPrank();
+    }
+
+    function prepareMintNfts(address user, uint256 tokenAmount) internal virtual {
+        vm.startPrank(user);
+
+        testBaycTokenIds = new uint256[](tokenAmount);
+        for (uint256 i = 0; i < tokenAmount; i++) {
+            testBaycTokenIds[i] = 101 + i;
+            mockBAYC.mint(testBaycTokenIds[i]);
+        }
+
+        testMaycTokenIds = new uint256[](tokenAmount);
+        for (uint256 i = 0; i < testMaycTokenIds.length; i++) {
+            testMaycTokenIds[i] = 201 + i;
+            mockMAYC.mint(testMaycTokenIds[i]);
+        }
+
+        testBakcTokenIds = new uint256[](tokenAmount);
+        for (uint256 i = 0; i < tokenAmount; i++) {
+            testBakcTokenIds[i] = 301 + i;
+            mockBAKC.mint(testBakcTokenIds[i]);
+        }
+
+        vm.stopPrank();
+    }
+
+    function prepareDepositNfts(address user, uint256 tokenAmount) internal virtual {
+        prepareMintNfts(user, tokenAmount);
+
+        vm.startPrank(user);
+        nftPool.deposit(address(mockBAYC), testBaycTokenIds);
+        nftPool.deposit(address(mockMAYC), testMaycTokenIds);
+        nftPool.deposit(address(mockBAKC), testBakcTokenIds);
+        vm.stopPrank();
     }
 }

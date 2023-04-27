@@ -30,12 +30,8 @@ contract BendCoinPoolTest is SetupHelper {
         compoundArgs1.coinStakeThreshold = 0;
         stakeManager.compound(compoundArgs1);
 
-        mockApeStaking.pools(0);
-
         // make some rewards
         advanceTimeAndBlock(2 hours, 100);
-
-        mockApeStaking.pools(0);
 
         IStakeManager.CompoundArgs memory compoundArgs2;
         compoundArgs2.claimCoinPool = true;
