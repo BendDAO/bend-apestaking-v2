@@ -17,6 +17,7 @@ import "../../contracts/interfaces/INftVault.sol";
 import "../../contracts/interfaces/ICoinPool.sol";
 import "../../contracts/interfaces/INftPool.sol";
 import "../../contracts/interfaces/IStakeManager.sol";
+import "../../contracts/interfaces/IRewardsStrategy.sol";
 
 import "../../contracts/stakednft/NftVault.sol";
 import "../../contracts/stakednft/StBAYC.sol";
@@ -26,6 +27,10 @@ import "../../contracts/stakednft/StBAKC.sol";
 import "../../contracts/BendCoinPool.sol";
 import "../../contracts/BendNftPool.sol";
 import "../../contracts/BendStakeManager.sol";
+
+import "../../contracts/strategy/BaycStrategy.sol";
+import "../../contracts/strategy/MaycStrategy.sol";
+import "../../contracts/strategy/BakcStrategy.sol";
 
 import "./UtilitiesHelper.sol";
 
@@ -56,6 +61,9 @@ abstract contract SetupHelper is Test {
     BendCoinPool internal coinPool;
     BendNftPool internal nftPool;
     BendStakeManager internal stakeManager;
+    BaycStrategy internal baycStrategy;
+    MaycStrategy internal maycStrategy;
+    BakcStrategy internal bakcStrategy;
 
     // mocked datas
     uint256[] internal testBaycTokenIds;
@@ -122,8 +130,24 @@ abstract contract SetupHelper is Test {
         stakeManager = new BendStakeManager();
 
         coinPool.initialize(IApeCoinStaking(address(mockApeStaking)), stakeManager);
-        nftPool.initialize(IDelegationRegistry(mockDelegationRegistry), coinPool, stakeManager, stBAYC, stMAYC, stBAKC);
+        nftPool.initialize(
+            IApeCoinStaking(address(mockApeStaking)),
+            IDelegationRegistry(mockDelegationRegistry),
+            coinPool,
+            stakeManager,
+            stBAYC,
+            stMAYC,
+            stBAKC
+        );
         stakeManager.initialize(IApeCoinStaking(address(mockApeStaking)), coinPool, nftPool, nftVault);
+
+        // set the strategy contracts
+        baycStrategy = new BaycStrategy();
+        maycStrategy = new MaycStrategy();
+        bakcStrategy = new BakcStrategy();
+        stakeManager.updateRewardsStrategy(address(mockBAYC), IRewardsStrategy(baycStrategy));
+        stakeManager.updateRewardsStrategy(address(mockMAYC), IRewardsStrategy(maycStrategy));
+        stakeManager.updateRewardsStrategy(address(mockBAKC), IRewardsStrategy(bakcStrategy));
 
         // mint some coins
         uint256 totalCoinRewards = 100000000 * 1e18;

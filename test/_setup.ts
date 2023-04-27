@@ -186,6 +186,7 @@ export async function setupContracts(): Promise<Contracts> {
   );
   await (bendCoinPool as Contract).initialize(apeStaking.address, bendStakeManager.address);
   await (bendNftPool as Contract).initialize(
+    apeStaking.address,
     delegateCash.address,
     bendCoinPool.address,
     bendStakeManager.address,

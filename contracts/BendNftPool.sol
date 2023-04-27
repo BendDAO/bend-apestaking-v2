@@ -21,6 +21,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
 
     uint256 private constant APE_COIN_PRECISION = 1e18;
 
+    IApeCoinStaking public apeCoinStaking;
+    IERC20Upgradeable public apeCoin;
     mapping(address => PoolState) public poolStates;
     IStakeManager public override staker;
     ICoinPool public coinPool;
@@ -40,6 +42,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function initialize(
+        IApeCoinStaking apeStaking_,
         IDelegationRegistry delegation_,
         ICoinPool coinPool_,
         IStakeManager staker_,
@@ -49,6 +52,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     ) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
+
+        apeCoinStaking = apeStaking_;
 
         staker = staker_;
         coinPool = coinPool_;
@@ -64,6 +69,9 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         IERC721Upgradeable(bayc).setApprovalForAll(address(stBayc), true);
         IERC721Upgradeable(mayc).setApprovalForAll(address(stMayc), true);
         IERC721Upgradeable(bakc).setApprovalForAll(address(stBakc), true);
+
+        apeCoin = IERC20Upgradeable(apeCoinStaking.apeCoin());
+        apeCoin.approve(address(coinPool), type(uint256).max);
     }
 
     function deposit(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {

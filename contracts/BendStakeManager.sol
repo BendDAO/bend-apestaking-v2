@@ -87,6 +87,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
         apeCoin.approve(address(apeCoinStaking), type(uint256).max);
         apeCoin.approve(address(coinPool), type(uint256).max);
+        apeCoin.approve(address(nftPool), type(uint256).max);
         apeCoin.approve(address(nftVault), type(uint256).max);
     }
 
@@ -704,7 +705,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
             _claimBayc(args_.claim.bayc);
         }
         if (args_.claim.mayc.length > 0) {
-            _claimBayc(args_.claim.mayc);
+            _claimMayc(args_.claim.mayc);
         }
         if (args_.claim.baycPairs.length > 0 || args_.claim.maycPairs.length > 0) {
             _claimBakc(args_.claim.baycPairs, args_.claim.maycPairs);
