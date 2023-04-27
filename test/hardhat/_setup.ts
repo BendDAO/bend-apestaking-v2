@@ -11,7 +11,7 @@ import {
   INftPool,
   IStakeManager,
   IDelegationRegistry,
-} from "../typechain-types";
+} from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 

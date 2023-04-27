@@ -5,7 +5,7 @@
 import fc from "fast-check";
 import { ethers } from "hardhat";
 import { BigNumber, Contract } from "ethers";
-import { MintableERC721 } from "../typechain-types";
+import { MintableERC721 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { advanceBlock, latest, increaseTo } from "./helpers/block-traveller";
 

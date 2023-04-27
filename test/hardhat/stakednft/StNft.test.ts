@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { Contracts, Env, makeSuite, Snapshots } from "../_setup";
 import { mintNft } from "../utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MintableERC721, IStakedNft } from "../../typechain-types";
+import { MintableERC721, IStakedNft } from "../../../typechain-types";
 import { constants } from "ethers";
 
 export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [IStakedNft, MintableERC721]): void {
