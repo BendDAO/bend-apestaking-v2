@@ -37,42 +37,6 @@ interface IStakeManager {
     // strategy
     function updateRewardsStrategy(address nft_, IRewardsStrategy rewardsStrategy_) external;
 
-    // refund
-    function withdrawTotalRefund() external;
-
-    function withdrawRefund(address nft_) external;
-
-    // ape coin pool
-    function stakeApeCoin(uint256 amount_) external;
-
-    function unstakeApeCoin(uint256 amount_) external;
-
-    function claimApeCoin() external;
-
-    // bayc pool
-    function stakeBayc(uint256[] calldata nfts_) external;
-
-    function unstakeBayc(uint256[] calldata nfts_) external;
-
-    function claimBayc(uint256[] calldata tokenIds_) external;
-
-    // mayc pool
-    function stakeMayc(uint256[] calldata nfts_) external;
-
-    function unstakeMayc(uint256[] calldata nfts_) external;
-
-    function claimMayc(uint256[] calldata tokenIds_) external;
-
-    // bakc pool
-    function stakeBakc(IApeCoinStaking.PairNft[] calldata baycPairs_, IApeCoinStaking.PairNft[] calldata maycPairs_)
-        external;
-
-    function unstakeBakc(IApeCoinStaking.PairNft[] calldata baycPairs_, IApeCoinStaking.PairNft[] calldata maycPairs_)
-        external;
-
-    function claimBakc(IApeCoinStaking.PairNft[] calldata baycPairs_, IApeCoinStaking.PairNft[] calldata maycPairs_)
-        external;
-
     struct NftArgs {
         uint256[] bayc;
         uint256[] mayc;

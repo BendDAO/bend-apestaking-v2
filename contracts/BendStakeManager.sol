@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
-import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import {SafeCastUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
-import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 import {IStakeManager, IApeCoinStaking} from "./interfaces/IStakeManager.sol";
 import {INftVault} from "./interfaces/INftVault.sol";
@@ -18,11 +16,7 @@ import {IRewardsStrategy} from "./interfaces/IRewardsStrategy.sol";
 import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
 
 contract BendStakeManager is IStakeManager, OwnableUpgradeable {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
     using MathUpgradeable for uint256;
-    using SafeCastUpgradeable for uint256;
-    using SafeCastUpgradeable for uint248;
-    using SafeCastUpgradeable for uint128;
     using ApeStakingLib for IApeCoinStaking;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
@@ -242,15 +236,15 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
                     pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.BAYC_POOL_ID);
                     if (pairingStatus.isPaired) {
                         baycPairs[baycPairIndex] = IApeCoinStaking.PairNft({
-                            mainTokenId: pairingStatus.tokenId.toUint128(),
-                            bakcTokenId: bakcTokenId.toUint128()
+                            mainTokenId: _toUint128(pairingStatus.tokenId),
+                            bakcTokenId: _toUint128(bakcTokenId)
                         });
                         baycPairIndex += 1;
                     } else {
                         pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.MAYC_POOL_ID);
                         maycPairs[maycPairIndex] = IApeCoinStaking.PairNft({
-                            mainTokenId: pairingStatus.tokenId.toUint128(),
-                            bakcTokenId: bakcTokenId.toUint128()
+                            mainTokenId: _toUint128(pairingStatus.tokenId),
+                            bakcTokenId: _toUint128(bakcTokenId)
                         });
                         maycPairIndex += 1;
                     }
@@ -331,10 +325,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         apeCoinPoolStakedAmount += amount_;
     }
 
-    function stakeApeCoin(uint256 amount_) external override onlyBot {
-        _stakeApeCoin(amount_);
-    }
-
     function _unstakeApeCoin(uint256 amount_) private {
         uint256 receivedApeCoin = apeCoin.balanceOf(address(this));
         apeCoinStaking.withdrawSelfApeCoin(amount_);
@@ -348,20 +338,12 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         coinPool.receiveApeCoin(amount_, rewardsAmount);
     }
 
-    function unstakeApeCoin(uint256 amount_) external override onlyCoinPoolOrBot {
-        _unstakeApeCoin(amount_);
-    }
-
     function _claimApeCoin() private {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
         apeCoinStaking.claimSelfApeCoin();
         rewardsAmount = apeCoin.balanceOf(address(this)) - rewardsAmount;
         rewardsAmount -= _collectFee(rewardsAmount);
         coinPool.receiveApeCoin(0, rewardsAmount);
-    }
-
-    function claimApeCoin() external override onlyCoinPoolOrBot {
-        _claimApeCoin();
     }
 
     function _stakeBayc(uint256[] memory tokenIds_) private {
@@ -371,16 +353,12 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
-            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: tokenId_.toUint32(), amount: maxCap.toUint224()});
+            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: _toUint32(tokenId_), amount: _toUint224(maxCap)});
             apeCoinAmount += maxCap;
             _stakedTokenIds[ApeStakingLib.BAYC_POOL_ID].add(tokenId_);
         }
         _prepareApeCoin(apeCoinAmount);
         nftVault.stakeBaycPool(nfts_);
-    }
-
-    function stakeBayc(uint256[] calldata tokenIds_) external override onlyBot {
-        _stakeBayc(tokenIds_);
     }
 
     function _unstakeBayc(uint256[] memory tokenIds_) private {
@@ -391,8 +369,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
             nfts_[i] = IApeCoinStaking.SingleNft({
-                tokenId: tokenId_.toUint32(),
-                amount: apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount.toUint224()
+                tokenId: _toUint32(tokenId_),
+                amount: _toUint224(apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount)
             });
             _stakedTokenIds[ApeStakingLib.BAYC_POOL_ID].remove(tokenId_);
         }
@@ -406,10 +384,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function unstakeBayc(uint256[] calldata tokenIds_) external override onlyCoinPoolOrBot {
-        _unstakeBayc(tokenIds_);
-    }
-
     function _claimBayc(uint256[] memory tokenIds_) private {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
         address nft_ = address(apeCoinStaking.bayc());
@@ -419,10 +393,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function claimBayc(uint256[] calldata tokenIds_) external override onlyCoinPoolOrBot {
-        _claimBayc(tokenIds_);
-    }
-
     function _stakeMayc(uint256[] memory tokenIds_) private {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
         uint256 maxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.MAYC_POOL_ID).capPerPosition;
@@ -430,16 +400,12 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
-            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: tokenId_.toUint32(), amount: maxCap.toUint224()});
+            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: _toUint32(tokenId_), amount: _toUint224(maxCap)});
             apeCoinAmount += maxCap;
             _stakedTokenIds[ApeStakingLib.MAYC_POOL_ID].add(tokenId_);
         }
         _prepareApeCoin(apeCoinAmount);
         nftVault.stakeMaycPool(nfts_);
-    }
-
-    function stakeMayc(uint256[] calldata tokenIds_) external override onlyBot {
-        _stakeMayc(tokenIds_);
     }
 
     function _unstakeMayc(uint256[] memory tokenIds_) private {
@@ -450,8 +416,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
             nfts_[i] = IApeCoinStaking.SingleNft({
-                tokenId: tokenId_.toUint32(),
-                amount: apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount.toUint224()
+                tokenId: _toUint32(tokenId_),
+                amount: _toUint224(apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount)
             });
             _stakedTokenIds[ApeStakingLib.MAYC_POOL_ID].remove(tokenId_);
         }
@@ -467,10 +433,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function unstakeMayc(uint256[] calldata tokenIds_) external override onlyCoinPoolOrBot {
-        _unstakeMayc(tokenIds_);
-    }
-
     function _claimMayc(uint256[] memory tokenIds_) private {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
         address nft_ = address(apeCoinStaking.mayc());
@@ -478,10 +440,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         rewardsAmount = apeCoin.balanceOf(address(this)) - rewardsAmount;
         rewardsAmount -= _collectFee(rewardsAmount);
         _distributeRewards(nft_, rewardsAmount);
-    }
-
-    function claimMayc(uint256[] calldata tokenIds_) external override onlyCoinPoolOrBot {
-        _claimMayc(tokenIds_);
     }
 
     function _stakeBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
@@ -499,9 +457,9 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < baycPairsWithAmount_.length; i++) {
             pair_ = baycPairs_[i];
             baycPairsWithAmount_[i] = IApeCoinStaking.PairNftDepositWithAmount({
-                mainTokenId: pair_.mainTokenId.toUint32(),
-                bakcTokenId: pair_.bakcTokenId.toUint32(),
-                amount: maxCap.toUint184()
+                mainTokenId: _toUint32(pair_.mainTokenId),
+                bakcTokenId: _toUint32(pair_.bakcTokenId),
+                amount: _toUint184(maxCap)
             });
             apeCoinAmount += maxCap;
             _stakedTokenIds[ApeStakingLib.BAKC_POOL_ID].add(pair_.bakcTokenId);
@@ -509,9 +467,9 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < maycPairsWithAmount_.length; i++) {
             pair_ = maycPairs_[i];
             maycPairsWithAmount_[i] = IApeCoinStaking.PairNftDepositWithAmount({
-                mainTokenId: pair_.mainTokenId.toUint32(),
-                bakcTokenId: pair_.bakcTokenId.toUint32(),
-                amount: maxCap.toUint184()
+                mainTokenId: _toUint32(pair_.mainTokenId),
+                bakcTokenId: _toUint32(pair_.bakcTokenId),
+                amount: _toUint184(maxCap)
             });
             apeCoinAmount += maxCap;
             _stakedTokenIds[ApeStakingLib.BAKC_POOL_ID].add(pair_.bakcTokenId);
@@ -520,14 +478,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _prepareApeCoin(apeCoinAmount);
 
         nftVault.stakeBakcPool(baycPairsWithAmount_, maycPairsWithAmount_);
-    }
-
-    function stakeBakc(IApeCoinStaking.PairNft[] calldata baycPairs_, IApeCoinStaking.PairNft[] calldata maycPairs_)
-        external
-        override
-        onlyBot
-    {
-        _stakeBakc(baycPairs_, maycPairs_);
     }
 
     function _unstakeBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
@@ -544,8 +494,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < baycPairsWithAmount_.length; i++) {
             pair_ = baycPairs_[i];
             baycPairsWithAmount_[i] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                mainTokenId: pair_.mainTokenId.toUint32(),
-                bakcTokenId: pair_.bakcTokenId.toUint32(),
+                mainTokenId: _toUint32(pair_.mainTokenId),
+                bakcTokenId: _toUint32(pair_.bakcTokenId),
                 amount: 0,
                 isUncommit: true
             });
@@ -554,8 +504,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < maycPairsWithAmount_.length; i++) {
             pair_ = maycPairs_[i];
             maycPairsWithAmount_[i] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                mainTokenId: pair_.mainTokenId.toUint32(),
-                bakcTokenId: pair_.bakcTokenId.toUint32(),
+                mainTokenId: _toUint32(pair_.mainTokenId),
+                bakcTokenId: _toUint32(pair_.bakcTokenId),
                 amount: 0,
                 isUncommit: true
             });
@@ -577,14 +527,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function unstakeBakc(IApeCoinStaking.PairNft[] calldata baycPairs_, IApeCoinStaking.PairNft[] calldata maycPairs_)
-        external
-        override
-        onlyCoinPoolOrBot
-    {
-        _unstakeBakc(baycPairs_, maycPairs_);
-    }
-
     function _claimBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
         private
     {
@@ -594,14 +536,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         rewardsAmount = apeCoin.balanceOf(address(this)) - rewardsAmount;
         rewardsAmount -= _collectFee(rewardsAmount);
         _distributeRewards(nft_, rewardsAmount);
-    }
-
-    function claimBakc(IApeCoinStaking.PairNft[] calldata baycPairs_, IApeCoinStaking.PairNft[] calldata maycPairs_)
-        external
-        override
-        onlyCoinPoolOrBot
-    {
-        _claimBakc(baycPairs_, maycPairs_);
     }
 
     function _withdrawRefund(address nft_) internal {
@@ -631,14 +565,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _withdrawRefund(address(apeCoinStaking.bayc()));
         _withdrawRefund(address(apeCoinStaking.mayc()));
         _withdrawRefund(address(apeCoinStaking.bakc()));
-    }
-
-    function withdrawTotalRefund() external override onlyCoinPoolOrBot {
-        _withdrawTotalRefund();
-    }
-
-    function withdrawRefund(address nft_) external override onlyCoinPoolOrBot onlyApe(nft_) {
-        _withdrawRefund(nft_);
     }
 
     function _refundOf(address nft_) internal view returns (uint256 principal, uint256 reward) {
@@ -740,8 +666,28 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
         // transfer fee to recipient
         if (pendingFeeAmount > MAX_PENDING_FEE && feeRecipient != address(0)) {
-            apeCoin.safeTransfer(feeRecipient, pendingFeeAmount);
+            apeCoin.transfer(feeRecipient, pendingFeeAmount);
             pendingFeeAmount = 0;
         }
+    }
+
+    function _toUint224(uint256 value) internal pure returns (uint224) {
+        require(value <= type(uint224).max, "SafeCast: value doesn't fit in 224 bits");
+        return uint224(value);
+    }
+
+    function _toUint184(uint256 value) internal pure returns (uint184) {
+        require(value <= type(uint184).max, "SafeCast: value doesn't fit in 184 bits");
+        return uint184(value);
+    }
+
+    function _toUint128(uint256 value) internal pure returns (uint128) {
+        require(value <= type(uint128).max, "SafeCast: value doesn't fit in 128 bits");
+        return uint128(value);
+    }
+
+    function _toUint32(uint256 value) internal pure returns (uint32) {
+        require(value <= type(uint32).max, "SafeCast: value doesn't fit in 32 bits");
+        return uint32(value);
     }
 }
