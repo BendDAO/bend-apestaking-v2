@@ -1,0 +1,661 @@
+[
+  {
+    "inputs": [],
+    "name": "apeCoinStaking",
+    "outputs": [
+      {
+        "internalType": "contract IApeCoinStaking",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "claimApeCoin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "baycPairs_",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "maycPairs_",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "claimBakc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "claimBayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "claimMayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "claimCoinPool",
+            "type": "bool"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256[]",
+                "name": "bayc",
+                "type": "uint256[]"
+              },
+              {
+                "internalType": "uint256[]",
+                "name": "mayc",
+                "type": "uint256[]"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "uint128",
+                    "name": "mainTokenId",
+                    "type": "uint128"
+                  },
+                  {
+                    "internalType": "uint128",
+                    "name": "bakcTokenId",
+                    "type": "uint128"
+                  }
+                ],
+                "internalType": "struct IApeCoinStaking.PairNft[]",
+                "name": "baycPairs",
+                "type": "tuple[]"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "uint128",
+                    "name": "mainTokenId",
+                    "type": "uint128"
+                  },
+                  {
+                    "internalType": "uint128",
+                    "name": "bakcTokenId",
+                    "type": "uint128"
+                  }
+                ],
+                "internalType": "struct IApeCoinStaking.PairNft[]",
+                "name": "maycPairs",
+                "type": "tuple[]"
+              }
+            ],
+            "internalType": "struct IStakeManager.NftArgs",
+            "name": "claim",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256[]",
+                "name": "bayc",
+                "type": "uint256[]"
+              },
+              {
+                "internalType": "uint256[]",
+                "name": "mayc",
+                "type": "uint256[]"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "uint128",
+                    "name": "mainTokenId",
+                    "type": "uint128"
+                  },
+                  {
+                    "internalType": "uint128",
+                    "name": "bakcTokenId",
+                    "type": "uint128"
+                  }
+                ],
+                "internalType": "struct IApeCoinStaking.PairNft[]",
+                "name": "baycPairs",
+                "type": "tuple[]"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "uint128",
+                    "name": "mainTokenId",
+                    "type": "uint128"
+                  },
+                  {
+                    "internalType": "uint128",
+                    "name": "bakcTokenId",
+                    "type": "uint128"
+                  }
+                ],
+                "internalType": "struct IApeCoinStaking.PairNft[]",
+                "name": "maycPairs",
+                "type": "tuple[]"
+              }
+            ],
+            "internalType": "struct IStakeManager.NftArgs",
+            "name": "unstake",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256[]",
+                "name": "bayc",
+                "type": "uint256[]"
+              },
+              {
+                "internalType": "uint256[]",
+                "name": "mayc",
+                "type": "uint256[]"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "uint128",
+                    "name": "mainTokenId",
+                    "type": "uint128"
+                  },
+                  {
+                    "internalType": "uint128",
+                    "name": "bakcTokenId",
+                    "type": "uint128"
+                  }
+                ],
+                "internalType": "struct IApeCoinStaking.PairNft[]",
+                "name": "baycPairs",
+                "type": "tuple[]"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "uint128",
+                    "name": "mainTokenId",
+                    "type": "uint128"
+                  },
+                  {
+                    "internalType": "uint128",
+                    "name": "bakcTokenId",
+                    "type": "uint128"
+                  }
+                ],
+                "internalType": "struct IApeCoinStaking.PairNft[]",
+                "name": "maycPairs",
+                "type": "tuple[]"
+              }
+            ],
+            "internalType": "struct IStakeManager.NftArgs",
+            "name": "stake",
+            "type": "tuple"
+          },
+          {
+            "internalType": "uint256",
+            "name": "coinStakeThreshold",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IStakeManager.CompoundArgs",
+        "name": "args_",
+        "type": "tuple"
+      }
+    ],
+    "name": "compound",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "fee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "feeRecipient",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pendingFeeAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "poolId_",
+        "type": "uint256"
+      }
+    ],
+    "name": "pendingRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      }
+    ],
+    "name": "refundOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount_",
+        "type": "uint256"
+      }
+    ],
+    "name": "stakeApeCoin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "baycPairs_",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "maycPairs_",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "stakeBakc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "nfts_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "stakeBayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "nfts_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "stakeMayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "poolId_",
+        "type": "uint256"
+      }
+    ],
+    "name": "stakedApeCoin",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalPendingRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalRefund",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalStakedApeCoin",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount_",
+        "type": "uint256"
+      }
+    ],
+    "name": "unstakeApeCoin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "baycPairs_",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "maycPairs_",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "unstakeBakc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "nfts_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "unstakeBayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "nfts_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "unstakeMayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "bot_",
+        "type": "address"
+      }
+    ],
+    "name": "updateBotAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "fee_",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "recipient_",
+        "type": "address"
+      }
+    ],
+    "name": "updateFeeRecipient",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IRewardsStrategy",
+        "name": "rewardsStrategy_",
+        "type": "address"
+      }
+    ],
+    "name": "updateRewardsStrategy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "required",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawApeCoin",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      }
+    ],
+    "name": "withdrawRefund",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "withdrawTotalRefund",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

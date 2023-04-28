@@ -1,0 +1,21 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "rewardsAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "calculateNftRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "nftRewardsAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

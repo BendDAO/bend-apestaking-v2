@@ -32,6 +32,16 @@ export const NETWORKS_RPC_URL: Params<string> = {
     : `https://mainnet.infura.io/v3/${INFURA_KEY}`,
 };
 
+export const FEE: Params<string> = {
+  [Network.goerli]: "400",
+  [Network.mainnet]: "400",
+};
+
+export const FEE_RECIPIENT: Params<string> = {
+  [Network.goerli]: "0x10855337e1b0D2d11F8f59Ba4b04EC8792A58B61",
+  [Network.mainnet]: "0x472FcC65Fab565f75B1e0E861864A86FE5bcEd7B",
+};
+
 export const APE_COIN: Params<string> = {
   [Network.goerli]: "0x701ca86a355dA5E32b70a9c7e8967B4DFaa735dB",
   [Network.mainnet]: "0x4d224452801ACEd8B2F0aebE155379bb5D594381",

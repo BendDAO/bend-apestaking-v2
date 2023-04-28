@@ -1,0 +1,26 @@
+{
+  "NftVault": {
+    "address": "0x590EB8082d5Af6afd80282bBaFf5325079e2f3BF",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "StBAYC": {
+    "address": "0x094CAc60032C008F7B3d249e631e2Ce678932c3b",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "StMAYC": {
+    "address": "0xFa69722bF64B273E3F41aB22C1C354C4dB32A804",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "StBAKC": {
+    "address": "0x541690aC15cEd3911e9F39CFf7B53fd93FE651A0",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "BendCoinPool": {
+    "address": "0x102A6352D90a1348184298f0184881D9e21F5C8c",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "BendNftPool": {
+    "address": "0x0d42Ec76548F573f78880dFAc1E9A8f4a904D868",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  }
+}

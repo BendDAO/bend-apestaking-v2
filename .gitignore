@@ -115,7 +115,7 @@ typechain-types
 # Hardhat files
 cache
 artifacts
-abis/
+#abis/
 
 # Foundry files
 cache_forge
