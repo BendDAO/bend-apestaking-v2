@@ -175,11 +175,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
-        IERC20Upgradeable(staker.apeCoinStaking().apeCoin()).safeTransferFrom(
-            _msgSender(),
-            address(this),
-            rewardsAmount_
-        );
+        IERC20Upgradeable(apeCoin).safeTransferFrom(_msgSender(), address(this), rewardsAmount_);
+
         PoolState storage pool = poolStates[nft_];
         pool.accumulatedRewardsPerNft += ((rewardsAmount_ * APE_COIN_PRECISION) /
             pool.stakedNft.totalStaked(address(staker)));
@@ -209,6 +206,21 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
                 amount += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
             }
         }
+    }
+
+    function getPoolStateUI(address nft_)
+        external
+        view
+        returns (uint256 totalNftAmount, uint256 accumulatedRewardsPerNft)
+    {
+        PoolState storage pool = poolStates[nft_];
+        totalNftAmount = pool.stakedNft.totalSupply();
+        accumulatedRewardsPerNft = pool.accumulatedRewardsPerNft;
+    }
+
+    function getNftStateUI(address nft_, uint256 tokenId) external view returns (uint256 rewardsDebt) {
+        PoolState storage pool = poolStates[nft_];
+        rewardsDebt = pool.rewardsDebt[tokenId];
     }
 
     function onERC721Received(

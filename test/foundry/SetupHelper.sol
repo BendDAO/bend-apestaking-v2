@@ -2,6 +2,7 @@ pragma solidity 0.8.18;
 
 import "forge-std/Test.sol";
 
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
@@ -35,6 +36,48 @@ import "../../contracts/strategy/BakcStrategy.sol";
 import "./UtilitiesHelper.sol";
 
 abstract contract SetupHelper is Test {
+    // types
+    struct TestLocalVars {
+        uint256 userAmount;
+        address curUser;
+        uint256 curTokenId;
+        uint256 userIndex;
+        uint256 nftIndex;
+        uint256 loopIndex1;
+        uint256 loopIndex2;
+        uint256 tmpUint256A;
+        uint256 tmpUint256B;
+        uint256[] balanceAmounts;
+        uint256[] depositAmounts;
+        uint256[] withdrawAmounts;
+        uint256[] queriedCoinStakedAmounts;
+        uint256[] queriedOneNftStakedAmounts;
+        uint256[] queriedAllNftStakedAmounts;
+        uint256[] expectedCoinStakedAmounts;
+        uint256[] expectedOneNftStakedAmounts;
+        uint256[] expectedAllNftStakedAmounts;
+        uint256[] expectedCoinRewards;
+        uint256[] expectedOneNftRewards;
+        uint256[] expectedAllNftRewards;
+    }
+
+    struct CoinPoolData {
+        uint256 totalShares;
+        uint256 totalAssets;
+    }
+    struct CoinUserData {
+        uint256 totalShares;
+        uint256 totalAssets;
+    }
+    struct NftPoolData {
+        uint256 totalNftAmount;
+        uint256 accumulatedRewardsPerNft;
+    }
+    struct NftTokenData {
+        uint256 rewardsDebt;
+        uint256 claimableRewards;
+    }
+
     UtilitiesHelper internal utilsHelper;
 
     // mocked users
@@ -69,6 +112,8 @@ abstract contract SetupHelper is Test {
     uint256[] internal testBaycTokenIds;
     uint256[] internal testMaycTokenIds;
     uint256[] internal testBakcTokenIds;
+
+    TestLocalVars internal testVars;
 
     function setUp() public virtual {
         // prepare test users
@@ -170,6 +215,29 @@ abstract contract SetupHelper is Test {
         vm.roll(100);
     }
 
+    function initTestVars(uint256 userAmount) internal {
+        testVars.userAmount = userAmount;
+        testVars.curUser = address(0);
+        testVars.curTokenId = 0;
+        testVars.userIndex = 0;
+        testVars.nftIndex = 0;
+        testVars.loopIndex1 = 0;
+        testVars.loopIndex2 = 0;
+
+        testVars.balanceAmounts = new uint256[](userAmount);
+        testVars.depositAmounts = new uint256[](userAmount);
+        testVars.withdrawAmounts = new uint256[](userAmount);
+        testVars.queriedCoinStakedAmounts = new uint256[](userAmount);
+        testVars.queriedOneNftStakedAmounts = new uint256[](userAmount);
+        testVars.queriedAllNftStakedAmounts = new uint256[](userAmount);
+        testVars.expectedCoinStakedAmounts = new uint256[](userAmount);
+        testVars.expectedOneNftStakedAmounts = new uint256[](userAmount);
+        testVars.expectedAllNftStakedAmounts = new uint256[](userAmount);
+        testVars.expectedCoinRewards = new uint256[](userAmount);
+        testVars.expectedOneNftRewards = new uint256[](userAmount);
+        testVars.expectedAllNftRewards = new uint256[](userAmount);
+    }
+
     function advanceTime(uint256 timeDelta) internal {
         vm.warp(block.timestamp + timeDelta);
     }
@@ -245,5 +313,281 @@ abstract contract SetupHelper is Test {
         nftPool.deposit(address(mockMAYC), testMaycTokenIds);
         nftPool.deposit(address(mockBAKC), testBakcTokenIds);
         vm.stopPrank();
+    }
+
+    function botStakeCoinPool() internal {
+        vm.startPrank(botAdmin);
+
+        IStakeManager.CompoundArgs memory compoundArgs;
+        compoundArgs.coinStakeThreshold = 0;
+        stakeManager.compound(compoundArgs);
+
+        vm.stopPrank();
+    }
+
+    function botClaimCoinPool() internal returns (uint256 expectedRewards) {
+        vm.startPrank(botAdmin);
+
+        expectedRewards = calcExpectedCoinPendingRewards();
+
+        IStakeManager.CompoundArgs memory compoundArgs;
+        compoundArgs.claimCoinPool = true;
+        compoundArgs.coinStakeThreshold = type(uint256).max;
+        stakeManager.compound(compoundArgs);
+
+        vm.stopPrank();
+    }
+
+    function botCompoudCoinPool() internal returns (uint256 expectedRewards) {
+        vm.startPrank(botAdmin);
+
+        expectedRewards = calcExpectedCoinPendingRewards();
+
+        IStakeManager.CompoundArgs memory compoundArgs;
+        compoundArgs.claimCoinPool = true;
+        compoundArgs.coinStakeThreshold = 0;
+        stakeManager.compound(compoundArgs);
+
+        vm.stopPrank();
+    }
+
+    // query data in contracts
+
+    function getCoinPoolDataInContracts() internal view returns (CoinPoolData memory poolData) {
+        poolData.totalShares = coinPool.totalSupply();
+        poolData.totalAssets = coinPool.totalAssets();
+    }
+
+    function getCoinUserDataInContracts(address user) internal view returns (CoinUserData memory userData) {
+        userData.totalShares = coinPool.balanceOf(user);
+        userData.totalAssets = coinPool.assetBalanceOf(user);
+    }
+
+    function getNftPoolDataInContracts(address nft) internal view returns (NftPoolData memory poolData) {
+        (poolData.totalNftAmount, poolData.accumulatedRewardsPerNft) = nftPool.getPoolStateUI(nft);
+    }
+
+    function getNftTokenDataInContracts(address nft, uint256 tokenId)
+        internal
+        view
+        returns (NftTokenData memory tokenData)
+    {
+        tokenData.rewardsDebt = nftPool.getNftStateUI(nft, tokenId);
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = tokenId;
+        tokenData.claimableRewards = nftPool.claimable(nft, tokenIds);
+    }
+
+    function getCoinStakedAmountInContracts() internal view returns (uint256) {
+        IApeCoinStaking.Position memory position = IApeCoinStaking(address(mockApeStaking)).addressPosition(
+            address(stakeManager)
+        );
+        return position.stakedAmount;
+    }
+
+    function getOneNftStakedAmountInContracts(uint256 poolId, uint256 tokenId) internal view returns (uint256) {
+        IApeCoinStaking.Position memory position = IApeCoinStaking(address(mockApeStaking)).nftPosition(
+            poolId,
+            tokenId
+        );
+        return position.stakedAmount;
+    }
+
+    // calculate expected data for coin pool
+
+    function calcExpectedCoinPendingRewards() internal view returns (uint256) {
+        return mockApeStaking.pendingRewards(0, address(stakeManager), 0);
+    }
+
+    function calcExpectedNftPendingRewards(uint256 poolId, uint256[] calldata tokenIds)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 rewardsAmount = 0;
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            rewardsAmount += mockApeStaking.pendingRewards(poolId, address(nftVault), tokenIds[i]);
+        }
+        return rewardsAmount;
+    }
+
+    function calcExpectedCoinPoolDataAfterDeposit(
+        address, /*user*/
+        uint256 depositAmount,
+        CoinPoolData memory poolDataBefore,
+        CoinUserData memory /*userDataBefore*/
+    ) internal pure returns (CoinPoolData memory poolDataExpected) {
+        uint256 sharesDelta = convertAssetsToShares(
+            depositAmount,
+            poolDataBefore.totalShares,
+            poolDataBefore.totalAssets,
+            Math.Rounding.Down
+        );
+
+        poolDataExpected.totalShares = poolDataBefore.totalShares + sharesDelta;
+        poolDataExpected.totalAssets = poolDataBefore.totalAssets + depositAmount;
+    }
+
+    function calcExpectedCoinUserDataAfterDeposit(
+        address, /*user*/
+        uint256 depositAmount,
+        CoinPoolData memory poolDataBefore,
+        CoinUserData memory userDataBefore
+    ) internal pure returns (CoinUserData memory userDataExpected) {
+        uint256 sharesDelta = convertAssetsToShares(
+            depositAmount,
+            poolDataBefore.totalShares,
+            poolDataBefore.totalAssets,
+            Math.Rounding.Down
+        );
+
+        userDataExpected.totalShares = poolDataBefore.totalShares + sharesDelta;
+        userDataExpected.totalAssets = userDataBefore.totalAssets + depositAmount;
+    }
+
+    function calcExpectedCoinPoolDataAfterWithdraw(
+        address, /*user*/
+        uint256 withdrawAmount,
+        CoinPoolData memory poolDataBefore,
+        CoinUserData memory /*userDataBefore*/
+    ) internal pure returns (CoinPoolData memory poolDataExpected) {
+        uint256 sharesDelta = convertAssetsToShares(
+            withdrawAmount,
+            poolDataBefore.totalShares,
+            poolDataBefore.totalAssets,
+            Math.Rounding.Down
+        );
+
+        poolDataExpected.totalShares = poolDataBefore.totalShares - sharesDelta;
+        poolDataExpected.totalAssets = poolDataBefore.totalAssets - withdrawAmount;
+    }
+
+    function calcExpectedCoinUserDataAfterWithdraw(
+        address, /*user*/
+        uint256 withdrawAmount,
+        CoinPoolData memory poolDataBefore,
+        CoinUserData memory userDataBefore
+    ) internal pure returns (CoinUserData memory userDataExpected) {
+        uint256 sharesDelta = convertAssetsToShares(
+            withdrawAmount,
+            poolDataBefore.totalShares,
+            poolDataBefore.totalAssets,
+            Math.Rounding.Down
+        );
+
+        userDataExpected.totalShares = poolDataBefore.totalShares - sharesDelta;
+        userDataExpected.totalAssets = userDataBefore.totalAssets - withdrawAmount;
+    }
+
+    function calcExpectedCoinPoolDataAfterDistributeReward(
+        uint256 rewardsAmount,
+        CoinPoolData memory poolDataBefore,
+        CoinUserData memory userDataBefore
+    ) internal pure returns (CoinPoolData memory poolDataExpected) {
+        poolDataExpected.totalShares = poolDataBefore.totalShares;
+        poolDataExpected.totalAssets = poolDataBefore.totalAssets + rewardsAmount;
+    }
+
+    function calcExpectedCoinUserDataAfterDistributeReward(
+        uint256 rewardsAmount,
+        CoinPoolData memory poolDataBefore,
+        CoinUserData memory userDataBefore
+    ) internal pure returns (CoinUserData memory userDataExpected) {
+        uint256 assetsDelata = Math.mulDiv(
+            userDataBefore.totalShares,
+            poolDataBefore.totalAssets,
+            poolDataBefore.totalShares,
+            Math.Rounding.Down
+        );
+
+        userDataExpected.totalShares = userDataBefore.totalShares;
+        userDataExpected.totalAssets = userDataBefore.totalAssets + assetsDelata;
+    }
+
+    // calculate expected data for nft pool
+    function calcExpectedNftPoolDataAfterDeposit(
+        address nft,
+        uint256 tokenId,
+        NftPoolData memory poolDataBefore,
+        NftTokenData memory tokenDataBefore
+    ) internal pure returns (NftPoolData memory poolDataExpected) {
+        poolDataExpected.accumulatedRewardsPerNft = poolDataBefore.accumulatedRewardsPerNft;
+        poolDataExpected.totalNftAmount = poolDataBefore.totalNftAmount + 1;
+    }
+
+    function calcExpectedNftTokenDataAfterDeposit(
+        address nft,
+        uint256 tokenId,
+        NftPoolData memory poolDataBefore,
+        NftTokenData memory tokenDataBefore
+    ) internal pure returns (NftTokenData memory tokenDataExpected) {
+        tokenDataExpected.rewardsDebt = poolDataBefore.accumulatedRewardsPerNft;
+        tokenDataExpected.claimableRewards = 0;
+    }
+
+    function calcExpectedNftPoolDataAfterWithdraw(
+        address nft,
+        uint256 tokenId,
+        NftPoolData memory poolDataBefore,
+        NftTokenData memory tokenDataBefore
+    ) internal pure returns (NftPoolData memory poolDataExpected) {
+        poolDataExpected.accumulatedRewardsPerNft = poolDataBefore.accumulatedRewardsPerNft;
+        poolDataExpected.totalNftAmount = poolDataBefore.totalNftAmount - 1;
+    }
+
+    function calcExpectedNftTokenDataAfterWithdraw(
+        address nft,
+        uint256 tokenId,
+        NftPoolData memory poolDataBefore,
+        NftTokenData memory tokenDataBefore
+    ) internal pure returns (NftTokenData memory tokenDataExpected) {
+        tokenDataExpected.rewardsDebt = 0;
+        tokenDataExpected.claimableRewards = 0;
+    }
+
+    function calcExpectedNftPoolDataAfterDistributeReward(
+        address nft,
+        uint256 rewardsAmount,
+        NftPoolData memory poolDataBefore
+    ) internal pure returns (NftPoolData memory poolDataExpected) {
+        uint256 accRewardsPerNftDelta = (rewardsAmount * 1e18) / poolDataBefore.totalNftAmount;
+        poolDataExpected.accumulatedRewardsPerNft = poolDataBefore.accumulatedRewardsPerNft + accRewardsPerNftDelta;
+        poolDataExpected.totalNftAmount = poolDataBefore.totalNftAmount;
+    }
+
+    function calcExpectedNftTokenDataAfterDistributeReward(
+        address nft,
+        uint256 rewardsAmount,
+        NftPoolData memory poolDataBefore,
+        NftTokenData memory tokenDataBefore,
+        NftPoolData memory poolDataAfter
+    ) internal pure returns (NftTokenData memory tokenDataExpected) {
+        tokenDataExpected.rewardsDebt = poolDataBefore.accumulatedRewardsPerNft;
+        uint256 accRewardsPerNftDelta = (poolDataAfter.accumulatedRewardsPerNft - tokenDataBefore.rewardsDebt) / 1e18;
+        tokenDataExpected.claimableRewards += accRewardsPerNftDelta;
+    }
+
+    /**
+     * @dev Internal conversion function (from assets to shares) with support for rounding direction.
+     */
+    function convertAssetsToShares(
+        uint256 assets,
+        uint256 totaShares,
+        uint256 totalAssets,
+        Math.Rounding rounding
+    ) internal pure returns (uint256) {
+        return Math.mulDiv(assets, totaShares + 10**0, totalAssets + 1, rounding);
+    }
+
+    /**
+     * @dev Internal conversion function (from shares to assets) with support for rounding direction.
+     */
+    function convertSharesToAssets(
+        uint256 shares,
+        uint256 totaShares,
+        uint256 totalAssets,
+        Math.Rounding rounding
+    ) internal pure returns (uint256) {
+        return Math.mulDiv(shares, totalAssets + 1, totaShares + 10**0, rounding);
     }
 }

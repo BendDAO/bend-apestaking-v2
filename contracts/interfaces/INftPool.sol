@@ -41,4 +41,9 @@ interface INftPool {
 
     // rewards
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external;
+
+    // query
+    function getPoolStateUI(address nft_) external view returns (uint256 totalNfts, uint256 accumulatedRewardsPerNft);
+
+    function getNftStateUI(address nft_, uint256 tokenId) external view returns (uint256 rewardsDebt);
 }
