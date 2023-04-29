@@ -5,6 +5,7 @@ import { BendCoinPool, BendNftPool, BendStakeManager } from "../typechain-types"
 import { APE_STAKING, BAKC, BAYC, DELEAGATE_CASH, FEE, FEE_RECIPIENT, getParams, MAYC } from "./config";
 import {
   deployContract,
+  deployImplementation,
   deployProxyContractWithoutInit,
   getContractAddressFromDB,
   getContractFromDB,
@@ -97,6 +98,27 @@ task("deploy:BendStakeManager", "Deploy StakeManager").setAction(async (_, { net
   await deployProxyContractWithoutInit("BendStakeManager", [], false);
 });
 
+task("deploy:BaycStrategy", "Deploy BaycStrategy").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  await deployContract("BaycStrategy", [], false);
+});
+
+task("deploy:MaycStrategy", "Deploy MaycStrategy").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  await deployContract("MaycStrategy", [], false);
+});
+
+task("deploy:BakcStrategy", "Deploy BakcStrategy").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  await deployContract("BakcStrategy", [], false);
+});
+
 task("deploy:config:BendCoinPool", "Coinfig BendCoinPool").setAction(async (_, { network, run }) => {
   await run("set-DRE");
   await run("compile");
@@ -107,6 +129,8 @@ task("deploy:config:BendCoinPool", "Coinfig BendCoinPool").setAction(async (_, {
   const stakeManager = await getContractAddressFromDB("BendStakeManager");
 
   await waitForTx(await coinPool.connect(deployer).initialize(apeStaking, stakeManager));
+
+  console.log("ok");
 });
 
 task("deploy:config:BendNftPool", "Coinfig BendNftPool").setAction(async (_, { network, run }) => {
@@ -130,6 +154,8 @@ task("deploy:config:BendNftPool", "Coinfig BendNftPool").setAction(async (_, { n
       .connect(deployer)
       .initialize(apeStaking, delegationCash, coinPool, stakeManager, stBayc, stMayc, stBakc)
   );
+
+  console.log("ok");
 });
 
 task("deploy:config:BendStakeManager", "Coinfig BendStakeManager").setAction(async (_, { network, run }) => {
@@ -150,7 +176,41 @@ task("deploy:config:BendStakeManager", "Coinfig BendStakeManager").setAction(asy
 
   await waitForTx(await stakeManager.connect(deployer).updateFee(fee));
   await waitForTx(await stakeManager.connect(deployer).updateFeeRecipient(feeRecipient));
+
+  console.log("ok");
 });
+
+task("deploy:config:RewardsStrategy", "Coinfig RewardsStrategy").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+  const deployer = await getDeploySigner();
+  const stakeManager = await getContractFromDB<BendStakeManager>("BendStakeManager");
+
+  const bayc = getParams(BAYC, network.name);
+  const mayc = getParams(MAYC, network.name);
+  const bakc = getParams(BAKC, network.name);
+
+  const baycStrategy = await getContractAddressFromDB("BaycStrategy");
+  const maycStrategy = await getContractAddressFromDB("MaycStrategy");
+  const bakcStrategy = await getContractAddressFromDB("BakcStrategy");
+
+  await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(bayc, baycStrategy));
+  await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(mayc, maycStrategy));
+  await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(bakc, bakcStrategy));
+
+  console.log("ok");
+});
+
+task("deploy:NewImpl", "Deploy new implmentation")
+  .addParam("implid", "The new impl contract id")
+  .setAction(async ({ implid }, { ethers, upgrades, run }) => {
+    await run("set-DRE");
+    await run("compile");
+
+    await deployImplementation(implid, false);
+
+    console.log("ok");
+  });
 
 task("prepareUpgrade", "Deploy new implmentation for upgrade")
   .addParam("proxyid", "The proxy contract id")

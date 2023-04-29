@@ -22,5 +22,21 @@
   "BendNftPool": {
     "address": "0x0d42Ec76548F573f78880dFAc1E9A8f4a904D868",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "BendStakeManager": {
+    "address": "0xfb4F26cAa06f17324C89Ec1bF6a83a8Cb848B009",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "BaycStrategy": {
+    "address": "0xa085497AdfABEf1f4BF58A2e54E180537c33FBDC",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "MaycStrategy": {
+    "address": "0xe3Fa083E153EBeeeC8504232c466E23811Dc4f03",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "BakcStrategy": {
+    "address": "0x9476880b6B4bA882fC5e0f5f4F8E70150f3331CE",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   }
 }
