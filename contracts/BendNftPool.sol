@@ -137,13 +137,13 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             );
 
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
-                claimableRewards += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
+                claimableRewards += _round_claimble_rewards(pool.accumulatedRewardsPerNft, pool.rewardsDebt[tokenId_]);
                 pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
             }
         }
 
         if (claimableRewards > 0) {
-            coinPool.safeTransfer(receiver_, claimableRewards);
+            coinPool.withdraw(claimableRewards, receiver_, address(this));
             emit RewardClaimed(nft_, tokenIds_, receiver_, claimableRewards);
         }
     }
@@ -203,7 +203,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
-                amount += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
+                amount += _round_claimble_rewards(pool.accumulatedRewardsPerNft, pool.rewardsDebt[tokenId_]);
             }
         }
     }
@@ -237,5 +237,20 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         }
         require(isValidNFT, "BendNftPool: not ape nft");
         return this.onERC721Received.selector;
+    }
+
+    /*
+     * @dev Rounds down the claimable rewards to the nearest integer.
+     * Because ERC4626 will round down the rewards when withdraw.
+     */
+    function _round_claimble_rewards(uint256 accumulatedRewardsPerNft, uint256 rewardsDebt)
+        private
+        pure
+        returns (uint256 rewards)
+    {
+        rewards = (accumulatedRewardsPerNft - rewardsDebt) / APE_COIN_PRECISION;
+        if (rewards > 0) {
+            rewards -= 1;
+        }
     }
 }

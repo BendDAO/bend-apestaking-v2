@@ -195,7 +195,7 @@ abstract contract SetupHelper is Test {
         stakeManager.updateRewardsStrategy(address(mockBAKC), IRewardsStrategy(bakcStrategy));
 
         // mint some coins
-        uint256 totalCoinRewards = 100000000 * 1e18;
+        uint256 totalCoinRewards = 10000000 * 1e18;
         mockApeCoin.mint(totalCoinRewards);
         mockApeCoin.transfer(address(mockApeStaking), totalCoinRewards);
 
@@ -249,6 +249,16 @@ abstract contract SetupHelper is Test {
     function advanceTimeAndBlock(uint256 timeDelta, uint256 blockDelta) internal {
         vm.warp(block.timestamp + timeDelta);
         vm.roll(block.number + blockDelta);
+    }
+
+    function prepareCoolPoolMathRound(address user) internal {
+        vm.startPrank(user);
+
+        mockApeCoin.mint(1 * 1e18);
+        mockApeCoin.approve(address(coinPool), 1 * 1e18);
+        coinPool.deposit(1 * 1e18, address(0));
+
+        vm.stopPrank();
     }
 
     function prepareAllApprovals(address user) internal virtual {

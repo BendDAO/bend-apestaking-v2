@@ -41,7 +41,7 @@
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "TS_NODE_TRANSPILE_ONLY=true hardhat coverage && hardhat compile --force",
-    "test:forge": "forge test",
+    "test:forge": "forge test -vvv",
     "release": "release-it"
   },
   "devDependencies": {

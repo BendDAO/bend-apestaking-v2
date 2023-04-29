@@ -58,6 +58,9 @@ contract BendStakeManagerTest is SetupHelper {
         vm.startPrank(testUser0);
         uint256 rewardsAmount = nftPool.claimable(address(mockBAYC), testBaycTokenIds);
         assertGt(rewardsAmount, 0, "rewards should greater than 0");
+        nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
+        uint256 balanceAmount = mockApeCoin.balanceOf(testUser0);
+        assertEq(balanceAmount, rewardsAmount, "balance not match rewards");
         vm.stopPrank();
     }
 }
