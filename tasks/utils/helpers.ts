@@ -46,8 +46,7 @@ export const getSignersAddresses = async (): Promise<string[]> =>
   await Promise.all((await getSigners()).map((signer) => signer.getAddress()));
 
 export const deployImplementation = async <ContractType extends Contract>(
-  contractName: string,
-  verify?: boolean
+  contractName: string
 ): Promise<ContractType> => {
   console.log("deploy", contractName);
   const instance = await (await DRE.ethers.getContractFactory(contractName)).connect(await getDeploySigner()).deploy();

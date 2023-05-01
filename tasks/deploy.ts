@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { task } from "hardhat/config";
-import { utils } from "ethers";
 import { BendCoinPool, BendNftPool, BendStakeManager } from "../typechain-types";
 import { APE_STAKING, BAKC, BAYC, DELEAGATE_CASH, FEE, FEE_RECIPIENT, getParams, MAYC } from "./config";
 import {
@@ -77,42 +76,42 @@ task("deploy:full:staking", "Deploy all contracts for staking").setAction(async 
   await run("deploy:config:BendStakeManager");
 });
 
-task("deploy:BendCoinPool", "Deploy BendCoinPool").setAction(async (_, { network, run }) => {
+task("deploy:BendCoinPool", "Deploy BendCoinPool").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
   await deployProxyContractWithoutInit("BendCoinPool", [], false);
 });
 
-task("deploy:BendNftPool", "Deploy BendNftPool").setAction(async (_, { network, run }) => {
+task("deploy:BendNftPool", "Deploy BendNftPool").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
   await deployProxyContractWithoutInit("BendNftPool", [], false);
 });
 
-task("deploy:BendStakeManager", "Deploy StakeManager").setAction(async (_, { network, run }) => {
+task("deploy:BendStakeManager", "Deploy StakeManager").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
   await deployProxyContractWithoutInit("BendStakeManager", [], false);
 });
 
-task("deploy:BaycStrategy", "Deploy BaycStrategy").setAction(async (_, { network, run }) => {
+task("deploy:BaycStrategy", "Deploy BaycStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
   await deployContract("BaycStrategy", [], false);
 });
 
-task("deploy:MaycStrategy", "Deploy MaycStrategy").setAction(async (_, { network, run }) => {
+task("deploy:MaycStrategy", "Deploy MaycStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
   await deployContract("MaycStrategy", [], false);
 });
 
-task("deploy:BakcStrategy", "Deploy BakcStrategy").setAction(async (_, { network, run }) => {
+task("deploy:BakcStrategy", "Deploy BakcStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
@@ -203,7 +202,7 @@ task("deploy:config:RewardsStrategy", "Coinfig RewardsStrategy").setAction(async
 
 task("deploy:NewImpl", "Deploy new implmentation")
   .addParam("implid", "The new impl contract id")
-  .setAction(async ({ implid }, { ethers, upgrades, run }) => {
+  .setAction(async ({ implid }, { run }) => {
     await run("set-DRE");
     await run("compile");
 

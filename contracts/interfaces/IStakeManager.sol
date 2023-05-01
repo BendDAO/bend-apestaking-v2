@@ -4,8 +4,6 @@ import {IApeCoinStaking} from "./IApeCoinStaking.sol";
 import {IRewardsStrategy} from "./IRewardsStrategy.sol";
 
 interface IStakeManager {
-    function apeCoinStaking() external view returns (IApeCoinStaking);
-
     function totalStakedApeCoin() external view returns (uint256);
 
     function totalPendingRewards() external view returns (uint256);

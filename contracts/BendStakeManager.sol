@@ -30,7 +30,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     address public override feeRecipient;
     uint256 public override pendingFeeAmount;
 
-    IApeCoinStaking public override apeCoinStaking;
+    IApeCoinStaking public apeCoinStaking;
     IERC20Upgradeable public apeCoin;
     INftVault public nftVault;
     ICoinPool public coinPool;
@@ -94,15 +94,15 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         feeRecipient = recipient_;
     }
 
-    function _collectFee(uint256 rewardsAmount_) private returns (uint256 feeAmount) {
+    function _collectFee(uint256 rewardsAmount_) internal returns (uint256 feeAmount) {
         if (rewardsAmount_ > 0 && fee > 0) {
             feeAmount = rewardsAmount_.mulDiv(fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Down);
             pendingFeeAmount += feeAmount;
         }
     }
 
-    function _coinPoolChangedBalance(uint256 initBalance) private view returns (uint256) {
-        return IERC20Upgradeable(apeCoinStaking.apeCoin()).balanceOf(address(coinPool)) - initBalance;
+    function _coinPoolChangedAmount(uint256 initBalance_) internal view returns (uint256) {
+        return apeCoin.balanceOf(address(coinPool)) - initBalance_;
     }
 
     struct WithdrawApeCoinVars {
@@ -113,7 +113,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function withdrawApeCoin(uint256 required) external override onlyCoinPool returns (uint256 withdrawn) {
-        uint256 initBalance = IERC20Upgradeable(apeCoinStaking.apeCoin()).balanceOf(address(coinPool));
+        uint256 initBalance = apeCoin.balanceOf(address(coinPool));
         // withdraw refund
         (uint256 principal, uint256 reward) = _totalRefund();
         if (principal > 0 || reward > 0) {
@@ -121,18 +121,18 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         }
 
         // claim ape coin pool
-        if (_coinPoolChangedBalance(initBalance) < required && _pendingRewards(ApeStakingLib.APE_COIN_POOL_ID) > 0) {
+        if (_coinPoolChangedAmount(initBalance) < required && _pendingRewards(ApeStakingLib.APE_COIN_POOL_ID) > 0) {
             _claimApeCoin();
         }
 
         // unstake ape coin pool
-        if (_coinPoolChangedBalance(initBalance) < required && _stakedApeCoin(ApeStakingLib.APE_COIN_POOL_ID) > 0) {
-            _unstakeApeCoin(required - _coinPoolChangedBalance(initBalance));
+        if (_coinPoolChangedAmount(initBalance) < required && _stakedApeCoin(ApeStakingLib.APE_COIN_POOL_ID) > 0) {
+            _unstakeApeCoin(required - _coinPoolChangedAmount(initBalance));
         }
         WithdrawApeCoinVars memory vars;
         // unstake bayc
-        if (_coinPoolChangedBalance(initBalance) < required && _stakedApeCoin(ApeStakingLib.BAYC_POOL_ID) > 0) {
-            vars.margin = required - _coinPoolChangedBalance(initBalance);
+        if (_coinPoolChangedAmount(initBalance) < required && _stakedApeCoin(ApeStakingLib.BAYC_POOL_ID) > 0) {
+            vars.margin = required - _coinPoolChangedAmount(initBalance);
             vars.tokenId = 0;
             vars.size = 0;
             vars.totalWithdrawn = 0;
@@ -162,8 +162,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         }
 
         // unstake mayc
-        if (_coinPoolChangedBalance(initBalance) < required && _stakedApeCoin(ApeStakingLib.MAYC_POOL_ID) > 0) {
-            vars.margin = required - _coinPoolChangedBalance(initBalance);
+        if (_coinPoolChangedAmount(initBalance) < required && _stakedApeCoin(ApeStakingLib.MAYC_POOL_ID) > 0) {
+            vars.margin = required - _coinPoolChangedAmount(initBalance);
             vars.tokenId = 0;
             vars.size = 0;
             vars.totalWithdrawn = 0;
@@ -192,8 +192,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         }
 
         // unstake bakc
-        if (_coinPoolChangedBalance(initBalance) < required && _stakedApeCoin(ApeStakingLib.BAKC_POOL_ID) > 0) {
-            vars.margin = required - _coinPoolChangedBalance(initBalance);
+        if (_coinPoolChangedAmount(initBalance) < required && _stakedApeCoin(ApeStakingLib.BAKC_POOL_ID) > 0) {
+            vars.margin = required - _coinPoolChangedAmount(initBalance);
             vars.tokenId = 0;
             vars.size = 0;
             vars.totalWithdrawn = 0;
@@ -253,7 +253,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
             }
         }
 
-        withdrawn = _coinPoolChangedBalance(initBalance);
+        withdrawn = _coinPoolChangedAmount(initBalance);
     }
 
     function updateBotAdmin(address botAdmin_) external override onlyOwner {
@@ -285,14 +285,14 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         return _stakedApeCoin(poolId_);
     }
 
-    function _stakedApeCoin(uint256 poolId_) private view returns (uint256) {
+    function _stakedApeCoin(uint256 poolId_) internal view returns (uint256) {
         if (poolId_ == ApeStakingLib.APE_COIN_POOL_ID) {
             return apeCoinPoolStakedAmount;
         }
         return nftVault.positionOf(apeCoinStaking.nftContracts(poolId_), address(this)).stakedAmount;
     }
 
-    function _pendingRewards(uint256 poolId_) private view returns (uint256) {
+    function _pendingRewards(uint256 poolId_) internal view returns (uint256) {
         if (poolId_ == ApeStakingLib.APE_COIN_POOL_ID) {
             return apeCoinStaking.pendingRewards(ApeStakingLib.APE_COIN_POOL_ID, address(this), 0);
         }
@@ -306,26 +306,33 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         }
     }
 
-    function _prepareApeCoin(uint256 amount_) private {
-        if (coinPool.pendingApeCoin() < amount_ && _pendingRewards(ApeStakingLib.APE_COIN_POOL_ID) > 0) {
-            _claimApeCoin();
+    function _prepareApeCoin(uint256 requiredAmount_) internal {
+        uint256 pendingApeCoin = coinPool.pendingApeCoin();
+        if (pendingApeCoin >= requiredAmount_) {
+            coinPool.pullApeCoin(requiredAmount_);
+        } else {
+            if (_pendingRewards(ApeStakingLib.APE_COIN_POOL_ID) > 0) {
+                _claimApeCoin();
+                pendingApeCoin = coinPool.pendingApeCoin();
+            }
+            if (pendingApeCoin < requiredAmount_) {
+                uint256 unstakeAmount = requiredAmount_ - pendingApeCoin;
+
+                if (_stakedApeCoin(ApeStakingLib.APE_COIN_POOL_ID) >= unstakeAmount) {
+                    _unstakeApeCoin(unstakeAmount);
+                }
+            }
+            coinPool.pullApeCoin(requiredAmount_);
         }
-        if (
-            coinPool.pendingApeCoin() < amount_ &&
-            _stakedApeCoin(ApeStakingLib.APE_COIN_POOL_ID) > (amount_ - coinPool.pendingApeCoin())
-        ) {
-            _unstakeApeCoin(amount_ - coinPool.pendingApeCoin());
-        }
-        coinPool.pullApeCoin(amount_);
     }
 
-    function _stakeApeCoin(uint256 amount_) private {
+    function _stakeApeCoin(uint256 amount_) internal {
         coinPool.pullApeCoin(amount_);
         apeCoinStaking.depositSelfApeCoin(amount_);
         apeCoinPoolStakedAmount += amount_;
     }
 
-    function _unstakeApeCoin(uint256 amount_) private {
+    function _unstakeApeCoin(uint256 amount_) internal {
         uint256 receivedApeCoin = apeCoin.balanceOf(address(this));
         apeCoinStaking.withdrawSelfApeCoin(amount_);
         receivedApeCoin = apeCoin.balanceOf(address(this)) - receivedApeCoin;
@@ -338,7 +345,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         coinPool.receiveApeCoin(amount_, rewardsAmount);
     }
 
-    function _claimApeCoin() private {
+    function _claimApeCoin() internal {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
         apeCoinStaking.claimSelfApeCoin();
         rewardsAmount = apeCoin.balanceOf(address(this)) - rewardsAmount;
@@ -346,7 +353,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         coinPool.receiveApeCoin(0, rewardsAmount);
     }
 
-    function _stakeBayc(uint256[] memory tokenIds_) private {
+    function _stakeBayc(uint256[] memory tokenIds_) internal {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
         uint256 maxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAYC_POOL_ID).capPerPosition;
         uint256 tokenId_;
@@ -361,7 +368,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         nftVault.stakeBaycPool(nfts_);
     }
 
-    function _unstakeBayc(uint256[] memory tokenIds_) private {
+    function _unstakeBayc(uint256[] memory tokenIds_) internal {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
         uint256 tokenId_;
         address nft_ = address(apeCoinStaking.bayc());
@@ -384,7 +391,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function _claimBayc(uint256[] memory tokenIds_) private {
+    function _claimBayc(uint256[] memory tokenIds_) internal {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
         address nft_ = address(apeCoinStaking.bayc());
         nftVault.claimBaycPool(tokenIds_, address(this));
@@ -393,7 +400,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function _stakeMayc(uint256[] memory tokenIds_) private {
+    function _stakeMayc(uint256[] memory tokenIds_) internal {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
         uint256 maxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.MAYC_POOL_ID).capPerPosition;
         uint256 tokenId_;
@@ -408,7 +415,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         nftVault.stakeMaycPool(nfts_);
     }
 
-    function _unstakeMayc(uint256[] memory tokenIds_) private {
+    function _unstakeMayc(uint256[] memory tokenIds_) internal {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
         uint256 tokenId_;
         address nft_ = address(apeCoinStaking.mayc());
@@ -433,7 +440,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function _claimMayc(uint256[] memory tokenIds_) private {
+    function _claimMayc(uint256[] memory tokenIds_) internal {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
         address nft_ = address(apeCoinStaking.mayc());
         nftVault.claimMaycPool(tokenIds_, address(this));
@@ -443,7 +450,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _stakeBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        private
+        internal
     {
         IApeCoinStaking.PairNftDepositWithAmount[]
             memory baycPairsWithAmount_ = new IApeCoinStaking.PairNftDepositWithAmount[](baycPairs_.length);
@@ -481,7 +488,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _unstakeBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        private
+        internal
     {
         address nft_ = address(apeCoinStaking.bakc());
         IApeCoinStaking.PairNftWithdrawWithAmount[]
@@ -528,7 +535,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _claimBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        private
+        internal
     {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
         address nft_ = address(apeCoinStaking.bakc());
@@ -550,18 +557,18 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         }
     }
 
-    function _distributeRewards(address nft_, uint256 rewardsAmount) internal {
+    function _distributeRewards(address nft_, uint256 rewardsAmount_) internal {
         //TODO: static call
-        uint256 nftPoolRewards = rewardsStrategies[nft_].calculateNftRewards(rewardsAmount);
+        uint256 nftPoolRewards = rewardsStrategies[nft_].calculateNftRewards(rewardsAmount_);
 
-        uint256 apeCoinPoolRewards = rewardsAmount - nftPoolRewards;
+        uint256 apeCoinPoolRewards = rewardsAmount_ - nftPoolRewards;
 
         coinPool.receiveApeCoin(0, apeCoinPoolRewards);
 
         nftPool.receiveApeCoin(nft_, nftPoolRewards);
     }
 
-    function _withdrawTotalRefund() private {
+    function _withdrawTotalRefund() internal {
         _withdrawRefund(address(apeCoinStaking.bayc()));
         _withdrawRefund(address(apeCoinStaking.mayc()));
         _withdrawRefund(address(apeCoinStaking.bakc()));
@@ -582,7 +589,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         }
     }
 
-    function _totalRefund() private view returns (uint256 principal, uint256 reward) {
+    function _totalRefund() internal view returns (uint256 principal, uint256 reward) {
         INftVault.Refund memory refund_ = nftVault.refundOf(address(apeCoinStaking.bayc()), address(this));
         principal += refund_.principal;
         reward += refund_.reward;
@@ -666,8 +673,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
         // transfer fee to recipient
         if (pendingFeeAmount > MAX_PENDING_FEE && feeRecipient != address(0)) {
-            apeCoin.transfer(feeRecipient, pendingFeeAmount);
             pendingFeeAmount = 0;
+            apeCoin.transfer(feeRecipient, pendingFeeAmount);
         }
     }
 

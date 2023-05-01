@@ -1,18 +1,5 @@
 [
   {
-    "inputs": [],
-    "name": "apeCoinStaking",
-    "outputs": [
-      {
-        "internalType": "contract IApeCoinStaking",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "components": [

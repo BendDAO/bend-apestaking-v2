@@ -9,7 +9,7 @@ import {
   ApeCoinStaking,
   ICoinPool,
   INftPool,
-  IStakeManager,
+  BendStakeManagerTester,
   IDelegationRegistry,
 } from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
@@ -40,7 +40,7 @@ export interface Contracts {
   stMayc: IStakedNft;
   stBakc: IStakedNft;
   // bend ape staking v2
-  bendStakeManager: IStakeManager;
+  bendStakeManager: BendStakeManagerTester;
   bendCoinPool: ICoinPool;
   bendNftPool: INftPool;
 }
@@ -174,7 +174,7 @@ export async function setupContracts(): Promise<Contracts> {
   const stBakc = await deployContract<IStakedNft>("StBAKC", [bakc.address, nftVault.address]);
 
   // bend staking v2
-  const bendStakeManager = await deployContract<IStakeManager>("BendStakeManager", []);
+  const bendStakeManager = await deployContract<BendStakeManagerTester>("BendStakeManagerTester", []);
   const bendCoinPool = await deployContract<ICoinPool>("BendCoinPool", []);
   const bendNftPool = await deployContract<INftPool>("BendNftPool", []);
 

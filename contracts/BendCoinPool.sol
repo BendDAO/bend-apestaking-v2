@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
+
 import {ERC4626Upgradeable, IERC4626Upgradeable, IERC20MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -77,7 +78,7 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
 
     function receiveApeCoin(uint256 principalAmount, uint256 rewardsAmount_) external override onlyStaker {
         uint256 totalAmount = principalAmount + rewardsAmount_;
-        IERC20Upgradeable(asset()).safeTransferFrom(_msgSender(), address(this), totalAmount);
+        apeCoin.safeTransferFrom(_msgSender(), address(this), totalAmount);
         pendingApeCoin += totalAmount;
         if (rewardsAmount_ > 0) {
             emit RewardDistributed(rewardsAmount_);
@@ -86,6 +87,6 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
 
     function pullApeCoin(uint256 amount_) external override onlyStaker {
         pendingApeCoin -= amount_;
-        IERC20Upgradeable(asset()).safeTransfer(address(staker), amount_);
+        apeCoin.safeTransfer(address(staker), amount_);
     }
 }
