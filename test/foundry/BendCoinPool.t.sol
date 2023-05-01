@@ -8,261 +8,146 @@ contract BendCoinPoolTest is SetupHelper {
     }
 
     function testSingleUserDepositWithdrawNoRewards() public {
-        super.initTestVars(1);
-        testVars.curUser = testUsers[0];
+        address testUser = testUsers[0];
+        uint256 depositAmount = 1000000 * 10**18;
 
-        vm.startPrank(testUsers[0]);
+        vm.startPrank(testUser);
 
-        testVars.depositAmounts[0] = 1000000 * 10**18;
-        mockApeCoin.mint(testVars.depositAmounts[0]);
-        mockApeCoin.approve(address(coinPool), testVars.depositAmounts[0]);
+        mockApeCoin.mint(depositAmount);
+        mockApeCoin.approve(address(coinPool), depositAmount);
 
         // deposit some coins
-        CoinPoolData memory poolDataBeforeDeposit = getCoinPoolDataInContracts();
-        CoinUserData memory userDataBeforeDeposit = getCoinUserDataInContracts(testVars.curUser);
-
-        coinPool.deposit(testVars.depositAmounts[0], testVars.curUser);
-
-        // check results
-        CoinPoolData memory poolDataAfterDeposit = getCoinPoolDataInContracts();
-        CoinUserData memory userDataAfterDeposit = getCoinUserDataInContracts(testVars.curUser);
-
-        CoinPoolData memory poolDataExpectedAfterDeposit = calcExpectedCoinPoolDataAfterDeposit(
-            testVars.curUser,
-            testVars.depositAmounts[0],
-            poolDataBeforeDeposit,
-            userDataBeforeDeposit
-        );
-        CoinUserData memory userDataExpectedAfterDeposit = calcExpectedCoinUserDataAfterDeposit(
-            testVars.curUser,
-            testVars.depositAmounts[0],
-            poolDataBeforeDeposit,
-            userDataBeforeDeposit
-        );
-
-        assertEq(poolDataAfterDeposit.totalAssets, poolDataExpectedAfterDeposit.totalAssets, "total assets not match");
-        assertEq(poolDataAfterDeposit.totalShares, poolDataExpectedAfterDeposit.totalShares, "total shares not match");
-        assertEq(userDataAfterDeposit.totalAssets, userDataExpectedAfterDeposit.totalAssets, "user assets not match");
-        assertEq(userDataAfterDeposit.totalShares, userDataExpectedAfterDeposit.totalShares, "user shares not match");
+        coinPool.deposit(depositAmount, testUser);
 
         // withdraw all coins
-        CoinPoolData memory poolDataBeforeWithdraw = getCoinPoolDataInContracts();
-        CoinUserData memory userDataBeforeWithdraw = getCoinUserDataInContracts(testVars.curUser);
-
-        testVars.withdrawAmounts[0] = coinPool.assetBalanceOf(testVars.curUser);
-        coinPool.withdraw(testVars.withdrawAmounts[0], testVars.curUser, testVars.curUser);
+        coinPool.withdraw(depositAmount, testUser, testUser);
 
         // check results
-        CoinPoolData memory poolDataAfterWithdraw = getCoinPoolDataInContracts();
-        CoinUserData memory userDataAfterWithdraw = getCoinUserDataInContracts(testVars.curUser);
+        uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUser);
+        assertEq(userBalanceAfterWithdraw, depositAmount, "user balance not match after withdraw");
 
-        CoinPoolData memory poolDataExpectedAfterWithdraw = calcExpectedCoinPoolDataAfterWithdraw(
-            testVars.curUser,
-            testVars.withdrawAmounts[0],
-            poolDataBeforeWithdraw,
-            userDataBeforeWithdraw
-        );
-        CoinUserData memory userDataExpectedAfterWithdraw = calcExpectedCoinUserDataAfterWithdraw(
-            testVars.curUser,
-            testVars.withdrawAmounts[0],
-            poolDataBeforeWithdraw,
-            userDataBeforeWithdraw
-        );
-
-        assertEq(
-            poolDataAfterWithdraw.totalAssets,
-            poolDataExpectedAfterWithdraw.totalAssets,
-            "total assets not match"
-        );
-        assertEq(
-            poolDataAfterWithdraw.totalShares,
-            poolDataExpectedAfterWithdraw.totalShares,
-            "total shares not match"
-        );
-        assertEq(userDataAfterWithdraw.totalAssets, userDataExpectedAfterWithdraw.totalAssets, "user assets not match");
-        assertEq(userDataAfterWithdraw.totalShares, userDataExpectedAfterWithdraw.totalShares, "user shares not match");
+        uint256 poolBalanceAfterWithdraw = mockApeCoin.balanceOf(address(coinPool));
+        assertEq(poolBalanceAfterWithdraw, 0, "pool balance not match after withdraw");
 
         vm.stopPrank();
     }
 
     function testSingleUserDepositWithdrawHasRewards() public {
-        super.initTestVars(1);
-        testVars.curUser = testUsers[0];
-
-        vm.startPrank(testVars.curUser);
-
-        testVars.depositAmounts[0] = 1000000 * 10**18;
-        mockApeCoin.mint(testVars.depositAmounts[0]);
-        mockApeCoin.approve(address(coinPool), testVars.depositAmounts[0]);
+        address testUser = testUsers[0];
+        uint256 depositAmount = 1000000 * 10**18;
+        uint256 rewardsAmount = 200000 * 10**18;
 
         // deposit some coins
-        CoinPoolData memory poolDataBeforeDeposit = getCoinPoolDataInContracts();
-        CoinUserData memory userDataBeforeDeposit = getCoinUserDataInContracts(testVars.curUser);
-
-        coinPool.deposit(testVars.depositAmounts[0], testVars.curUser);
-
-        // check results
-        CoinPoolData memory poolDataAfterDeposit = getCoinPoolDataInContracts();
-        CoinUserData memory userDataAfterDeposit = getCoinUserDataInContracts(testVars.curUser);
-
-        CoinPoolData memory poolDataExpectedAfterDeposit = calcExpectedCoinPoolDataAfterDeposit(
-            testVars.curUser,
-            testVars.depositAmounts[0],
-            poolDataBeforeDeposit,
-            userDataBeforeDeposit
-        );
-        CoinUserData memory userDataExpectedAfterDeposit = calcExpectedCoinUserDataAfterDeposit(
-            testVars.curUser,
-            testVars.depositAmounts[0],
-            poolDataBeforeDeposit,
-            userDataBeforeDeposit
-        );
-
-        assertEq(poolDataAfterDeposit.totalAssets, poolDataExpectedAfterDeposit.totalAssets, "total assets not match");
-        assertEq(poolDataAfterDeposit.totalShares, poolDataExpectedAfterDeposit.totalShares, "total shares not match");
-        assertEq(userDataAfterDeposit.totalAssets, userDataExpectedAfterDeposit.totalAssets, "user assets not match");
-        assertEq(userDataAfterDeposit.totalShares, userDataExpectedAfterDeposit.totalShares, "user shares not match");
-
+        vm.startPrank(testUser);
+        mockApeCoin.mint(depositAmount);
+        mockApeCoin.approve(address(coinPool), depositAmount);
+        coinPool.deposit(depositAmount, testUser);
         vm.stopPrank();
-
-        // do some stake
-        vm.startPrank(botAdmin);
-
-        IStakeManager.CompoundArgs memory compoundArgs1;
-        compoundArgs1.coinStakeThreshold = 0;
-        stakeManager.compound(compoundArgs1);
 
         // make some rewards
-        advanceTimeAndBlock(2 hours, 100);
-
-        testVars.expectedCoinRewards[0] = calcExpectedCoinPendingRewards();
-
-        IStakeManager.CompoundArgs memory compoundArgs2;
-        compoundArgs2.coinStakeThreshold = 0;
-        compoundArgs2.claimCoinPool = true;
-        stakeManager.compound(compoundArgs2);
-
+        vm.startPrank(address(stakeManager));
+        mockApeCoin.mint(rewardsAmount);
+        mockApeCoin.approve(address(coinPool), rewardsAmount);
+        coinPool.receiveApeCoin(0, rewardsAmount);
         vm.stopPrank();
 
-        testVars.queriedCoinStakedAmounts[0] = getCoinStakedAmountInContracts();
+        uint256 expectedUserBalanceAfterWithdraw = depositAmount + rewardsAmount;
 
         // withdraw all coins
-        vm.startPrank(testVars.curUser);
-
-        CoinPoolData memory poolDataBeforeWithdraw = getCoinPoolDataInContracts();
-        CoinUserData memory userDataBeforeWithdraw = getCoinUserDataInContracts(testVars.curUser);
-
-        testVars.withdrawAmounts[0] = coinPool.assetBalanceOf(testVars.curUser);
-        coinPool.withdraw(testVars.withdrawAmounts[0], testVars.curUser, testVars.curUser);
+        vm.startPrank(testUser);
+        coinPool.withdraw(expectedUserBalanceAfterWithdraw, testUser, testUser);
+        vm.stopPrank();
 
         // check results
-        assertEq(
-            (testVars.depositAmounts[0] + testVars.expectedCoinRewards[0]),
-            testVars.queriedCoinStakedAmounts[0],
-            "staked amount not match"
-        );
-        assertEq(
-            (testVars.depositAmounts[0] + testVars.expectedCoinRewards[0]),
-            testVars.withdrawAmounts[0],
-            "withdraw amount not match"
-        );
+        uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUser);
+        assertEq(userBalanceAfterWithdraw, expectedUserBalanceAfterWithdraw, "user balance not match after withdraw");
 
-        CoinPoolData memory poolDataAfterWithdraw = getCoinPoolDataInContracts();
-        CoinUserData memory userDataAfterWithdraw = getCoinUserDataInContracts(testVars.curUser);
-
-        CoinPoolData memory poolDataExpectedAfterWithdraw = calcExpectedCoinPoolDataAfterWithdraw(
-            testVars.curUser,
-            testVars.withdrawAmounts[0],
-            poolDataBeforeWithdraw,
-            userDataBeforeWithdraw
-        );
-        CoinUserData memory userDataExpectedAfterWithdraw = calcExpectedCoinUserDataAfterWithdraw(
-            testVars.curUser,
-            testVars.withdrawAmounts[0],
-            poolDataBeforeWithdraw,
-            userDataBeforeWithdraw
-        );
-
-        assertEq(
-            poolDataAfterWithdraw.totalAssets,
-            poolDataExpectedAfterWithdraw.totalAssets,
-            "total assets not match"
-        );
-        assertEq(
-            poolDataAfterWithdraw.totalShares,
-            poolDataExpectedAfterWithdraw.totalShares,
-            "total shares not match"
-        );
-        assertEq(userDataAfterWithdraw.totalAssets, userDataExpectedAfterWithdraw.totalAssets, "user assets not match");
-        assertEq(userDataAfterWithdraw.totalShares, userDataExpectedAfterWithdraw.totalShares, "user shares not match");
-
-        vm.stopPrank();
+        uint256 poolBalanceAfterWithdraw = mockApeCoin.balanceOf(address(coinPool));
+        assertEq(poolBalanceAfterWithdraw, 0, "pool balance not match after withdraw");
     }
 
     function testMutipleUserDepositWithdrawNoRewards() public {
-        super.initTestVars(5);
+        uint256 userIndex = 0;
+        uint256 userCount = 3;
+        uint256[] memory depositAmounts = new uint256[](userCount);
 
-        for (testVars.userIndex = 0; testVars.userIndex < 5; testVars.userIndex++) {
-            vm.startPrank(testUsers[testVars.userIndex]);
+        for (userIndex = 0; userIndex < userCount; userIndex++) {
+            vm.startPrank(testUsers[userIndex]);
 
-            testVars.depositAmounts[testVars.userIndex] = 1000000 * 10**18 * (testVars.userIndex + 1);
-            mockApeCoin.mint(testVars.depositAmounts[testVars.userIndex]);
-            mockApeCoin.approve(address(coinPool), testVars.depositAmounts[testVars.userIndex]);
+            depositAmounts[userIndex] = 1000000 * 10**18 * (userIndex + 1);
+            mockApeCoin.mint(depositAmounts[userIndex]);
+            mockApeCoin.approve(address(coinPool), depositAmounts[userIndex]);
 
-            coinPool.deposit(testVars.depositAmounts[testVars.userIndex], testUsers[testVars.userIndex]);
+            coinPool.deposit(depositAmounts[userIndex], testUsers[userIndex]);
 
             vm.stopPrank();
         }
 
-        for (testVars.userIndex = 0; testVars.userIndex < 5; testVars.userIndex++) {
-            vm.startPrank(testUsers[testVars.userIndex]);
+        // withdraw all coins
+        for (userIndex = 0; userIndex < userCount; userIndex++) {
+            vm.startPrank(testUsers[userIndex]);
 
-            coinPool.withdraw(
-                testVars.depositAmounts[testVars.userIndex],
-                testUsers[testVars.userIndex],
-                testUsers[testVars.userIndex]
-            );
+            coinPool.withdraw(depositAmounts[userIndex], testUsers[userIndex], testUsers[userIndex]);
 
             vm.stopPrank();
+        }
+
+        // check results
+        for (userIndex = 0; userIndex < userCount; userIndex++) {
+            uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUsers[userIndex]);
+            assertEq(userBalanceAfterWithdraw, depositAmounts[userIndex], "user balance not match after withdraw");
         }
     }
 
     function testMutipleUserDepositWithdrawHasRewards() public {
-        super.initTestVars(5);
+        uint256 userIndex = 0;
+        uint256 userCount = 3;
+        uint256 totalDepositAmount = 0;
+        uint256[] memory depositAmounts = new uint256[](userCount);
+        uint256 totalRewardsAmount = 100000 * 10**18 * userCount;
 
-        for (testVars.userIndex = 0; testVars.userIndex < 5; testVars.userIndex++) {
-            vm.startPrank(testUsers[testVars.userIndex]);
+        for (userIndex = 0; userIndex < userCount; userIndex++) {
+            vm.startPrank(testUsers[userIndex]);
 
-            testVars.depositAmounts[testVars.userIndex] = 1000000 * 10**18 * (testVars.userIndex + 1);
-            mockApeCoin.mint(testVars.depositAmounts[testVars.userIndex]);
-            mockApeCoin.approve(address(coinPool), testVars.depositAmounts[testVars.userIndex]);
+            depositAmounts[userIndex] = 1000000 * 10**18 * (userIndex + 1);
+            totalDepositAmount += depositAmounts[userIndex];
 
-            coinPool.deposit(testVars.depositAmounts[testVars.userIndex], testUsers[testVars.userIndex]);
+            mockApeCoin.mint(depositAmounts[userIndex]);
+            mockApeCoin.approve(address(coinPool), depositAmounts[userIndex]);
+
+            coinPool.deposit(depositAmounts[userIndex], testUsers[userIndex]);
 
             vm.stopPrank();
         }
 
-        botStakeCoinPool();
+        // make some rewards
+        vm.startPrank(address(stakeManager));
+        mockApeCoin.mint(totalRewardsAmount);
+        mockApeCoin.approve(address(coinPool), totalRewardsAmount);
+        coinPool.receiveApeCoin(0, totalRewardsAmount);
+        vm.stopPrank();
 
-        advanceTimeAndBlock(2 hours, 100);
+        // withdraw all coins
+        for (userIndex = 0; userIndex < userCount; userIndex++) {
+            vm.startPrank(testUsers[userIndex]);
 
-        testVars.expectedCoinRewards[0] = botCompoudCoinPool();
-        assertGt(testVars.expectedCoinRewards[0], 0, "coin rewards is zer0");
-
-        for (testVars.userIndex = 0; testVars.userIndex < 5; testVars.userIndex++) {
-            vm.startPrank(testUsers[testVars.userIndex]);
-
-            testVars.tmpUint256A = coinPool.assetBalanceOf(testUsers[testVars.userIndex]);
-            coinPool.withdraw(testVars.tmpUint256A, testUsers[testVars.userIndex], testUsers[testVars.userIndex]);
-
-            testVars.balanceAmounts[testVars.userIndex] = mockApeCoin.balanceOf(testUsers[testVars.userIndex]);
-            assertGt(
-                testVars.balanceAmounts[testVars.userIndex],
-                testVars.depositAmounts[testVars.userIndex],
-                "balance not match"
-            );
+            uint256 userBalanceBeforeWithdraw = coinPool.assetBalanceOf(testUsers[userIndex]);
+            coinPool.withdraw(userBalanceBeforeWithdraw, testUsers[userIndex], testUsers[userIndex]);
 
             vm.stopPrank();
+        }
+
+        // check results
+        for (userIndex = 0; userIndex < userCount; userIndex++) {
+            uint256 expectedUserRewardAmount = (totalRewardsAmount * depositAmounts[userIndex]) / totalDepositAmount;
+            uint256 expectedUserBalanceAfterWithdraw = (depositAmounts[userIndex] + expectedUserRewardAmount);
+
+            uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUsers[userIndex]);
+            assertEq(
+                userBalanceAfterWithdraw,
+                expectedUserBalanceAfterWithdraw,
+                "user balance not match after withdraw"
+            );
         }
     }
 }

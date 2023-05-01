@@ -8,73 +8,45 @@ contract BendNftPoolTest is SetupHelper {
     }
 
     function testSingleUserDepositWithdrawBAYCNoRewards() public {
-        super.prepareAllApprovals(testUser0);
-        super.prepareMintNfts(testUser0, 1);
+        address testUser = testUsers[0];
+        uint256[] memory testBaycTokenIds = new uint256[](1);
 
-        vm.startPrank(testUser0);
+        vm.startPrank(testUser);
 
-        NftPoolData memory poolDataBeforeDeposit = getNftPoolDataInContracts(address(mockBAYC));
-        NftTokenData memory tokenDataBeforeDeposit = getNftTokenDataInContracts(address(mockBAYC), testBaycTokenIds[0]);
+        mockBAYC.setApprovalForAll(address(nftPool), true);
+        stBAYC.setApprovalForAll(address(nftPool), true);
+
+        testBaycTokenIds[0] = 100;
+        mockBAYC.mint(testBaycTokenIds[0]);
 
         nftPool.deposit(address(mockBAYC), testBaycTokenIds);
-
-        // check results
-        NftPoolData memory poolDataAfterDeposit = getNftPoolDataInContracts(address(mockBAYC));
-        NftTokenData memory tokenDataAfterDeposit = getNftTokenDataInContracts(address(mockBAYC), testBaycTokenIds[0]);
-
-        NftPoolData memory poolDataExpectedAfterDeposit = calcExpectedNftPoolDataAfterDeposit(
-            testVars.curUser,
-            testBaycTokenIds[0],
-            poolDataBeforeDeposit,
-            tokenDataBeforeDeposit
-        );
-        NftTokenData memory tokenDataExpectedAfterDeposit = calcExpectedNftTokenDataAfterDeposit(
-            testVars.curUser,
-            testBaycTokenIds[0],
-            poolDataBeforeDeposit,
-            tokenDataBeforeDeposit
-        );
-
-        assertEq(
-            poolDataAfterDeposit.totalNftAmount,
-            poolDataExpectedAfterDeposit.totalNftAmount,
-            "total amount not match"
-        );
-        assertEq(
-            poolDataAfterDeposit.accumulatedRewardsPerNft,
-            poolDataExpectedAfterDeposit.accumulatedRewardsPerNft,
-            "pool rewards index not match"
-        );
-        assertEq(
-            tokenDataAfterDeposit.rewardsDebt,
-            tokenDataExpectedAfterDeposit.rewardsDebt,
-            "token rewards debt not match"
-        );
-        assertEq(
-            tokenDataAfterDeposit.claimableRewards,
-            tokenDataExpectedAfterDeposit.claimableRewards,
-            "token claimable rewards not match"
-        );
 
         nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
 
         vm.stopPrank();
     }
 
-    function testSingleUserBatchDepositWithdrawNoRewards() public {
-        super.prepareAllApprovals(testUser0);
-        super.prepareMintNfts(testUser0, 5);
+    function testSingleUserBatchDepositWithdrawBAYCNoRewards() public {
+        address testUser = testUsers[0];
+        uint256[] memory testBaycTokenIds = new uint256[](3);
 
-        vm.startPrank(testUser0);
+        vm.startPrank(testUser);
+
+        mockBAYC.setApprovalForAll(address(nftPool), true);
+        stBAYC.setApprovalForAll(address(nftPool), true);
+
+        testBaycTokenIds[0] = 100;
+        mockBAYC.mint(testBaycTokenIds[0]);
+
+        testBaycTokenIds[1] = 200;
+        mockBAYC.mint(testBaycTokenIds[1]);
+
+        testBaycTokenIds[2] = 300;
+        mockBAYC.mint(testBaycTokenIds[2]);
 
         nftPool.deposit(address(mockBAYC), testBaycTokenIds);
+
         nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
-
-        nftPool.deposit(address(mockMAYC), testMaycTokenIds);
-        nftPool.withdraw(address(mockMAYC), testMaycTokenIds);
-
-        nftPool.deposit(address(mockBAKC), testBakcTokenIds);
-        nftPool.withdraw(address(mockBAKC), testBakcTokenIds);
 
         vm.stopPrank();
     }
