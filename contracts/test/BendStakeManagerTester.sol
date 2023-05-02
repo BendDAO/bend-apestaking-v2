@@ -3,10 +3,6 @@ pragma solidity 0.8.18;
 
 import {BendStakeManager, IApeCoinStaking} from "../BendStakeManager.sol";
 
-/**
- * @title MintableERC721
- * @dev ERC721 minting logic
- */
 contract BendStakeManagerTester is BendStakeManager {
     function collectFee(uint256 rewardsAmount_) external returns (uint256 feeAmount) {
         return _collectFee(rewardsAmount_);

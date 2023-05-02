@@ -558,6 +558,10 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _distributeRewards(address nft_, uint256 rewardsAmount_) internal {
+        require(
+            address(rewardsStrategies[nft_]) != address(0),
+            "BendStakeManager: reward strategy can't be zero address"
+        );
         //TODO: static call
         uint256 nftPoolRewards = rewardsStrategies[nft_].calculateNftRewards(rewardsAmount_);
 

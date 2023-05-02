@@ -126,7 +126,6 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         PoolState storage pool = poolStates[nft_];
         uint256 tokenId_;
         uint256 claimableRewards;
-
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
             require(
@@ -144,7 +143,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
 
         if (claimableRewards > 0) {
             coinPool.withdraw(claimableRewards, receiver_, address(this));
-            emit RewardClaimed(nft_, tokenIds_, receiver_, claimableRewards);
+
+            emit RewardClaimed(nft_, tokenIds_, receiver_, claimableRewards, pool.accumulatedRewardsPerNft);
         }
     }
 
@@ -175,7 +175,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
-        IERC20Upgradeable(apeCoin).safeTransferFrom(_msgSender(), address(this), rewardsAmount_);
+        apeCoin.safeTransferFrom(_msgSender(), address(this), rewardsAmount_);
 
         PoolState storage pool = poolStates[nft_];
         pool.accumulatedRewardsPerNft += ((rewardsAmount_ * APE_COIN_PRECISION) /

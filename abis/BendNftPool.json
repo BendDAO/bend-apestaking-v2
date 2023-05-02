@@ -107,6 +107,12 @@
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "rewardsDebt",
+        "type": "uint256"
       }
     ],
     "name": "RewardClaimed",

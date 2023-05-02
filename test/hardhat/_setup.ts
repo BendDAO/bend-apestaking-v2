@@ -11,6 +11,7 @@ import {
   INftPool,
   BendStakeManagerTester,
   IDelegationRegistry,
+  IRewardsStrategy,
 } from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -43,6 +44,9 @@ export interface Contracts {
   bendStakeManager: BendStakeManagerTester;
   bendCoinPool: ICoinPool;
   bendNftPool: INftPool;
+  baycStrategy: IRewardsStrategy;
+  maycStrategy: IRewardsStrategy;
+  bakcStrategy: IRewardsStrategy;
 }
 
 export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
@@ -149,6 +153,9 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
     1701284400,
     BigNumber.from("856000000000000000000")
   );
+  contracts.bendStakeManager.updateRewardsStrategy(contracts.bayc.address, contracts.baycStrategy.address);
+  contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.maycStrategy.address);
+  contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakcStrategy.address);
 }
 
 export async function setupContracts(): Promise<Contracts> {
@@ -195,6 +202,10 @@ export async function setupContracts(): Promise<Contracts> {
     stBakc.address
   );
 
+  const baycStrategy = await deployContract<IRewardsStrategy>("BaycStrategy", []);
+  const maycStrategy = await deployContract<IRewardsStrategy>("MaycStrategy", []);
+  const bakcStrategy = await deployContract<IRewardsStrategy>("BakcStrategy", []);
+
   return {
     initialized: true,
     delegateCash,
@@ -210,6 +221,9 @@ export async function setupContracts(): Promise<Contracts> {
     bendStakeManager,
     bendCoinPool,
     bendNftPool,
+    baycStrategy,
+    maycStrategy,
+    bakcStrategy,
   } as Contracts;
 }
 

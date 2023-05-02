@@ -12,7 +12,13 @@ interface INftPool {
         uint256 accumulatedRewardsPerNft
     );
 
-    event RewardClaimed(address indexed nft, uint256[] indexed tokenIds, address indexed receiver, uint256 amount);
+    event RewardClaimed(
+        address indexed nft,
+        uint256[] indexed tokenIds,
+        address indexed receiver,
+        uint256 amount,
+        uint256 rewardsDebt
+    );
 
     event NftDeposited(address indexed nft, uint256[] indexed tokenIds, address indexed owner);
 
