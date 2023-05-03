@@ -46,6 +46,8 @@ abstract contract SetupHelper is Test {
     address payable botAdmin;
 
     // mocked contracts
+    MintableERC20 internal mockWETH;
+    MintableERC20 internal mockUSDT;
     MintableERC20 internal mockApeCoin;
     MintableERC721 internal mockBAYC;
     MintableERC721 internal mockMAYC;
@@ -80,6 +82,8 @@ abstract contract SetupHelper is Test {
         mockDelegationRegistry = new DelegationRegistry();
 
         // mocked ERC20 and NFTs
+        mockWETH = new MintableERC20("WETH", "WETH", 18);
+        mockUSDT = new MintableERC20("USDT", "USDT", 6);
         mockApeCoin = new MintableERC20("ApeCoin", "APE", 18);
 
         mockBAYC = new MintableERC721("Mock BAYC", "BAYC");
