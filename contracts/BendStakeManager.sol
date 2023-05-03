@@ -26,16 +26,22 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
     mapping(address => IRewardsStrategy) public rewardsStrategies;
     mapping(uint256 => EnumerableSetUpgradeable.UintSet) private _stakedTokenIds;
+
     uint256 public override fee;
     address public override feeRecipient;
     uint256 public override pendingFeeAmount;
+    uint256 public apeCoinPoolStakedAmount;
 
     IApeCoinStaking public apeCoinStaking;
     IERC20Upgradeable public apeCoin;
+    address public bayc;
+    address public mayc;
+    address public bakc;
+
     INftVault public nftVault;
     ICoinPool public coinPool;
     INftPool public nftPool;
-    uint256 public apeCoinPoolStakedAmount;
+
     address public botAdmin;
 
     modifier onlyBot() {
@@ -44,12 +50,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     modifier onlyApe(address nft_) {
-        require(
-            nft_ == address(apeCoinStaking.bayc()) ||
-                nft_ == address(apeCoinStaking.mayc()) ||
-                nft_ == address(apeCoinStaking.bakc()),
-            "BendStakeManager: nft must be ape"
-        );
+        require(nft_ == bayc || nft_ == mayc || nft_ == bakc, "BendStakeManager: nft must be ape");
         _;
     }
 
@@ -83,6 +84,10 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         apeCoin.approve(address(coinPool), type(uint256).max);
         apeCoin.approve(address(nftPool), type(uint256).max);
         apeCoin.approve(address(nftVault), type(uint256).max);
+
+        bayc = address(apeCoinStaking.bayc());
+        mayc = address(apeCoinStaking.mayc());
+        bakc = address(apeCoinStaking.bakc());
     }
 
     function updateFee(uint256 fee_) external onlyOwner {
@@ -371,7 +376,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     function _unstakeBayc(uint256[] memory tokenIds_) internal {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
         uint256 tokenId_;
-        address nft_ = address(apeCoinStaking.bayc());
+        address nft_ = bayc;
 
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
@@ -393,7 +398,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
     function _claimBayc(uint256[] memory tokenIds_) internal {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
-        address nft_ = address(apeCoinStaking.bayc());
+        address nft_ = bayc;
         nftVault.claimBaycPool(tokenIds_, address(this));
         rewardsAmount = apeCoin.balanceOf(address(this)) - rewardsAmount;
         rewardsAmount -= _collectFee(rewardsAmount);
@@ -418,7 +423,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     function _unstakeMayc(uint256[] memory tokenIds_) internal {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
         uint256 tokenId_;
-        address nft_ = address(apeCoinStaking.mayc());
+        address nft_ = mayc;
 
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
@@ -442,16 +447,17 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
     function _claimMayc(uint256[] memory tokenIds_) internal {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
-        address nft_ = address(apeCoinStaking.mayc());
+        address nft_ = mayc;
         nftVault.claimMaycPool(tokenIds_, address(this));
         rewardsAmount = apeCoin.balanceOf(address(this)) - rewardsAmount;
         rewardsAmount -= _collectFee(rewardsAmount);
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function _stakeBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        internal
-    {
+    function _stakeBakc(
+        IApeCoinStaking.PairNft[] memory baycPairs_,
+        IApeCoinStaking.PairNft[] memory maycPairs_
+    ) internal {
         IApeCoinStaking.PairNftDepositWithAmount[]
             memory baycPairsWithAmount_ = new IApeCoinStaking.PairNftDepositWithAmount[](baycPairs_.length);
 
@@ -487,10 +493,11 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         nftVault.stakeBakcPool(baycPairsWithAmount_, maycPairsWithAmount_);
     }
 
-    function _unstakeBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        internal
-    {
-        address nft_ = address(apeCoinStaking.bakc());
+    function _unstakeBakc(
+        IApeCoinStaking.PairNft[] memory baycPairs_,
+        IApeCoinStaking.PairNft[] memory maycPairs_
+    ) internal {
+        address nft_ = bakc;
         IApeCoinStaking.PairNftWithdrawWithAmount[]
             memory baycPairsWithAmount_ = new IApeCoinStaking.PairNftWithdrawWithAmount[](baycPairs_.length);
 
@@ -534,11 +541,12 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _distributeRewards(nft_, rewardsAmount);
     }
 
-    function _claimBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        internal
-    {
+    function _claimBakc(
+        IApeCoinStaking.PairNft[] memory baycPairs_,
+        IApeCoinStaking.PairNft[] memory maycPairs_
+    ) internal {
         uint256 rewardsAmount = apeCoin.balanceOf(address(this));
-        address nft_ = address(apeCoinStaking.bakc());
+        address nft_ = bakc;
         nftVault.claimBakcPool(baycPairs_, maycPairs_, address(this));
         rewardsAmount = apeCoin.balanceOf(address(this)) - rewardsAmount;
         rewardsAmount -= _collectFee(rewardsAmount);
@@ -546,7 +554,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _withdrawRefund(address nft_) internal {
-        INftVault.Refund memory refund = nftVault.refundOf(address(apeCoinStaking.bayc()), address(this));
+        INftVault.Refund memory refund = nftVault.refundOf(bayc, address(this));
 
         if (refund.principal > 0) {
             coinPool.receiveApeCoin(refund.principal, 0);
@@ -573,9 +581,9 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _withdrawTotalRefund() internal {
-        _withdrawRefund(address(apeCoinStaking.bayc()));
-        _withdrawRefund(address(apeCoinStaking.mayc()));
-        _withdrawRefund(address(apeCoinStaking.bakc()));
+        _withdrawRefund(bayc);
+        _withdrawRefund(mayc);
+        _withdrawRefund(bakc);
     }
 
     function _refundOf(address nft_) internal view returns (uint256 principal, uint256 reward) {
@@ -594,13 +602,13 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _totalRefund() internal view returns (uint256 principal, uint256 reward) {
-        INftVault.Refund memory refund_ = nftVault.refundOf(address(apeCoinStaking.bayc()), address(this));
+        INftVault.Refund memory refund_ = nftVault.refundOf(bayc, address(this));
         principal += refund_.principal;
         reward += refund_.reward;
-        refund_ = nftVault.refundOf(address(apeCoinStaking.mayc()), address(this));
+        refund_ = nftVault.refundOf(mayc, address(this));
         principal += refund_.principal;
         reward += refund_.reward;
-        refund_ = nftVault.refundOf(address(apeCoinStaking.bakc()), address(this));
+        refund_ = nftVault.refundOf(bakc, address(this));
         principal += refund_.principal;
         reward += refund_.reward;
     }
@@ -616,17 +624,17 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
     function compound(CompoundArgs calldata args_) external override onlyBot {
         // withdraw refunds which caused by users active burn the staked NFT
-        address nft_ = address(apeCoinStaking.bayc());
+        address nft_ = bayc;
         (uint256 principal, ) = _refundOf(address(nft_));
         if (principal > 0) {
             _withdrawRefund(nft_);
         }
-        nft_ = address(apeCoinStaking.mayc());
+        nft_ = mayc;
         (principal, ) = _refundOf(address(nft_));
         if (principal > 0) {
             _withdrawRefund(nft_);
         }
-        nft_ = address(apeCoinStaking.bakc());
+        nft_ = bakc;
         (principal, ) = _refundOf(address(nft_));
         if (principal > 0) {
             _withdrawRefund(nft_);
