@@ -1,8 +1,18 @@
 {
   "editor.formatOnSave": false,
   "files.exclude": {
-    "**/.git": true, // this is a default value
-    "**/.DS_Store": true, // this is a default value
-    ".history/**": true // this is a default value
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    ".history/**": true,
+    "artifacts": true,
+    "cache": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true
   }
 }
