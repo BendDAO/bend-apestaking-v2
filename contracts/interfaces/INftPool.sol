@@ -39,11 +39,7 @@ interface INftPool {
     function withdraw(address nft_, uint256[] calldata tokenIds_) external;
 
     // bacAPE
-    function claim(
-        address nft_,
-        uint256[] calldata tokenIds_,
-        address delegateVault_
-    ) external;
+    function claim(address nft_, uint256[] calldata tokenIds_, address delegateVault_) external;
 
     // rewards
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external;

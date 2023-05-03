@@ -69,11 +69,7 @@ interface IDelegationRegistry {
      * @param contract_ The address for the contract you're delegating
      * @param value Whether to enable or disable delegation for this address, true for setting and false for revoking
      */
-    function delegateForContract(
-        address delegate,
-        address contract_,
-        bool value
-    ) external;
+    function delegateForContract(address delegate, address contract_, bool value) external;
 
     /**
      * @notice Allow the delegate to act on your behalf for a specific token
@@ -82,12 +78,7 @@ interface IDelegationRegistry {
      * @param tokenId The token id for the token you're delegating
      * @param value Whether to enable or disable delegation for this address, true for setting and false for revoking
      */
-    function delegateForToken(
-        address delegate,
-        address contract_,
-        uint256 tokenId,
-        bool value
-    ) external;
+    function delegateForToken(address delegate, address contract_, uint256 tokenId, bool value) external;
 
     /**
      * @notice Revoke all delegates
@@ -172,11 +163,7 @@ interface IDelegationRegistry {
      * @param contract_ The address for the contract you're delegating
      * @param vault The cold wallet who issued the delegation
      */
-    function checkDelegateForContract(
-        address delegate,
-        address vault,
-        address contract_
-    ) external view returns (bool);
+    function checkDelegateForContract(address delegate, address vault, address contract_) external view returns (bool);
 
     /**
      * @notice Returns true if the address is delegated to act on your behalf for a specific token, the token's contract or an entire vault

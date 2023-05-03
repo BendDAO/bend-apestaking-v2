@@ -55,10 +55,10 @@ export const verifyEtherscanContract = async (
     fs.writeSync(fd, `module.exports = ${JSON.stringify([...constructorArguments])};`);
 
     const params = {
-      address: address,
+      address,
       contract,
       libraries,
-      constructorArguments: constructorArguments,
+      constructorArguments,
       constructorArgsParams: constructorArguments,
       constructorArgs: path,
       relatedSources: true,

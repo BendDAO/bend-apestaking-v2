@@ -25,19 +25,10 @@ interface INftVault is IERC721Receiver {
 
     // delegate.cash
 
-    function setDelegateCash(
-        address delegate_,
-        address nft_,
-        uint256[] calldata tokenIds,
-        bool value
-    ) external;
+    function setDelegateCash(address delegate_, address nft_, uint256[] calldata tokenIds, bool value) external;
 
     // deposit nft
-    function depositNft(
-        address nft_,
-        uint256[] calldata tokenIds_,
-        address staker_
-    ) external;
+    function depositNft(address nft_, uint256[] calldata tokenIds_, address staker_) external;
 
     // withdraw nft
     function withdrawNft(address nft_, uint256[] calldata tokenIds_) external;
@@ -56,13 +47,15 @@ interface INftVault is IERC721Receiver {
     ) external;
 
     // unstake
-    function unstakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
-        external
-        returns (uint256 principal, uint256 rewards);
+    function unstakeBaycPool(
+        IApeCoinStaking.SingleNft[] calldata nfts_,
+        address recipient_
+    ) external returns (uint256 principal, uint256 rewards);
 
-    function unstakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
-        external
-        returns (uint256 principal, uint256 rewards);
+    function unstakeMaycPool(
+        IApeCoinStaking.SingleNft[] calldata nfts_,
+        address recipient_
+    ) external returns (uint256 principal, uint256 rewards);
 
     function unstakeBakcPool(
         IApeCoinStaking.PairNftWithdrawWithAmount[] calldata baycPairs_,

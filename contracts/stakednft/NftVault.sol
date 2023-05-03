@@ -129,11 +129,7 @@ contract NftVault is INftVault {
         }
     }
 
-    function depositNft(
-        address nft_,
-        uint256[] calldata tokenIds_,
-        address staker_
-    ) external override onlyApe(nft_) {
+    function depositNft(address nft_, uint256[] calldata tokenIds_, address staker_) external override onlyApe(nft_) {
         IApeCoinStaking.Position memory position_;
 
         // transfer nft and set permission
@@ -401,33 +397,21 @@ contract NftVault is INftVault {
         apeCoin.safeTransfer(msg.sender, amount);
     }
 
-    function _increasePosition(
-        address nft_,
-        address staker_,
-        uint256 stakedAmount_
-    ) private {
+    function _increasePosition(address nft_, address staker_, uint256 stakedAmount_) private {
         Position storage position_ = _positions[nft_][staker_];
         position_.stakedAmount += stakedAmount_;
         position_.rewardsDebt += (stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare)
             .toInt256();
     }
 
-    function _decreasePosition(
-        address nft_,
-        address staker_,
-        uint256 stakedAmount_
-    ) private {
+    function _decreasePosition(address nft_, address staker_, uint256 stakedAmount_) private {
         Position storage position_ = _positions[nft_][staker_];
         position_.stakedAmount -= stakedAmount_;
         position_.rewardsDebt -= (stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare)
             .toInt256();
     }
 
-    function _updateRewardsDebt(
-        address nft_,
-        address staker_,
-        uint256 claimedRewardsAmount_
-    ) private {
+    function _updateRewardsDebt(address nft_, address staker_, uint256 claimedRewardsAmount_) private {
         Position storage position_ = _positions[nft_][staker_];
         position_.rewardsDebt += (claimedRewardsAmount_ * ApeStakingLib.APE_COIN_PRECISION).toInt256();
     }
@@ -446,11 +430,10 @@ contract NftVault is INftVault {
         _increasePosition(bayc, msg.sender, totalStakedAmount);
     }
 
-    function unstakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
-        external
-        override
-        returns (uint256 principal, uint256 rewards)
-    {
+    function unstakeBaycPool(
+        IApeCoinStaking.SingleNft[] calldata nfts_,
+        address recipient_
+    ) external override returns (uint256 principal, uint256 rewards) {
         address nft_ = bayc;
         IApeCoinStaking.SingleNft memory singleNft_;
         for (uint256 i = 0; i < nfts_.length; i++) {
@@ -468,11 +451,10 @@ contract NftVault is INftVault {
         _decreasePosition(nft_, msg.sender, principal);
     }
 
-    function claimBaycPool(uint256[] calldata tokenIds_, address recipient_)
-        external
-        override
-        returns (uint256 rewards)
-    {
+    function claimBaycPool(
+        uint256[] calldata tokenIds_,
+        address recipient_
+    ) external override returns (uint256 rewards) {
         address nft_ = bayc;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(msg.sender == _stakerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft staker");
@@ -498,11 +480,10 @@ contract NftVault is INftVault {
         _increasePosition(mayc, msg.sender, totalApeCoinAmount);
     }
 
-    function unstakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_, address recipient_)
-        external
-        override
-        returns (uint256 principal, uint256 rewards)
-    {
+    function unstakeMaycPool(
+        IApeCoinStaking.SingleNft[] calldata nfts_,
+        address recipient_
+    ) external override returns (uint256 principal, uint256 rewards) {
         address nft_ = mayc;
         IApeCoinStaking.SingleNft memory singleNft_;
         for (uint256 i = 0; i < nfts_.length; i++) {
@@ -522,11 +503,10 @@ contract NftVault is INftVault {
         _decreasePosition(nft_, msg.sender, principal);
     }
 
-    function claimMaycPool(uint256[] calldata tokenIds_, address recipient_)
-        external
-        override
-        returns (uint256 rewards)
-    {
+    function claimMaycPool(
+        uint256[] calldata tokenIds_,
+        address recipient_
+    ) external override returns (uint256 rewards) {
         address nft_ = mayc;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(msg.sender == _stakerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft staker");

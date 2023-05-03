@@ -77,11 +77,7 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function delegateForContract(
-        address delegate,
-        address contract_,
-        bool value
-    ) external override {
+    function delegateForContract(address delegate, address contract_, bool value) external override {
         bytes32 delegationHash = _computeContractDelegationHash(msg.sender, delegate, contract_);
         _setDelegationValues(
             delegate,
@@ -98,12 +94,7 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function delegateForToken(
-        address delegate,
-        address contract_,
-        uint256 tokenId,
-        bool value
-    ) external override {
+    function delegateForToken(address delegate, address contract_, uint256 tokenId, bool value) external override {
         bytes32 delegationHash = _computeTokenDelegationHash(msg.sender, delegate, contract_, tokenId);
         _setDelegationValues(
             delegate,
@@ -220,11 +211,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getDelegationsByDelegate(address delegate)
-        external
-        view
-        returns (IDelegationRegistry.DelegationInfo[] memory info)
-    {
+    function getDelegationsByDelegate(
+        address delegate
+    ) external view returns (IDelegationRegistry.DelegationInfo[] memory info) {
         EnumerableSet.Bytes32Set storage potentialDelegationHashes = delegationHashes[delegate];
         uint256 potentialDelegationHashesLength = potentialDelegationHashes.length();
         uint256 delegationCount = 0;
@@ -276,12 +265,10 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getDelegatesForContract(address vault, address contract_)
-        external
-        view
-        override
-        returns (address[] memory delegates)
-    {
+    function getDelegatesForContract(
+        address vault,
+        address contract_
+    ) external view override returns (address[] memory delegates) {
         return _getDelegatesForLevel(vault, IDelegationRegistry.DelegationType.CONTRACT, contract_, 0);
     }
 
@@ -351,11 +338,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getContractLevelDelegations(address vault)
-        external
-        view
-        returns (IDelegationRegistry.ContractDelegation[] memory contractDelegations)
-    {
+    function getContractLevelDelegations(
+        address vault
+    ) external view returns (IDelegationRegistry.ContractDelegation[] memory contractDelegations) {
         EnumerableSet.Bytes32Set storage delegationHashes_ = delegations[vault][vaultVersion[vault]];
         uint256 potentialLength = delegationHashes_.length();
         uint256 delegationCount = 0;
@@ -390,11 +375,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getTokenLevelDelegations(address vault)
-        external
-        view
-        returns (IDelegationRegistry.TokenDelegation[] memory tokenDelegations)
-    {
+    function getTokenLevelDelegations(
+        address vault
+    ) external view returns (IDelegationRegistry.TokenDelegation[] memory tokenDelegations) {
         EnumerableSet.Bytes32Set storage delegationHashes_ = delegations[vault][vaultVersion[vault]];
         uint256 potentialLength = delegationHashes_.length();
         uint256 delegationCount = 0;

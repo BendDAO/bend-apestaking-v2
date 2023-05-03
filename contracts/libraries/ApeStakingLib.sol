@@ -14,11 +14,10 @@ library ApeStakingLib {
     uint256 internal constant MAYC_POOL_ID = 2;
     uint256 internal constant BAKC_POOL_ID = 3;
 
-    function getCurrentTimeRange(IApeCoinStaking apeCoinStaking_, uint256 poolId)
-        internal
-        view
-        returns (IApeCoinStaking.TimeRange memory)
-    {
+    function getCurrentTimeRange(
+        IApeCoinStaking apeCoinStaking_,
+        uint256 poolId
+    ) internal view returns (IApeCoinStaking.TimeRange memory) {
         (
             IApeCoinStaking.PoolUI memory apeCoinPoolUI,
             IApeCoinStaking.PoolUI memory baycPoolUI,
@@ -66,11 +65,10 @@ library ApeStakingLib {
         return apeCoinStaking_.nftPosition(getNftPoolId(apeCoinStaking_, nft_), tokenId_);
     }
 
-    function getNftPool(IApeCoinStaking apeCoinStaking_, address nft_)
-        internal
-        view
-        returns (IApeCoinStaking.PoolWithoutTimeRange memory)
-    {
+    function getNftPool(
+        IApeCoinStaking apeCoinStaking_,
+        address nft_
+    ) internal view returns (IApeCoinStaking.PoolWithoutTimeRange memory) {
         return apeCoinStaking_.pools(getNftPoolId(apeCoinStaking_, nft_));
     }
 

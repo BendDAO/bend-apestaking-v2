@@ -48,21 +48,24 @@ contract BendStakeManagerTester is BendStakeManager {
         _claimMayc(tokenIds_);
     }
 
-    function stakeBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        external
-    {
+    function stakeBakc(
+        IApeCoinStaking.PairNft[] memory baycPairs_,
+        IApeCoinStaking.PairNft[] memory maycPairs_
+    ) external {
         _stakeBakc(baycPairs_, maycPairs_);
     }
 
-    function unstakeBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        external
-    {
+    function unstakeBakc(
+        IApeCoinStaking.PairNft[] memory baycPairs_,
+        IApeCoinStaking.PairNft[] memory maycPairs_
+    ) external {
         _unstakeBakc(baycPairs_, maycPairs_);
     }
 
-    function claimBakc(IApeCoinStaking.PairNft[] memory baycPairs_, IApeCoinStaking.PairNft[] memory maycPairs_)
-        external
-    {
+    function claimBakc(
+        IApeCoinStaking.PairNft[] memory baycPairs_,
+        IApeCoinStaking.PairNft[] memory maycPairs_
+    ) external {
         _claimBakc(baycPairs_, maycPairs_);
     }
 

@@ -37,31 +37,18 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
         IERC721Metadata(_nft).setApprovalForAll(address(nftVault), true);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(IERC165, ERC721Enumerable)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(IERC165, ERC721Enumerable) returns (bool) {
         return interfaceId == type(IStakedNft).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) external view override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) external view override returns (bytes4) {
         require(_msgSender() == address(_nft), "StNft: nft not acceptable");
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function mint(
-        address staker_,
-        address to_,
-        uint256[] calldata tokenIds_
-    ) external override {
+    function mint(address staker_, address to_, uint256[] calldata tokenIds_) external override {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             _nft.safeTransferFrom(_msgSender(), address(this), tokenIds_[i]);
         }
@@ -142,11 +129,7 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
         return _nft.tokenURI(tokenId_);
     }
 
-    function setDelegateCash(
-        address delegate_,
-        uint256[] calldata tokenIds_,
-        bool value_
-    ) external override {
+    function setDelegateCash(address delegate_, uint256[] calldata tokenIds_, bool value_) external override {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(_msgSender() == ownerOf(tokenIds_[i]), "stNft: only owner can delegate");
         }

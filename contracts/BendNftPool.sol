@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.18;
+
 import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -117,12 +118,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         emit NftWithdrawn(nft_, tokenIds_, _msgSender());
     }
 
-    function _claim(
-        address owner_,
-        address receiver_,
-        address nft_,
-        uint256[] calldata tokenIds_
-    ) internal {
+    function _claim(address owner_, address receiver_, address nft_, uint256[] calldata tokenIds_) internal {
         PoolState storage pool = poolStates[nft_];
         uint256 tokenId_;
         uint256 claimableRewards;
@@ -148,11 +144,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         }
     }
 
-    function claim(
-        address nft_,
-        uint256[] calldata tokenIds_,
-        address delegateVault_
-    ) external override onlyApe(nft_) {
+    function claim(address nft_, uint256[] calldata tokenIds_, address delegateVault_) external override onlyApe(nft_) {
         address owner = _msgSender();
         address receiver = _msgSender();
         if (delegateVault_ != address(0)) {
@@ -191,13 +183,10 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         );
     }
 
-    function claimable(address nft_, uint256[] calldata tokenIds_)
-        external
-        view
-        override
-        onlyApe(nft_)
-        returns (uint256 amount)
-    {
+    function claimable(
+        address nft_,
+        uint256[] calldata tokenIds_
+    ) external view override onlyApe(nft_) returns (uint256 amount) {
         PoolState storage pool = poolStates[nft_];
         uint256 tokenId_ = 0;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -208,11 +197,9 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         }
     }
 
-    function getPoolStateUI(address nft_)
-        external
-        view
-        returns (uint256 totalNftAmount, uint256 accumulatedRewardsPerNft)
-    {
+    function getPoolStateUI(
+        address nft_
+    ) external view returns (uint256 totalNftAmount, uint256 accumulatedRewardsPerNft) {
         PoolState storage pool = poolStates[nft_];
         totalNftAmount = pool.stakedNft.totalSupply();
         accumulatedRewardsPerNft = pool.accumulatedRewardsPerNft;
@@ -224,10 +211,10 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function onERC721Received(
-        address, /*operator*/
-        address, /*from*/
-        uint256, /*tokenId*/
-        bytes calldata /*data*/
+        address,
+        /*operator*/ address,
+        /*from*/ uint256,
+        /*tokenId*/ bytes calldata /*data*/
     ) external view returns (bytes4) {
         bool isValidNFT = (bayc == msg.sender || mayc == msg.sender || bakc == msg.sender);
         if (!isValidNFT) {
@@ -243,11 +230,10 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
      * @dev Rounds down the claimable rewards to the nearest integer.
      * Because ERC4626 will round down the rewards when withdraw.
      */
-    function _round_claimble_rewards(uint256 accumulatedRewardsPerNft, uint256 rewardsDebt)
-        private
-        pure
-        returns (uint256 rewards)
-    {
+    function _round_claimble_rewards(
+        uint256 accumulatedRewardsPerNft,
+        uint256 rewardsDebt
+    ) private pure returns (uint256 rewards) {
         rewards = (accumulatedRewardsPerNft - rewardsDebt) / APE_COIN_PRECISION;
         if (rewards > 0) {
             rewards -= 1;

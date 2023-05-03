@@ -9,7 +9,7 @@ contract BendCoinPoolTest is SetupHelper {
 
     function testSingleUserDepositWithdrawNoRewards() public {
         address testUser = testUsers[0];
-        uint256 depositAmount = 1000000 * 10**18;
+        uint256 depositAmount = 1000000 * 10 ** 18;
 
         vm.startPrank(testUser);
 
@@ -34,8 +34,8 @@ contract BendCoinPoolTest is SetupHelper {
 
     function testSingleUserDepositWithdrawHasRewards() public {
         address testUser = testUsers[0];
-        uint256 depositAmount = 1000000 * 10**18;
-        uint256 rewardsAmount = 200000 * 10**18;
+        uint256 depositAmount = 1000000 * 10 ** 18;
+        uint256 rewardsAmount = 200000 * 10 ** 18;
 
         // deposit some coins
         vm.startPrank(testUser);
@@ -74,7 +74,7 @@ contract BendCoinPoolTest is SetupHelper {
         for (userIndex = 0; userIndex < userCount; userIndex++) {
             vm.startPrank(testUsers[userIndex]);
 
-            depositAmounts[userIndex] = 1000000 * 10**18 * (userIndex + 1);
+            depositAmounts[userIndex] = 1000000 * 10 ** 18 * (userIndex + 1);
             mockApeCoin.mint(depositAmounts[userIndex]);
             mockApeCoin.approve(address(coinPool), depositAmounts[userIndex]);
 
@@ -104,12 +104,12 @@ contract BendCoinPoolTest is SetupHelper {
         uint256 userCount = 3;
         uint256 totalDepositAmount = 0;
         uint256[] memory depositAmounts = new uint256[](userCount);
-        uint256 totalRewardsAmount = 100000 * 10**18 * userCount;
+        uint256 totalRewardsAmount = 100000 * 10 ** 18 * userCount;
 
         for (userIndex = 0; userIndex < userCount; userIndex++) {
             vm.startPrank(testUsers[userIndex]);
 
-            depositAmounts[userIndex] = 1000000 * 10**18 * (userIndex + 1);
+            depositAmounts[userIndex] = 1000000 * 10 ** 18 * (userIndex + 1);
             totalDepositAmount += depositAmounts[userIndex];
 
             mockApeCoin.mint(depositAmounts[userIndex]);

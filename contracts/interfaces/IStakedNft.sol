@@ -6,11 +6,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/interfaces/IERC721Receive
 import {IERC721Enumerable} from "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
 
 interface IStakedNft is IERC721Metadata, IERC721Receiver, IERC721Enumerable {
-    function mint(
-        address staker,
-        address to,
-        uint256[] calldata tokenIds
-    ) external;
+    function mint(address staker, address to, uint256[] calldata tokenIds) external;
 
     function burn(uint256[] calldata tokenIds) external;
 
@@ -38,9 +34,5 @@ interface IStakedNft is IERC721Metadata, IERC721Receiver, IERC721Enumerable {
 
     function underlyingAsset() external view returns (address);
 
-    function setDelegateCash(
-        address delegate,
-        uint256[] calldata tokenIds,
-        bool value
-    ) external;
+    function setDelegateCash(address delegate, uint256[] calldata tokenIds, bool value) external;
 }

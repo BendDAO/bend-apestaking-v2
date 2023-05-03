@@ -81,11 +81,7 @@ interface IApeCoinStaking {
 
     function nftContracts(uint256 poolId_) external view returns (address);
 
-    function rewardsBy(
-        uint256 poolId_,
-        uint256 from_,
-        uint256 to_
-    ) external view returns (uint256, uint256);
+    function rewardsBy(uint256 poolId_, uint256 from_, uint256 to_) external view returns (uint256, uint256);
 
     function apeCoin() external view returns (address);
 
@@ -93,15 +89,7 @@ interface IApeCoinStaking {
 
     function getTimeRangeBy(uint256 poolId_, uint256 index_) external view returns (TimeRange memory);
 
-    function getPoolsUI()
-        external
-        view
-        returns (
-            PoolUI memory,
-            PoolUI memory,
-            PoolUI memory,
-            PoolUI memory
-        );
+    function getPoolsUI() external view returns (PoolUI memory, PoolUI memory, PoolUI memory, PoolUI memory);
 
     function getSplitStakes(address address_) external view returns (DashboardStake[] memory);
 
@@ -113,18 +101,16 @@ interface IApeCoinStaking {
 
     function addressPosition(address addr_) external view returns (Position memory);
 
-    function pendingRewards(
-        uint256 poolId_,
-        address address_,
-        uint256 tokenId_
-    ) external view returns (uint256);
+    function pendingRewards(uint256 poolId_, address address_, uint256 tokenId_) external view returns (uint256);
 
     function depositBAYC(SingleNft[] calldata nfts_) external;
 
     function depositMAYC(SingleNft[] calldata nfts_) external;
 
-    function depositBAKC(PairNftDepositWithAmount[] calldata baycPairs_, PairNftDepositWithAmount[] calldata maycPairs_)
-        external;
+    function depositBAKC(
+        PairNftDepositWithAmount[] calldata baycPairs_,
+        PairNftDepositWithAmount[] calldata maycPairs_
+    ) external;
 
     function depositSelfApeCoin(uint256 amount_) external;
 
@@ -134,11 +120,7 @@ interface IApeCoinStaking {
 
     function claimMAYC(uint256[] calldata nfts_, address recipient_) external;
 
-    function claimBAKC(
-        PairNft[] calldata baycPairs_,
-        PairNft[] calldata maycPairs_,
-        address recipient_
-    ) external;
+    function claimBAKC(PairNft[] calldata baycPairs_, PairNft[] calldata maycPairs_, address recipient_) external;
 
     function withdrawBAYC(SingleNft[] calldata nfts_, address recipient_) external;
 
