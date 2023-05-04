@@ -1,7 +1,18 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { task } from "hardhat/config";
-import { BendCoinPool, BendNftPool, BendStakeManager } from "../typechain-types";
-import { APE_STAKING, BAKC, BAYC, DELEAGATE_CASH, FEE, FEE_RECIPIENT, getParams, MAYC } from "./config";
+import { BendCoinPool, BendNftPool, BendStakeManager, LendingMigrator } from "../typechain-types";
+import {
+  AAVE_ADDRESS_PROVIDER,
+  APE_STAKING,
+  BAKC,
+  BAYC,
+  BEND_ADDRESS_PROVIDER,
+  DELEAGATE_CASH,
+  FEE,
+  FEE_RECIPIENT,
+  getParams,
+  MAYC,
+} from "./config";
 import {
   deployContract,
   deployImplementation,
@@ -118,6 +129,13 @@ task("deploy:BakcStrategy", "Deploy BakcStrategy").setAction(async (_, { run }) 
   await deployContract("BakcStrategy", [], false);
 });
 
+task("deploy:LendingMigrator", "Deploy LendingMigrator").setAction(async (_, { run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  await deployProxyContractWithoutInit("LendingMigrator", [], false);
+});
+
 task("deploy:config:BendCoinPool", "Coinfig BendCoinPool").setAction(async (_, { network, run }) => {
   await run("set-DRE");
   await run("compile");
@@ -196,6 +214,27 @@ task("deploy:config:RewardsStrategy", "Coinfig RewardsStrategy").setAction(async
   await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(bayc, baycStrategy));
   await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(mayc, maycStrategy));
   await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(bakc, bakcStrategy));
+
+  console.log("ok");
+});
+
+task("deploy:config:LendingMigrator", "Coinfig LendingMigrator").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+  const deployer = await getDeploySigner();
+  const migrator = await getContractFromDB<LendingMigrator>("LendingMigrator");
+
+  const aaveProvider = getParams(AAVE_ADDRESS_PROVIDER, network.name);
+  const bendProvider = getParams(BEND_ADDRESS_PROVIDER, network.name);
+
+  const nftPool = await getContractAddressFromDB("BendNftPool");
+  const stBayc = await getContractAddressFromDB("StBAYC");
+  const stMayc = await getContractAddressFromDB("StMAYC");
+  const stBakc = await getContractAddressFromDB("StBAKC");
+
+  await waitForTx(
+    await migrator.connect(deployer).initialize(aaveProvider, bendProvider, nftPool, stBayc, stMayc, stBakc)
+  );
 
   console.log("ok");
 });

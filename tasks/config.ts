@@ -76,3 +76,13 @@ export const DELEAGATE_CASH: Params<string> = {
   [Network.goerli]: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   [Network.mainnet]: "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
+
+export const AAVE_ADDRESS_PROVIDER: Params<string> = {
+  [Network.goerli]: "0x94a675Fa2eFe076E99C126be1Bc80aedf4684190",
+  [Network.mainnet]: "0xb53c1a33016b2dc2ff3653530bff1848a515c8c5",
+};
+
+export const BEND_ADDRESS_PROVIDER: Params<string> = {
+  [Network.goerli]: "0x1cba0A3e18be7f210713c9AC9FE17955359cC99B",
+  [Network.mainnet]: "0x24451f47caf13b24f4b5034e1df6c0e401ec0e46",
+};

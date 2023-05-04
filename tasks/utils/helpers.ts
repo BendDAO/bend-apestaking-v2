@@ -46,12 +46,16 @@ export const getSignersAddresses = async (): Promise<string[]> =>
   await Promise.all((await getSigners()).map((signer) => signer.getAddress()));
 
 export const deployImplementation = async <ContractType extends Contract>(
-  contractName: string
+  contractName: string,
+  verify?: boolean
 ): Promise<ContractType> => {
   console.log("deploy", contractName);
   const instance = await (await DRE.ethers.getContractFactory(contractName)).connect(await getDeploySigner()).deploy();
-
   console.log("Impl address:", instance.address);
+
+  if (verify) {
+    await verifyEtherscanContract(instance.address, []);
+  }
 
   return instance as ContractType;
 };

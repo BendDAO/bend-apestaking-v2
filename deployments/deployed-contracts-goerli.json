@@ -38,5 +38,9 @@
   "BakcStrategy": {
     "address": "0x9476880b6B4bA882fC5e0f5f4F8E70150f3331CE",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "LendingMigrator": {
+    "address": "0xD26AB813453DAf2cCaA07e119BBd6FD93F6ADca0",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   }
 }
