@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import {IAaveLendPoolAddressesProvider} from "../misc/interfaces/IAaveLendPoolAddressesProvider.sol";
 
-contract MocKAaveLendPoolAddressesProvider is IAaveLendPoolAddressesProvider {
+contract MockAaveLendPoolAddressesProvider is IAaveLendPoolAddressesProvider {
     address public lendingPool;
 
     function setLendingPool(address lendingPool_) public {

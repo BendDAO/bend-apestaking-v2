@@ -1,6 +1,6 @@
 pragma solidity 0.8.18;
 
-import "../../contracts/test/MocKAaveLendPoolAddressesProvider.sol";
+import "../../contracts/test/MockAaveLendPoolAddressesProvider.sol";
 import "../../contracts/test/MockAaveLendPool.sol";
 import "../../contracts/test/MockBendLendPoolAddressesProvider.sol";
 import "../../contracts/test/MockBendLendPool.sol";
@@ -11,7 +11,7 @@ import "../../contracts/misc/LendingMigrator.sol";
 import "./SetupHelper.sol";
 
 contract LendingMigratorTest is SetupHelper {
-    MocKAaveLendPoolAddressesProvider mockAaveLendPoolAddressesProvider;
+    MockAaveLendPoolAddressesProvider mockAaveLendPoolAddressesProvider;
     MockAaveLendPool mockAaveLendPool;
     MockBendLendPoolAddressesProvider mockBendLendPoolAddressesProvider;
     MockBendLendPool mockBendLendPool;
@@ -42,7 +42,7 @@ contract LendingMigratorTest is SetupHelper {
     function setUp() public override {
         super.setUp();
 
-        mockAaveLendPoolAddressesProvider = new MocKAaveLendPoolAddressesProvider();
+        mockAaveLendPoolAddressesProvider = new MockAaveLendPoolAddressesProvider();
         mockAaveLendPool = new MockAaveLendPool();
         mockAaveLendPoolAddressesProvider.setLendingPool(address(mockAaveLendPool));
 
