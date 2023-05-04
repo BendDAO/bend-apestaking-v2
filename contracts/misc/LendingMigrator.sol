@@ -68,7 +68,7 @@ contract LendingMigrator is IAaveFlashLoanReceiver, ReentrancyGuardUpgradeable, 
         address[] calldata assets,
         uint256[] calldata amounts,
         uint256[] calldata premiums,
-        address, /*initiator*/
+        address /*initiator*/,
         bytes calldata params
     ) external returns (bool) {
         require(msg.sender == address(aaveLendPool), "Migrator: caller must be aave lending pool");
@@ -185,12 +185,7 @@ contract LendingMigrator is IAaveFlashLoanReceiver, ReentrancyGuardUpgradeable, 
         }
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public virtual returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes memory) public virtual returns (bytes4) {
         return this.onERC721Received.selector;
     }
 }

@@ -46,16 +46,9 @@ contract MockBendLendPoolLoan is ILendPoolLoan {
         delete _loanDatas[loanId];
     }
 
-    function getLoanData(uint256 loanId)
-        public
-        view
-        returns (
-            address borrower,
-            address reserveAsset,
-            uint256 totalDebt,
-            uint256 bidFine
-        )
-    {
+    function getLoanData(
+        uint256 loanId
+    ) public view returns (address borrower, address reserveAsset, uint256 totalDebt, uint256 bidFine) {
         LoanData memory loanData = _loanDatas[loanId];
         borrower = loanData.borrower;
         reserveAsset = loanData.reserveAsset;

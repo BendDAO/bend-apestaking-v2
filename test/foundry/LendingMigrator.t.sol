@@ -53,19 +53,19 @@ contract LendingMigratorTest is SetupHelper {
         mockBendLendPoolAddressesProvider.setLendPoolLoan(address(mockBendLendPoolLoan));
         mockBendLendPool.setAddressesProvider(address(mockBendLendPoolAddressesProvider));
 
-        uint256 wethAmountAave = 1000000 * 10**18;
+        uint256 wethAmountAave = 1000000 * 10 ** 18;
         mockWETH.mint(wethAmountAave);
         mockWETH.transfer(address(mockAaveLendPool), wethAmountAave);
 
-        uint256 usdtAmountAave = 1000000 * 10**6;
+        uint256 usdtAmountAave = 1000000 * 10 ** 6;
         mockUSDT.mint(usdtAmountAave);
         mockUSDT.transfer(address(mockAaveLendPool), usdtAmountAave);
 
-        uint256 wethAmountBend = 1000000 * 10**18;
+        uint256 wethAmountBend = 1000000 * 10 ** 18;
         mockWETH.mint(wethAmountBend);
         mockWETH.transfer(address(mockBendLendPool), wethAmountBend);
 
-        uint256 usdtAmountBend = 1000000 * 10**6;
+        uint256 usdtAmountBend = 1000000 * 10 ** 6;
         mockUSDT.mint(usdtAmountBend);
         mockUSDT.transfer(address(mockBendLendPool), usdtAmountBend);
 
@@ -111,7 +111,7 @@ contract LendingMigratorTest is SetupHelper {
             // mint & borrow
             mockBAYC.mint(vars.nftTokenIds[vars.i]);
 
-            vars.borrowAmounts[vars.i] = 1000 * 10**18 + (vars.i + 1);
+            vars.borrowAmounts[vars.i] = 1000 * 10 ** 18 + (vars.i + 1);
             mockBendLendPool.borrow(
                 address(mockWETH),
                 vars.borrowAmounts[vars.i],
@@ -177,7 +177,7 @@ contract LendingMigratorTest is SetupHelper {
             // mint & borrow
             mockBAYC.mint(vars.nftTokenIds[vars.i]);
 
-            vars.borrowAmounts[vars.i] = 1000 * 10**18 + (vars.i + 1);
+            vars.borrowAmounts[vars.i] = 1000 * 10 ** 18 + (vars.i + 1);
             mockBendLendPool.borrow(
                 address(mockWETH),
                 vars.borrowAmounts[vars.i],

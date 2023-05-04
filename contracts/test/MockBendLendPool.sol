@@ -21,7 +21,7 @@ contract MockBendLendPool is ILendPool {
         uint256 amount,
         address nftAsset,
         uint256 nftTokenId,
-        address, /*onBehalfOf*/
+        address /*onBehalfOf*/,
         uint16 /*referralCode*/
     ) external {
         MockBendLendPoolLoan lendPoolLoan = MockBendLendPoolLoan(
@@ -33,11 +33,7 @@ contract MockBendLendPool is ILendPool {
         IERC20(reserveAsset).transfer(msg.sender, amount);
     }
 
-    function repay(
-        address nftAsset,
-        uint256 nftTokenId,
-        uint256 amount
-    ) external returns (uint256, bool) {
+    function repay(address nftAsset, uint256 nftTokenId, uint256 amount) external returns (uint256, bool) {
         MockBendLendPoolLoan lendPoolLoan = MockBendLendPoolLoan(
             ILendPoolAddressesProvider(addressesProvider).getLendPoolLoan()
         );
@@ -64,12 +60,7 @@ contract MockBendLendPool is ILendPool {
         return (amount, true);
     }
 
-    function redeem(
-        address nftAsset,
-        uint256 nftTokenId,
-        uint256 amount,
-        uint256 bidFine
-    ) external returns (uint256) {
+    function redeem(address nftAsset, uint256 nftTokenId, uint256 amount, uint256 bidFine) external returns (uint256) {
         MockBendLendPoolLoan lendPoolLoan = MockBendLendPoolLoan(
             ILendPoolAddressesProvider(addressesProvider).getLendPoolLoan()
         );
@@ -89,7 +80,10 @@ contract MockBendLendPool is ILendPool {
         return amount;
     }
 
-    function getNftDebtData(address nftAsset, uint256 nftTokenId)
+    function getNftDebtData(
+        address nftAsset,
+        uint256 nftTokenId
+    )
         external
         view
         returns (
@@ -113,16 +107,13 @@ contract MockBendLendPool is ILendPool {
         healthFactor = 1e18;
     }
 
-    function getNftAuctionData(address nftAsset, uint256 nftTokenId)
+    function getNftAuctionData(
+        address nftAsset,
+        uint256 nftTokenId
+    )
         external
         view
-        returns (
-            uint256 loanId,
-            address bidderAddress,
-            uint256 bidPrice,
-            uint256 bidBorrowAmount,
-            uint256 bidFine
-        )
+        returns (uint256 loanId, address bidderAddress, uint256 bidPrice, uint256 bidBorrowAmount, uint256 bidFine)
     {
         MockBendLendPoolLoan lendPoolLoan = MockBendLendPoolLoan(
             ILendPoolAddressesProvider(addressesProvider).getLendPoolLoan()

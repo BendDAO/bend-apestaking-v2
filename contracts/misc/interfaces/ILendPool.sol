@@ -11,20 +11,14 @@ interface ILendPool {
         uint16 referralCode
     ) external;
 
-    function repay(
-        address nftAsset,
-        uint256 nftTokenId,
-        uint256 amount
-    ) external returns (uint256, bool);
+    function repay(address nftAsset, uint256 nftTokenId, uint256 amount) external returns (uint256, bool);
 
-    function redeem(
-        address nftAsset,
-        uint256 nftTokenId,
-        uint256 amount,
-        uint256 bidFine
-    ) external returns (uint256);
+    function redeem(address nftAsset, uint256 nftTokenId, uint256 amount, uint256 bidFine) external returns (uint256);
 
-    function getNftDebtData(address nftAsset, uint256 nftTokenId)
+    function getNftDebtData(
+        address nftAsset,
+        uint256 nftTokenId
+    )
         external
         view
         returns (
@@ -36,14 +30,11 @@ interface ILendPool {
             uint256 healthFactor
         );
 
-    function getNftAuctionData(address nftAsset, uint256 nftTokenId)
+    function getNftAuctionData(
+        address nftAsset,
+        uint256 nftTokenId
+    )
         external
         view
-        returns (
-            uint256 loanId,
-            address bidderAddress,
-            uint256 bidPrice,
-            uint256 bidBorrowAmount,
-            uint256 bidFine
-        );
+        returns (uint256 loanId, address bidderAddress, uint256 bidPrice, uint256 bidBorrowAmount, uint256 bidFine);
 }
