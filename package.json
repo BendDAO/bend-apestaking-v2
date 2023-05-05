@@ -39,6 +39,7 @@
     "lint:ts": "eslint '**/*.{js,jsx,ts,tsx}'",
     "prepare": "husky install",
     "test": "hardhat test",
+    "test:file": "npm run compile && hardhat test ./test/hardhat/setup.ts ./test/hardhat/${TEST_FILE}",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "TS_NODE_TRANSPILE_ONLY=true hardhat coverage && hardhat compile --force",
     "test:forge": "forge test -vvv",

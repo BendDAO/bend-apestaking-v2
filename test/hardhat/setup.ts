@@ -14,6 +14,12 @@ import {
   IRewardsStrategy,
   MockBNFTRegistry,
   MockBNFT,
+  MockAaveLendPoolAddressesProvider,
+  MockAaveLendPool,
+  MockBendLendPoolAddressesProvider,
+  MockBendLendPool,
+  MockBendLendPoolLoan,
+  LendingMigrator,
 } from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -54,6 +60,15 @@ export interface Contracts {
   baycStrategy: IRewardsStrategy;
   maycStrategy: IRewardsStrategy;
   bakcStrategy: IRewardsStrategy;
+  // lending pool
+  weth: MintableERC20;
+  usdt: MintableERC20;
+  mockAaveLendPoolAddressesProvider: MockAaveLendPoolAddressesProvider;
+  mockAaveLendPool: MockAaveLendPool;
+  mockBendLendPoolAddressesProvider: MockBendLendPoolAddressesProvider;
+  mockBendLendPool: MockBendLendPool;
+  mockBendLendPoolLoan: MockBendLendPoolLoan;
+  lendingMigrator: LendingMigrator;
 }
 
 export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
@@ -160,15 +175,15 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
     1701284400,
     BigNumber.from("856000000000000000000")
   );
-  contracts.bendStakeManager.updateRewardsStrategy(contracts.bayc.address, contracts.baycStrategy.address);
-  contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.maycStrategy.address);
-  contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakcStrategy.address);
+  await contracts.bendStakeManager.updateRewardsStrategy(contracts.bayc.address, contracts.baycStrategy.address);
+  await contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.maycStrategy.address);
+  await contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakcStrategy.address);
 
-  contracts.bendNftPool.setBNFTRegistry(contracts.bnftRegistry.address);
+  await contracts.bendNftPool.setBNFTRegistry(contracts.bnftRegistry.address);
 
-  contracts.bnftRegistry.setBNFTContract(contracts.stBayc.address, contracts.bnftStBayc.address);
-  contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);
-  contracts.bnftRegistry.setBNFTContract(contracts.stBakc.address, contracts.bnftStBakc.address);
+  await contracts.bnftRegistry.setBNFTContract(contracts.stBayc.address, contracts.bnftStBayc.address);
+  await contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);
+  await contracts.bnftRegistry.setBNFTContract(contracts.stBakc.address, contracts.bnftStBakc.address);
 }
 
 export async function setupContracts(): Promise<Contracts> {
@@ -225,6 +240,38 @@ export async function setupContracts(): Promise<Contracts> {
   const maycStrategy = await deployContract<IRewardsStrategy>("MaycStrategy", []);
   const bakcStrategy = await deployContract<IRewardsStrategy>("BakcStrategy", []);
 
+  // lending pool
+  const weth = await deployContract<MintableERC20>("MintableERC20", ["WETH", "WETH", 18]);
+  const usdt = await deployContract<MintableERC20>("MintableERC20", ["USDT", "USDT", 6]);
+
+  const mockAaveLendPoolAddressesProvider = await deployContract<MockAaveLendPoolAddressesProvider>(
+    "MockAaveLendPoolAddressesProvider",
+    []
+  );
+  const mockAaveLendPool = await deployContract<MockAaveLendPool>("MockAaveLendPool", []);
+  const mockBendLendPoolAddressesProvider = await deployContract<MockBendLendPoolAddressesProvider>(
+    "MockBendLendPoolAddressesProvider",
+    []
+  );
+  const mockBendLendPool = await deployContract<MockBendLendPool>("MockBendLendPool", []);
+  const mockBendLendPoolLoan = await deployContract<MockBendLendPoolLoan>("MockBendLendPoolLoan", []);
+  const lendingMigrator = await deployContract<LendingMigrator>("LendingMigrator", []);
+
+  await mockAaveLendPoolAddressesProvider.setLendingPool(mockAaveLendPool.address);
+
+  await mockBendLendPoolAddressesProvider.setLendPool(mockBendLendPool.address);
+  await mockBendLendPoolAddressesProvider.setLendPoolLoan(mockBendLendPoolLoan.address);
+  await mockBendLendPool.setAddressesProvider(mockBendLendPoolAddressesProvider.address);
+
+  await lendingMigrator.initialize(
+    mockAaveLendPoolAddressesProvider.address,
+    mockBendLendPoolAddressesProvider.address,
+    bendNftPool.address,
+    stBayc.address,
+    stMayc.address,
+    stBakc.address
+  );
+
   return {
     initialized: true,
     delegateCash,
@@ -247,6 +294,14 @@ export async function setupContracts(): Promise<Contracts> {
     baycStrategy,
     maycStrategy,
     bakcStrategy,
+    weth,
+    usdt,
+    mockAaveLendPoolAddressesProvider,
+    mockAaveLendPool,
+    mockBendLendPoolAddressesProvider,
+    mockBendLendPool,
+    mockBendLendPoolLoan,
+    lendingMigrator,
   } as Contracts;
 }
 

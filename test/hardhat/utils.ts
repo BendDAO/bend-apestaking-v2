@@ -13,6 +13,10 @@ export function makeBN18(num: any): BigNumber {
   return ethers.utils.parseUnits(num.toString(), 18);
 }
 
+export function makeBNWithDecimals(num: any, decimals: any): BigNumber {
+  return ethers.utils.parseUnits(num.toString(), decimals);
+}
+
 export const getContract = async <ContractType extends Contract>(
   contractName: string,
   address: string

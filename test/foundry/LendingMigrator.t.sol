@@ -126,7 +126,7 @@ contract LendingMigratorTest is SetupHelper {
         vars.assets[0] = address(mockWETH);
         vars.modes[0] = 0;
         for (vars.i = 0; vars.i < vars.nftCount; vars.i++) {
-            vars.amounts[0] = vars.borrowAmounts[vars.i];
+            vars.amounts[0] = vars.amounts[0] + vars.borrowAmounts[vars.i];
         }
 
         vars.params = abi.encode(vars.nftAssets, vars.nftTokenIds);
@@ -199,7 +199,7 @@ contract LendingMigratorTest is SetupHelper {
         vars.assets[0] = address(mockWETH);
         vars.modes[0] = 0;
         for (vars.i = 0; vars.i < vars.nftCount; vars.i++) {
-            vars.amounts[0] = vars.borrowAmounts[vars.i] + vars.bidFines[vars.i];
+            vars.amounts[0] = vars.amounts[0] + vars.borrowAmounts[vars.i] + vars.bidFines[vars.i];
         }
 
         vars.params = abi.encode(vars.nftAssets, vars.nftTokenIds);
