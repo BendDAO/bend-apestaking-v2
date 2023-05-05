@@ -489,7 +489,7 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "amount",
         "type": "uint256"
       }
     ],
@@ -560,7 +560,7 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "refunds",
+        "name": "amount",
         "type": "uint256"
       }
     ],

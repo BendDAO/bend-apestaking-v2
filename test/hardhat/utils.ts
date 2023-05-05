@@ -27,12 +27,16 @@ export const mintNft = async (owner: SignerWithAddress, nft: MintableERC721, tok
 export const skipHourBlocks = async (tolerance: number) => {
   const currentTime = await latest();
   // skip hour blocks
-  if (currentTime % 3600 >= 3599 - tolerance) {
-    await increaseTo(Math.round(currentTime / 3600) * 3600);
+  if (currentTime % 3600 >= 3600 - tolerance) {
+    await increaseTo(Math.round(currentTime / 3600) * 3600 + 1);
     await advanceBlock();
   }
 };
 
 export const randomUint = (min: number, max: number) => {
   return fc.sample(fc.integer({ min, max }), 1)[0];
+};
+
+export const shuffledSubarray = (originalArray: number[]) => {
+  return fc.sample(fc.shuffledSubarray(originalArray, { minLength: 1, maxLength: originalArray.length }), 1)[0];
 };

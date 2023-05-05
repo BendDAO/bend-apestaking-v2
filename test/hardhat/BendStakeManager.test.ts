@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Contracts, Env, makeSuite, Snapshots } from "./_setup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { makeBN18, mintNft, randomUint, skipHourBlocks } from "./utils";
+import { makeBN18, mintNft, randomUint, shuffledSubarray, skipHourBlocks } from "./utils";
 import { BigNumber, constants } from "ethers";
 import { advanceBlock, increaseBy } from "./helpers/block-traveller";
 
@@ -232,17 +232,14 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     // const coinPoolRewards = rewards.sub(baycPoolRewards);
     const unstakeAmount = await contracts.bendStakeManager.stakedApeCoin(1);
 
-    await expect(contracts.bendStakeManager.unstakeBayc(baycTokenIds))
-      .changeTokenBalances(
-        contracts.apeCoin,
-        [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
-        [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
-      )
-      .changeTokenBalance(
-        contracts.bendCoinPool,
-        contracts.bendNftPool.address,
-        await contracts.bendCoinPool.convertToShares(baycPoolRewards)
-      );
+    const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
+    await expect(contracts.bendStakeManager.unstakeBayc(baycTokenIds)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
+      [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
+    );
+    const sharesDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preCoinshares);
+    expect(await contracts.bendCoinPool.convertToAssets(sharesDelta)).closeTo(baycPoolRewards, 10); // round down
 
     for (const id of baycTokenIds) {
       expect(await contracts.apeStaking.pendingRewards(1, constants.AddressZero, id)).eq(0);
@@ -269,17 +266,14 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
       }
     }
     const baycPoolRewards = await contracts.baycStrategy.calculateNftRewards(rewards);
-    await expect(contracts.bendStakeManager.unstakeBayc(unstakeBaycTokenId))
-      .changeTokenBalances(
-        contracts.apeCoin,
-        [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
-        [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
-      )
-      .changeTokenBalance(
-        contracts.bendCoinPool,
-        contracts.bendNftPool.address,
-        await contracts.bendCoinPool.convertToShares(baycPoolRewards)
-      );
+    const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
+    await expect(contracts.bendStakeManager.unstakeBayc(unstakeBaycTokenId)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
+      [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
+    );
+    const sharesDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preCoinshares);
+    expect(await contracts.bendCoinPool.convertToAssets(sharesDelta)).closeTo(baycPoolRewards, 10);
 
     for (const id of unstakeBaycTokenId) {
       expect(await contracts.apeStaking.pendingRewards(1, constants.AddressZero, id)).eq(0);
@@ -340,17 +334,16 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const maycPoolRewards = await contracts.maycStrategy.calculateNftRewards(rewards);
     const unstakeAmount = await contracts.bendStakeManager.stakedApeCoin(2);
 
-    await expect(contracts.bendStakeManager.unstakeMayc(maycTokenIds))
-      .changeTokenBalances(
-        contracts.apeCoin,
-        [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
-        [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
-      )
-      .changeTokenBalance(
-        contracts.bendCoinPool,
-        contracts.bendNftPool.address,
-        await contracts.bendCoinPool.convertToShares(maycPoolRewards)
-      );
+    const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
+
+    await expect(contracts.bendStakeManager.unstakeMayc(maycTokenIds)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
+      [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
+    );
+
+    const sharesDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preCoinshares);
+    expect(await contracts.bendCoinPool.convertToAssets(sharesDelta)).closeTo(maycPoolRewards, 10);
 
     for (const id of maycTokenIds) {
       expect(await contracts.apeStaking.pendingRewards(2, constants.AddressZero, id)).eq(0);
@@ -377,17 +370,15 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
       }
     }
     const maycPoolRewards = await contracts.maycStrategy.calculateNftRewards(rewards);
-    await expect(contracts.bendStakeManager.unstakeMayc(unstakeMaycTokenId))
-      .changeTokenBalances(
-        contracts.apeCoin,
-        [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
-        [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
-      )
-      .changeTokenBalance(
-        contracts.bendCoinPool,
-        contracts.bendNftPool.address,
-        await contracts.bendCoinPool.convertToShares(maycPoolRewards)
-      );
+    const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
+    await expect(contracts.bendStakeManager.unstakeMayc(unstakeMaycTokenId)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
+      [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
+    );
+
+    const sharesDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preCoinshares);
+    expect(await contracts.bendCoinPool.convertToAssets(sharesDelta)).closeTo(maycPoolRewards, 10);
 
     for (const id of unstakeMaycTokenId) {
       expect(await contracts.apeStaking.pendingRewards(2, constants.AddressZero, id)).eq(0);
@@ -465,17 +456,15 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
       }
     }
 
-    await expect(contracts.bendStakeManager.claimBakc(baycNfts, maycNfts))
-      .changeTokenBalances(
-        contracts.apeCoin,
-        [contracts.apeStaking.address, contracts.bendCoinPool.address],
-        [constants.Zero.sub(rewards), rewards]
-      )
-      .changeTokenBalance(
-        contracts.bendCoinPool,
-        contracts.bendNftPool,
-        await contracts.bendCoinPool.convertToShares(bakcPoolRewards)
-      );
+    const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
+
+    await expect(contracts.bendStakeManager.claimBakc(baycNfts, maycNfts)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.apeStaking.address, contracts.bendCoinPool.address],
+      [constants.Zero.sub(rewards), rewards]
+    );
+    const sharesDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preCoinshares);
+    expect(await contracts.bendCoinPool.convertToAssets(sharesDelta)).closeTo(bakcPoolRewards, 10);
 
     for (const id of bakcTokenIds) {
       expect(await contracts.apeStaking.pendingRewards(3, constants.AddressZero, id)).eq(0);
@@ -507,18 +496,14 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
       }
     }
 
-    await expect(contracts.bendStakeManager.unstakeBakc(baycNfts, maycNfts))
-      .changeTokenBalances(
-        contracts.apeCoin,
-        [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
-        [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
-      )
-      .changeTokenBalance(
-        contracts.bendCoinPool,
-        contracts.bendNftPool.address,
-        await contracts.bendCoinPool.convertToShares(bakcPoolRewards)
-      );
-
+    const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
+    await expect(contracts.bendStakeManager.unstakeBakc(baycNfts, maycNfts)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
+      [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
+    );
+    const sharesDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preCoinshares);
+    expect(await contracts.bendCoinPool.convertToAssets(sharesDelta)).closeTo(bakcPoolRewards, 10);
     for (const id of bakcTokenIds) {
       expect(await contracts.apeStaking.pendingRewards(3, constants.AddressZero, id)).eq(0);
     }
@@ -563,23 +548,329 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
         });
       }
     }
+    const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
 
-    await expect(contracts.bendStakeManager.unstakeBakc(baycNfts, maycNfts))
-      .changeTokenBalances(
-        contracts.apeCoin,
-        [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
-        [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
-      )
-      .changeTokenBalance(
-        contracts.bendCoinPool,
-        contracts.bendNftPool.address,
-        await contracts.bendCoinPool.convertToShares(bakcPoolRewards)
-      );
+    await expect(contracts.bendStakeManager.unstakeBakc(baycNfts, maycNfts)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.apeStaking.address, contracts.bendCoinPool.address, contracts.bendNftPool.address],
+      [constants.Zero.sub(unstakeAmount).sub(rewards), unstakeAmount.add(rewards), constants.Zero]
+    );
+    const sharesDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preCoinshares);
+    expect(await contracts.bendCoinPool.convertToAssets(sharesDelta)).closeTo(bakcPoolRewards, 10);
 
     for (const id of unstakeBakcTokenId) {
       expect(await contracts.apeStaking.pendingRewards(3, constants.AddressZero, id)).eq(0);
     }
     expect(await contracts.bendStakeManager.pendingRewards(3)).eq(pendingRewards);
     expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(stakeAmount);
+  });
+
+  it("withdrawRefund: burn all stBAYC", async () => {
+    let baycPooStakedAmount = constants.Zero;
+    let baycPoolRewards = constants.Zero;
+    let bakcPooStakedAmount = constants.Zero;
+    let bakcPoolRewards = constants.Zero;
+    for (const id of baycTokenIds) {
+      baycPooStakedAmount = baycPooStakedAmount.add((await contracts.apeStaking.nftPosition(1, id)).stakedAmount);
+      baycPoolRewards = baycPoolRewards.add(await contracts.apeStaking.pendingRewards(1, constants.AddressZero, id));
+      const pairStauts = await contracts.apeStaking.mainToBakc(1, id);
+      if (pairStauts.isPaired) {
+        bakcPooStakedAmount = bakcPooStakedAmount.add(
+          (await contracts.apeStaking.nftPosition(3, pairStauts.tokenId)).stakedAmount
+        );
+        bakcPoolRewards = bakcPoolRewards.add(
+          await contracts.apeStaking.pendingRewards(3, constants.AddressZero, pairStauts.tokenId)
+        );
+      }
+    }
+    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address))
+      .eq(await contracts.bendStakeManager.refundOf(contracts.bakc.address))
+      .eq(await contracts.bendStakeManager.totalRefund())
+      .eq(0);
+    const preBaycStakedAmount = await contracts.bendStakeManager.stakedApeCoin(1);
+    const preBaycPendingRewards = await contracts.bendStakeManager.pendingRewards(1);
+
+    const preBakcStakedAmount = await contracts.bendStakeManager.stakedApeCoin(3);
+    const preBakcPendingRewards = await contracts.bendStakeManager.pendingRewards(3);
+
+    await contracts.stBayc.connect(owner).burn(baycTokenIds);
+
+    expect(
+      (await contracts.bendStakeManager.refundOf(contracts.bayc.address)).add(
+        await contracts.bendStakeManager.refundOf(contracts.bakc.address)
+      )
+    ).eq(await contracts.bendStakeManager.totalRefund());
+
+    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address)).eq(
+      baycPooStakedAmount.add(baycPoolRewards)
+    );
+    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address)).eq(
+      bakcPooStakedAmount.add(bakcPoolRewards)
+    );
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(1)).eq(preBaycStakedAmount.sub(baycPooStakedAmount));
+    expect(await contracts.bendStakeManager.pendingRewards(1)).eq(preBaycPendingRewards.sub(baycPoolRewards));
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preBakcStakedAmount.sub(bakcPooStakedAmount));
+    expect(await contracts.bendStakeManager.pendingRewards(3)).eq(preBakcPendingRewards.sub(bakcPoolRewards));
+
+    const baycRewards = await contracts.baycStrategy.calculateNftRewards(baycPoolRewards);
+    let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
+
+    await expect(contracts.bendStakeManager.withdrawRefund(contracts.bayc.address)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.bendStakeManager.address, contracts.nftVault.address, contracts.bendCoinPool.address],
+      [
+        constants.Zero,
+        constants.Zero.sub(baycPooStakedAmount.add(baycPoolRewards)),
+        baycPooStakedAmount.add(baycPoolRewards),
+      ]
+    );
+    let nftPoolDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preNftPool);
+    expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(baycRewards, 10);
+
+    const bakcRewards = await contracts.bakcStrategy.calculateNftRewards(bakcPoolRewards);
+    preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
+
+    await expect(contracts.bendStakeManager.withdrawRefund(contracts.bakc.address)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.bendStakeManager.address, contracts.nftVault.address, contracts.bendCoinPool.address],
+      [
+        constants.Zero,
+        constants.Zero.sub(bakcPooStakedAmount.add(bakcPoolRewards)),
+        bakcPooStakedAmount.add(bakcPoolRewards),
+      ]
+    );
+    nftPoolDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address)).sub(preNftPool);
+    expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(bakcRewards, 10);
+  });
+
+  it("withdrawRefund: burn stBAYC with nonpaired bakc", async () => {
+    let baycPooStakedAmount = constants.Zero;
+    let baycPoolRewards = constants.Zero;
+    let burnBaycTokenIds = [];
+    for (const id of baycTokenIds) {
+      const pairStauts = await contracts.apeStaking.mainToBakc(1, id);
+      if (!pairStauts.isPaired) {
+        burnBaycTokenIds.push(id);
+        baycPooStakedAmount = baycPooStakedAmount.add((await contracts.apeStaking.nftPosition(1, id)).stakedAmount);
+        baycPoolRewards = baycPoolRewards.add(await contracts.apeStaking.pendingRewards(1, constants.AddressZero, id));
+      }
+    }
+    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address))
+      .eq(await contracts.bendStakeManager.totalRefund())
+      .eq(0);
+
+    const preBaycStakedAmount = await contracts.bendStakeManager.stakedApeCoin(1);
+    const preBaycPendingRewards = await contracts.bendStakeManager.pendingRewards(1);
+
+    const preBakcStakedAmount = await contracts.bendStakeManager.stakedApeCoin(3);
+    const preBakcPendingRewards = await contracts.bendStakeManager.pendingRewards(3);
+
+    await contracts.stBayc.connect(owner).burn(burnBaycTokenIds);
+
+    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address)).eq(
+      await contracts.bendStakeManager.totalRefund()
+    );
+
+    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address)).eq(
+      baycPooStakedAmount.add(baycPoolRewards)
+    );
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(1)).eq(preBaycStakedAmount.sub(baycPooStakedAmount));
+    expect(await contracts.bendStakeManager.pendingRewards(1)).eq(preBaycPendingRewards.sub(baycPoolRewards));
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preBakcStakedAmount);
+    expect(await contracts.bendStakeManager.pendingRewards(3)).eq(preBakcPendingRewards);
+
+    const baycRewards = await contracts.baycStrategy.calculateNftRewards(baycPoolRewards);
+    let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
+
+    await expect(contracts.bendStakeManager.withdrawRefund(contracts.bayc.address)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.bendStakeManager.address, contracts.nftVault.address, contracts.bendCoinPool.address],
+      [
+        constants.Zero,
+        constants.Zero.sub(baycPooStakedAmount.add(baycPoolRewards)),
+        baycPooStakedAmount.add(baycPoolRewards),
+      ]
+    );
+    let nftPoolDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preNftPool);
+    expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(baycRewards, 10);
+  });
+
+  it("withdrawRefund: burn all stMAYC", async () => {
+    let maycPooStakedAmount = constants.Zero;
+    let maycPoolRewards = constants.Zero;
+    let bakcPooStakedAmount = constants.Zero;
+    let bakcPoolRewards = constants.Zero;
+    for (const id of maycTokenIds) {
+      maycPooStakedAmount = maycPooStakedAmount.add((await contracts.apeStaking.nftPosition(2, id)).stakedAmount);
+      maycPoolRewards = maycPoolRewards.add(await contracts.apeStaking.pendingRewards(2, constants.AddressZero, id));
+      const pairStauts = await contracts.apeStaking.mainToBakc(2, id);
+      if (pairStauts.isPaired) {
+        bakcPooStakedAmount = bakcPooStakedAmount.add(
+          (await contracts.apeStaking.nftPosition(3, pairStauts.tokenId)).stakedAmount
+        );
+        bakcPoolRewards = bakcPoolRewards.add(
+          await contracts.apeStaking.pendingRewards(3, constants.AddressZero, pairStauts.tokenId)
+        );
+      }
+    }
+    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address))
+      .eq(await contracts.bendStakeManager.refundOf(contracts.bakc.address))
+      .eq(await contracts.bendStakeManager.totalRefund())
+      .eq(0);
+    const preMaycStakedAmount = await contracts.bendStakeManager.stakedApeCoin(2);
+    const preMaycPendingRewards = await contracts.bendStakeManager.pendingRewards(2);
+
+    const preBakcStakedAmount = await contracts.bendStakeManager.stakedApeCoin(3);
+    const preBakcPendingRewards = await contracts.bendStakeManager.pendingRewards(3);
+
+    await contracts.stMayc.connect(owner).burn(maycTokenIds);
+
+    expect(
+      (await contracts.bendStakeManager.refundOf(contracts.mayc.address)).add(
+        await contracts.bendStakeManager.refundOf(contracts.bakc.address)
+      )
+    ).eq(await contracts.bendStakeManager.totalRefund());
+
+    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address)).eq(
+      maycPooStakedAmount.add(maycPoolRewards)
+    );
+    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address)).eq(
+      bakcPooStakedAmount.add(bakcPoolRewards)
+    );
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(2)).eq(preMaycStakedAmount.sub(maycPooStakedAmount));
+    expect(await contracts.bendStakeManager.pendingRewards(2)).eq(preMaycPendingRewards.sub(maycPoolRewards));
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preBakcStakedAmount.sub(bakcPooStakedAmount));
+    expect(await contracts.bendStakeManager.pendingRewards(3)).eq(preBakcPendingRewards.sub(bakcPoolRewards));
+
+    const maycRewards = await contracts.maycStrategy.calculateNftRewards(maycPoolRewards);
+    let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
+
+    await expect(contracts.bendStakeManager.withdrawRefund(contracts.mayc.address)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.bendStakeManager.address, contracts.nftVault.address, contracts.bendCoinPool.address],
+      [
+        constants.Zero,
+        constants.Zero.sub(maycPooStakedAmount.add(maycPoolRewards)),
+        maycPooStakedAmount.add(maycPoolRewards),
+      ]
+    );
+    let nftPoolDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preNftPool);
+
+    expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(maycRewards, 10);
+
+    const bakcRewards = await contracts.bakcStrategy.calculateNftRewards(bakcPoolRewards);
+    preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
+
+    await expect(contracts.bendStakeManager.withdrawRefund(contracts.bakc.address)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.bendStakeManager.address, contracts.nftVault.address, contracts.bendCoinPool.address],
+      [
+        constants.Zero,
+        constants.Zero.sub(bakcPooStakedAmount.add(bakcPoolRewards)),
+        bakcPooStakedAmount.add(bakcPoolRewards),
+      ]
+    );
+    nftPoolDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address)).sub(preNftPool);
+    expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(bakcRewards, 10);
+  });
+
+  it("withdrawRefund: burn stMAYC with nonpaired bakc", async () => {
+    let maycPooStakedAmount = constants.Zero;
+    let maycPoolRewards = constants.Zero;
+    let burnMaycTokenIds = [];
+    for (const id of maycTokenIds) {
+      const pairStauts = await contracts.apeStaking.mainToBakc(2, id);
+      if (!pairStauts.isPaired) {
+        burnMaycTokenIds.push(id);
+        maycPooStakedAmount = maycPooStakedAmount.add((await contracts.apeStaking.nftPosition(2, id)).stakedAmount);
+        maycPoolRewards = maycPoolRewards.add(await contracts.apeStaking.pendingRewards(2, constants.AddressZero, id));
+      }
+    }
+    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address))
+      .eq(await contracts.bendStakeManager.totalRefund())
+      .eq(0);
+
+    const preMaycStakedAmount = await contracts.bendStakeManager.stakedApeCoin(2);
+    const preMaycPendingRewards = await contracts.bendStakeManager.pendingRewards(2);
+
+    const preBakcStakedAmount = await contracts.bendStakeManager.stakedApeCoin(3);
+    const preBakcPendingRewards = await contracts.bendStakeManager.pendingRewards(3);
+
+    await contracts.stMayc.connect(owner).burn(burnMaycTokenIds);
+
+    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address)).eq(
+      await contracts.bendStakeManager.totalRefund()
+    );
+
+    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address)).eq(
+      maycPooStakedAmount.add(maycPoolRewards)
+    );
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(2)).eq(preMaycStakedAmount.sub(maycPooStakedAmount));
+    expect(await contracts.bendStakeManager.pendingRewards(2)).eq(preMaycPendingRewards.sub(maycPoolRewards));
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preBakcStakedAmount);
+    expect(await contracts.bendStakeManager.pendingRewards(3)).eq(preBakcPendingRewards);
+
+    const maycRewards = await contracts.maycStrategy.calculateNftRewards(maycPoolRewards);
+    let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
+
+    await expect(contracts.bendStakeManager.withdrawRefund(contracts.mayc.address)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.bendStakeManager.address, contracts.nftVault.address, contracts.bendCoinPool.address],
+      [
+        constants.Zero,
+        constants.Zero.sub(maycPooStakedAmount.add(maycPoolRewards)),
+        maycPooStakedAmount.add(maycPoolRewards),
+      ]
+    );
+    let nftPoolDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preNftPool);
+
+    expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(maycRewards, 10);
+  });
+
+  it("withdrawRefund: burn part of stBAKC", async () => {
+    let pooStakedAmount = constants.Zero;
+    let poolRewards = constants.Zero;
+    let tokenIds = shuffledSubarray(bakcTokenIds);
+    for (const id of tokenIds) {
+      pooStakedAmount = pooStakedAmount.add((await contracts.apeStaking.nftPosition(3, id)).stakedAmount);
+      poolRewards = poolRewards.add(await contracts.apeStaking.pendingRewards(3, constants.AddressZero, id));
+    }
+    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address))
+      .eq(await contracts.bendStakeManager.totalRefund())
+      .eq(0);
+
+    const preStakedAmount = await contracts.bendStakeManager.stakedApeCoin(3);
+    const prePendingRewards = await contracts.bendStakeManager.pendingRewards(3);
+
+    await contracts.stBakc.connect(owner).burn(tokenIds);
+
+    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address)).eq(
+      await contracts.bendStakeManager.totalRefund()
+    );
+
+    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address)).eq(pooStakedAmount.add(poolRewards));
+
+    expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preStakedAmount.sub(pooStakedAmount));
+    expect(await contracts.bendStakeManager.pendingRewards(3)).eq(prePendingRewards.sub(poolRewards));
+
+    const bakcRewards = await contracts.bakcStrategy.calculateNftRewards(poolRewards);
+    let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
+
+    await expect(contracts.bendStakeManager.withdrawRefund(contracts.bakc.address)).changeTokenBalances(
+      contracts.apeCoin,
+      [contracts.bendStakeManager.address, contracts.nftVault.address, contracts.bendCoinPool.address],
+      [constants.Zero, constants.Zero.sub(pooStakedAmount.add(poolRewards)), pooStakedAmount.add(poolRewards)]
+    );
+    let nftPoolDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preNftPool);
+
+    expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(bakcRewards, 10);
   });
 });

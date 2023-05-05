@@ -54,14 +54,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _;
     }
 
-    modifier onlyCoinPoolOrBot() {
-        require(
-            _msgSender() == address(coinPool) || _msgSender() == botAdmin,
-            "BendStakeManager: caller is not coin pool or bot admin"
-        );
-        _;
-    }
-
     modifier onlyCoinPool() {
         require(_msgSender() == address(coinPool), "BendStakeManager: caller is not coin pool");
         _;
@@ -91,11 +83,12 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function updateFee(uint256 fee_) external onlyOwner {
-        require(fee_ >= 0 && fee_ <= 1000, "BendStakeManager: invalid fee");
+        require(fee_ >= 0 && fee_ <= MAX_FEE, "BendStakeManager: invalid fee");
         fee = fee_;
     }
 
     function updateFeeRecipient(address recipient_) external onlyOwner {
+        require(recipient_ != address(0), "BendStakeManager: invalid fee recipient");
         feeRecipient = recipient_;
     }
 
@@ -554,8 +547,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _withdrawRefund(address nft_) internal {
-        INftVault.Refund memory refund = nftVault.refundOf(bayc, address(this));
-
+        INftVault.Refund memory refund = nftVault.refundOf(nft_, address(this));
+        nftVault.withdrawRefunds(nft_);
         if (refund.principal > 0) {
             coinPool.receiveApeCoin(refund.principal, 0);
         }
@@ -574,9 +567,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         uint256 nftPoolRewards = rewardsStrategies[nft_].calculateNftRewards(rewardsAmount_);
 
         uint256 apeCoinPoolRewards = rewardsAmount_ - nftPoolRewards;
-
         coinPool.receiveApeCoin(0, apeCoinPoolRewards);
-
         nftPool.receiveApeCoin(nft_, nftPoolRewards);
     }
 
@@ -592,12 +583,12 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         reward = refund.reward;
     }
 
-    function refundOf(address nft_) external view onlyApe(nft_) returns (uint256) {
+    function refundOf(address nft_) external view onlyApe(nft_) returns (uint256 amount) {
         (uint256 pricipal, uint256 reward) = _refundOf(nft_);
         if (fee > 0) {
-            return pricipal += reward.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
+            amount = pricipal + reward.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
         } else {
-            return pricipal += reward;
+            amount = pricipal + reward;
         }
     }
 
@@ -605,20 +596,22 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         INftVault.Refund memory refund_ = nftVault.refundOf(bayc, address(this));
         principal += refund_.principal;
         reward += refund_.reward;
+
         refund_ = nftVault.refundOf(mayc, address(this));
         principal += refund_.principal;
         reward += refund_.reward;
+
         refund_ = nftVault.refundOf(bakc, address(this));
         principal += refund_.principal;
         reward += refund_.reward;
     }
 
-    function totalRefund() external view override returns (uint256 refunds) {
+    function totalRefund() external view override returns (uint256 amount) {
         (uint256 pricipal, uint256 reward) = _totalRefund();
         if (fee > 0) {
-            return pricipal += reward.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
+            amount = pricipal + reward.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
         } else {
-            return pricipal += reward;
+            amount = pricipal + reward;
         }
     }
 

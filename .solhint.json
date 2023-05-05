@@ -4,12 +4,8 @@
     "compiler-version": ["error", "0.8.18"],
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "func-name-mixedcase": "off",
-    "no-inline-assembly": "off",
     "not-rely-on-time": "off",
     "reason-string": "off",
-    "var-name-mixedcase": "off",
-    "avoid-low-level-calls": "off",
-    "no-empty-blocks": "off",
-    "max-states-count": ["warn", 20]
+    "no-empty-blocks": "off"
   }
 }

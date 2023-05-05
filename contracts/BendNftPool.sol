@@ -174,17 +174,17 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         apeCoin.safeTransferFrom(_msgSender(), address(this), rewardsAmount_);
 
         PoolState storage pool = poolStates[nft_];
-        pool.accumulatedRewardsPerNft += ((rewardsAmount_ * APE_COIN_PRECISION) /
-            pool.stakedNft.totalStaked(address(staker)));
+
+        uint256 supply = pool.stakedNft.totalStaked(address(staker));
+
+        // In extreme cases all nft give up the earned rewards and exit
+        if (supply > 0) {
+            pool.accumulatedRewardsPerNft += ((rewardsAmount_ * APE_COIN_PRECISION) / supply);
+        }
 
         coinPool.deposit(rewardsAmount_, address(this));
 
-        emit RewardDistributed(
-            nft_,
-            rewardsAmount_,
-            pool.stakedNft.totalStaked(address(staker)),
-            pool.accumulatedRewardsPerNft
-        );
+        emit RewardDistributed(nft_, rewardsAmount_, supply, pool.accumulatedRewardsPerNft);
     }
 
     function claimable(
