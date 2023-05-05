@@ -48,7 +48,7 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
         address receiver,
         uint256 assets,
         uint256 shares
-    ) internal override(ERC4626Upgradeable) {
+    ) internal override(ERC4626Upgradeable) nonReentrant {
         // transfer ape coin from caller
         super._deposit(caller, receiver, assets, shares);
         // increase pending amount
@@ -61,7 +61,7 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
         address owner,
         uint256 assets,
         uint256 shares
-    ) internal override(ERC4626Upgradeable) {
+    ) internal override(ERC4626Upgradeable) nonReentrant {
         if (pendingApeCoin < assets) {
             uint256 required = assets - pendingApeCoin;
             require(staker.withdrawApeCoin(required) >= (required), "BendCoinPool: withdraw failed");

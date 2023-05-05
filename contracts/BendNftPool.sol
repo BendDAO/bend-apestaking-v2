@@ -75,7 +75,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         apeCoin.approve(address(coinPool), type(uint256).max);
     }
 
-    function deposit(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {
+    function deposit(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
         PoolState storage pool = poolStates[nft_];
 
         uint256 tokenId_;
@@ -92,7 +92,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         emit NftDeposited(nft_, tokenIds_, _msgSender());
     }
 
-    function withdraw(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {
+    function withdraw(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
         _claim(_msgSender(), _msgSender(), nft_, tokenIds_);
 
         PoolState storage pool = poolStates[nft_];
@@ -144,7 +144,11 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         }
     }
 
-    function claim(address nft_, uint256[] calldata tokenIds_, address delegateVault_) external override onlyApe(nft_) {
+    function claim(
+        address nft_,
+        uint256[] calldata tokenIds_,
+        address delegateVault_
+    ) external override nonReentrant onlyApe(nft_) {
         address owner = _msgSender();
         address receiver = _msgSender();
         if (delegateVault_ != address(0)) {

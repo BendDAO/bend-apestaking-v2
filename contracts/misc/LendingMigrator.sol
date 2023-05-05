@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
@@ -16,7 +17,12 @@ import {ILendPoolLoan} from "./interfaces/ILendPoolLoan.sol";
 import {IStakedNft} from "../interfaces/IStakedNft.sol";
 import {INftPool} from "../interfaces/INftPool.sol";
 
-contract LendingMigrator is IAaveFlashLoanReceiver, ReentrancyGuardUpgradeable, OwnableUpgradeable {
+contract LendingMigrator is
+    IAaveFlashLoanReceiver,
+    ReentrancyGuardUpgradeable,
+    OwnableUpgradeable,
+    PausableUpgradeable
+{
     IAaveLendPoolAddressesProvider public aaveAddressesProvider;
     IAaveLendPool public aaveLendPool;
     ILendPoolAddressesProvider public bendAddressesProvider;
@@ -42,6 +48,7 @@ contract LendingMigrator is IAaveFlashLoanReceiver, ReentrancyGuardUpgradeable, 
     ) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
+        __Pausable_init();
 
         nftPool = INftPool(nftPool_);
         stBayc = IStakedNft(stBayc_);
@@ -62,6 +69,10 @@ contract LendingMigrator is IAaveFlashLoanReceiver, ReentrancyGuardUpgradeable, 
         IERC721Upgradeable(bayc).setApprovalForAll(address(nftPool), true);
         IERC721Upgradeable(mayc).setApprovalForAll(address(nftPool), true);
         IERC721Upgradeable(bakc).setApprovalForAll(address(nftPool), true);
+
+        IERC721Upgradeable(address(stBayc)).setApprovalForAll(address(bendLendPool), true);
+        IERC721Upgradeable(address(stMayc)).setApprovalForAll(address(bendLendPool), true);
+        IERC721Upgradeable(address(stBakc)).setApprovalForAll(address(bendLendPool), true);
     }
 
     function executeOperation(
@@ -70,7 +81,7 @@ contract LendingMigrator is IAaveFlashLoanReceiver, ReentrancyGuardUpgradeable, 
         uint256[] calldata premiums,
         address /*initiator*/,
         bytes calldata params
-    ) external returns (bool) {
+    ) external whenNotPaused nonReentrant returns (bool) {
         require(msg.sender == address(aaveLendPool), "Migrator: caller must be aave lending pool");
         require(
             assets.length == 1 && amounts.length == 1 && premiums.length == 1,
@@ -156,7 +167,6 @@ contract LendingMigrator is IAaveFlashLoanReceiver, ReentrancyGuardUpgradeable, 
         vars.balanceBeforeBorrow = IERC20Upgradeable(vars.debtReserve).balanceOf(address(this));
 
         IStakedNft stNftAsset = getStakedNFTAsset(vars.nftAsset);
-        IERC721Upgradeable(address(stNftAsset)).approve(address(bendLendPool), vars.nftTokenId);
 
         vars.flashLoanPremium = (vars.debtTotalAmountWithBidFine * vars.flashLoanFeeRatio) / 10000;
         vars.debtBorrowAmountWithFee = vars.debtTotalAmountWithBidFine + vars.flashLoanPremium;

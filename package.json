@@ -42,6 +42,7 @@
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "TS_NODE_TRANSPILE_ONLY=true hardhat coverage && hardhat compile --force",
     "test:forge": "forge test -vvv",
+    "test:all": "npm run test && npm run test:forge",
     "release": "release-it"
   },
   "devDependencies": {
