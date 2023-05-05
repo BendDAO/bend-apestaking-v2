@@ -43,3 +43,12 @@ TBD
 yarn install
 yarn test
 ```
+
+### Run static analysis
+
+```shell
+# install only once
+pip3 install slither-analyzer
+
+slither .
+```
