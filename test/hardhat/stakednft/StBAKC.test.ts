@@ -1,4 +1,4 @@
-import { Contracts } from "../_setup";
+import { Contracts } from "../setup";
 import { makeStNftTest } from "./StNft.test";
 
 makeStNftTest("StBAKC", (contracts: Contracts) => {

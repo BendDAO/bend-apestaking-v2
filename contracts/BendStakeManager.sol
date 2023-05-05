@@ -92,9 +92,24 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         feeRecipient = recipient_;
     }
 
+    function updateBotAdmin(address botAdmin_) external override onlyOwner {
+        botAdmin = botAdmin_;
+    }
+
+    function updateRewardsStrategy(
+        address nft_,
+        IRewardsStrategy rewardsStrategy_
+    ) external override onlyOwner onlyApe(nft_) {
+        rewardsStrategies[nft_] = rewardsStrategy_;
+    }
+
+    function _calculateFee(uint256 rewardsAmount_) internal view returns (uint256 feeAmount) {
+        return rewardsAmount_.mulDiv(fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Down);
+    }
+
     function _collectFee(uint256 rewardsAmount_) internal returns (uint256 feeAmount) {
         if (rewardsAmount_ > 0 && fee > 0) {
-            feeAmount = rewardsAmount_.mulDiv(fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Down);
+            feeAmount = _calculateFee(rewardsAmount_);
             pendingFeeAmount += feeAmount;
         }
     }
@@ -254,14 +269,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         withdrawn = _coinPoolChangedAmount(initBalance);
     }
 
-    function updateBotAdmin(address botAdmin_) external override onlyOwner {
-        botAdmin = botAdmin_;
-    }
-
-    function updateRewardsStrategy(address nft_, IRewardsStrategy rewardsStrategy_) external override onlyOwner {
-        rewardsStrategies[nft_] = rewardsStrategy_;
-    }
-
     function totalStakedApeCoin() external view override returns (uint256 amount) {
         amount += _stakedApeCoin(ApeStakingLib.APE_COIN_POOL_ID);
         amount += _stakedApeCoin(ApeStakingLib.BAYC_POOL_ID);
@@ -275,7 +282,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         amount += _pendingRewards(ApeStakingLib.MAYC_POOL_ID);
         amount += _pendingRewards(ApeStakingLib.BAKC_POOL_ID);
         if (fee > 0) {
-            amount = amount.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
+            amount -= _calculateFee(amount);
         }
     }
 
@@ -300,7 +307,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     function pendingRewards(uint256 poolId_) external view override returns (uint256 amount) {
         amount = _pendingRewards(poolId_);
         if (fee > 0) {
-            amount = amount.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
+            amount -= _calculateFee(amount);
         }
     }
 
@@ -585,10 +592,9 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
     function refundOf(address nft_) external view onlyApe(nft_) returns (uint256 amount) {
         (uint256 pricipal, uint256 reward) = _refundOf(nft_);
+        amount = pricipal + reward;
         if (fee > 0) {
-            amount = pricipal + reward.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
-        } else {
-            amount = pricipal + reward;
+            amount -= _calculateFee(reward);
         }
     }
 
@@ -608,10 +614,9 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
     function totalRefund() external view override returns (uint256 amount) {
         (uint256 pricipal, uint256 reward) = _totalRefund();
+        amount = pricipal + reward;
         if (fee > 0) {
-            amount = pricipal + reward.mulDiv(PERCENTAGE_FACTOR - fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Up);
-        } else {
-            amount = pricipal + reward;
+            amount -= _calculateFee(reward);
         }
     }
 

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Contracts, Env, makeSuite, Snapshots } from "../_setup";
+import { Contracts, Env, makeSuite, Snapshots } from "../setup";
 import { makeBN18, mintNft, randomUint, skipHourBlocks } from "../utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, constants } from "ethers";

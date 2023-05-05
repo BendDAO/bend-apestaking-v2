@@ -6,7 +6,7 @@ import "@nomicfoundation/hardhat-chai-matchers";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
-import "@nomicfoundation/hardhat-foundry";
+
 import "@typechain/hardhat";
 import "hardhat-abi-exporter";
 import "hardhat-gas-reporter";
@@ -21,6 +21,7 @@ const MNEMONIC_PATH = "m/44'/60'/0'/0";
 const MNEMONIC = process.env.MNEMONIC || "";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 const REPORT_GAS = !!process.env.REPORT_GAS;
+
 // const GWEI = 1000 * 1000 * 1000;
 
 const tasksPath = path.join(__dirname, "tasks");
