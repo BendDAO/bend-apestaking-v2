@@ -202,6 +202,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "bnftRegistry",
+    "outputs": [
+      {
+        "internalType": "contract IBNFTRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -488,6 +501,19 @@
   {
     "inputs": [],
     "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "bnftRegistry_",
+        "type": "address"
+      }
+    ],
+    "name": "setBNFTRegistry",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

@@ -12,6 +12,8 @@ import {
   BendStakeManagerTester,
   IDelegationRegistry,
   IRewardsStrategy,
+  MockBNFTRegistry,
+  MockBNFT,
 } from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -40,6 +42,11 @@ export interface Contracts {
   stBayc: IStakedNft;
   stMayc: IStakedNft;
   stBakc: IStakedNft;
+  // bound nft
+  bnftRegistry: MockBNFTRegistry;
+  bnftStBayc: MockBNFT;
+  bnftStMayc: MockBNFT;
+  bnftStBakc: MockBNFT;
   // bend ape staking v2
   bendStakeManager: BendStakeManagerTester;
   bendCoinPool: ICoinPool;
@@ -156,6 +163,12 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   contracts.bendStakeManager.updateRewardsStrategy(contracts.bayc.address, contracts.baycStrategy.address);
   contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.maycStrategy.address);
   contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakcStrategy.address);
+
+  contracts.bendNftPool.setBNFTRegistry(contracts.bnftRegistry.address);
+
+  contracts.bnftRegistry.setBNFTContract(contracts.stBayc.address, contracts.bnftStBayc.address);
+  contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);
+  contracts.bnftRegistry.setBNFTContract(contracts.stBakc.address, contracts.bnftStBakc.address);
 }
 
 export async function setupContracts(): Promise<Contracts> {
@@ -179,6 +192,12 @@ export async function setupContracts(): Promise<Contracts> {
   const stBayc = await deployContract<IStakedNft>("StBAYC", [bayc.address, nftVault.address]);
   const stMayc = await deployContract<IStakedNft>("StMAYC", [mayc.address, nftVault.address]);
   const stBakc = await deployContract<IStakedNft>("StBAKC", [bakc.address, nftVault.address]);
+
+  // bound nft
+  const bnftRegistry = await deployContract<MockBNFTRegistry>("MockBNFTRegistry", []);
+  const bnftStBayc = await deployContract<MockBNFT>("MockBNFT", ["bnftStBayc", "bnftStBayc", stBayc.address]);
+  const bnftStMayc = await deployContract<MockBNFT>("MockBNFT", ["bnftStMayc", "bnftStMayc", stBayc.address]);
+  const bnftStBakc = await deployContract<MockBNFT>("MockBNFT", ["bnftStBakc", "bnftStBakc", stBayc.address]);
 
   // bend staking v2
   const bendStakeManager = await deployContract<BendStakeManagerTester>("BendStakeManagerTester", []);
@@ -218,6 +237,10 @@ export async function setupContracts(): Promise<Contracts> {
     stBayc,
     stMayc,
     stBakc,
+    bnftRegistry,
+    bnftStBayc,
+    bnftStMayc,
+    bnftStBakc,
     bendStakeManager,
     bendCoinPool,
     bendNftPool,

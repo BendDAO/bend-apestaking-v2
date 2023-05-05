@@ -1,0 +1,26 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nftAsset",
+        "type": "address"
+      }
+    ],
+    "name": "getBNFTAddresses",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "bNftProxy",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "bNftImpl",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

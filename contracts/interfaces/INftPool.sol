@@ -30,6 +30,8 @@ interface INftPool {
         mapping(uint256 => uint256) rewardsDebt;
     }
 
+    function setBNFTRegistry(address bnftRegistry_) external;
+
     function staker() external view returns (IStakeManager);
 
     function claimable(address nft_, uint256[] calldata tokenIds_) external view returns (uint256);

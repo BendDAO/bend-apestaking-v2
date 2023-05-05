@@ -12,6 +12,7 @@ import {IStakeManager} from "./interfaces/IStakeManager.sol";
 import {INftPool, IStakedNft, IApeCoinStaking} from "./interfaces/INftPool.sol";
 import {ICoinPool} from "./interfaces/ICoinPool.sol";
 import {IDelegationRegistry} from "./interfaces/IDelegationRegistry.sol";
+import {IBNFTRegistry} from "./interfaces/IBNFTRegistry.sol";
 
 import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
 
@@ -31,6 +32,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     address public bayc;
     address public mayc;
     address public bakc;
+    IBNFTRegistry public bnftRegistry;
 
     modifier onlyApe(address nft_) {
         require(bayc == nft_ || mayc == nft_ || bakc == nft_, "BendNftPool: not ape");
@@ -73,6 +75,11 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
 
         apeCoin = IERC20Upgradeable(apeCoinStaking.apeCoin());
         apeCoin.approve(address(coinPool), type(uint256).max);
+    }
+
+    function setBNFTRegistry(address bnftRegistry_) public onlyOwner {
+        require(bnftRegistry_ != address(0), "BendNftPool: invalid bnft registry");
+        bnftRegistry = IBNFTRegistry(bnftRegistry_);
     }
 
     function deposit(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
@@ -122,14 +129,24 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         PoolState storage pool = poolStates[nft_];
         uint256 tokenId_;
         uint256 claimableRewards;
+        address tokenOwner_;
+
+        address bnftProxy;
+        if (address(bnftRegistry) != address(0)) {
+            (bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(pool.stakedNft));
+        }
+
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            require(
-                pool.stakedNft.ownerOf(tokenId_) == owner_ &&
-                    pool.stakedNft.minterOf(tokenId_) == address(this) &&
-                    pool.stakedNft.stakerOf(tokenId_) == address(staker),
-                "BendNftPool: invalid token id"
-            );
+
+            tokenOwner_ = pool.stakedNft.ownerOf(tokenId_);
+            if (tokenOwner_ == bnftProxy) {
+                tokenOwner_ = IERC721Upgradeable(bnftProxy).ownerOf(tokenId_);
+            }
+            require(tokenOwner_ == owner_, "BendNftPool: invalid token owner");
+
+            require(pool.stakedNft.minterOf(tokenId_) == address(this), "BendNftPool: invalid token minter");
+            require(pool.stakedNft.stakerOf(tokenId_) == address(staker), "BendNftPool: invalid token staker");
 
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
                 claimableRewards += _round_claimble_rewards(pool.accumulatedRewardsPerNft, pool.rewardsDebt[tokenId_]);

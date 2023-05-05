@@ -10,6 +10,8 @@ import "../../contracts/test/MintableERC20.sol";
 import "../../contracts/test/MintableERC721.sol";
 import "../../contracts/test/ApeCoinStaking.sol";
 import "../../contracts/test/DelegationRegistry.sol";
+import "../../contracts/test/MockBNFTRegistry.sol";
+import "../../contracts/test/MockBNFT.sol";
 
 import "../../contracts/interfaces/IDelegationRegistry.sol";
 import "../../contracts/interfaces/IApeCoinStaking.sol";
@@ -54,6 +56,8 @@ abstract contract SetupHelper is Test {
     MintableERC721 internal mockBAKC;
     ApeCoinStaking internal mockApeStaking;
     DelegationRegistry internal mockDelegationRegistry;
+    MockBNFTRegistry internal mockBNFTRegistry;
+    MockBNFT internal mockBnftStBAYC;
 
     // tested contracts
     NftVault internal nftVault;
@@ -124,6 +128,11 @@ abstract contract SetupHelper is Test {
         stMAYC = new StMAYC(mockMAYC, nftVault);
         stBAKC = new StBAKC(mockBAKC, nftVault);
 
+        // boundNFTs
+        mockBNFTRegistry = new MockBNFTRegistry();
+        mockBnftStBAYC = new MockBNFT("boundstBAYC", "boundstBAYC", address(stBAYC));
+        mockBNFTRegistry.setBNFTContract(address(stBAYC), address(mockBnftStBAYC));
+
         // staking contracts
         coinPool = new BendCoinPool();
         nftPool = new BendNftPool();
@@ -161,7 +170,8 @@ abstract contract SetupHelper is Test {
         stakeManager.transferOwnership(poolOwner);
         vm.stopPrank();
 
-        vm.startPrank(stakeManager.owner());
+        vm.startPrank(poolOwner);
+        nftPool.setBNFTRegistry(address(mockBNFTRegistry));
         stakeManager.updateBotAdmin(botAdmin);
         vm.stopPrank();
 

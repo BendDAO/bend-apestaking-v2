@@ -21,6 +21,8 @@ contract BendNftPoolTest is SetupHelper {
 
         nftPool.deposit(address(mockBAYC), testBaycTokenIds);
 
+        nftPool.claim(address(mockBAYC), testBaycTokenIds, address(0));
+
         nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
 
         vm.stopPrank();
@@ -45,6 +47,34 @@ contract BendNftPoolTest is SetupHelper {
         mockBAYC.mint(testBaycTokenIds[2]);
 
         nftPool.deposit(address(mockBAYC), testBaycTokenIds);
+
+        nftPool.claim(address(mockBAYC), testBaycTokenIds, address(0));
+
+        nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
+
+        vm.stopPrank();
+    }
+
+    function testBoundNFTClaimRewards() public {
+        address testUser = testUsers[0];
+        uint256[] memory testBaycTokenIds = new uint256[](1);
+
+        vm.startPrank(testUser);
+
+        mockBAYC.setApprovalForAll(address(nftPool), true);
+        stBAYC.setApprovalForAll(address(nftPool), true);
+
+        testBaycTokenIds[0] = 100;
+        mockBAYC.mint(testBaycTokenIds[0]);
+
+        nftPool.deposit(address(mockBAYC), testBaycTokenIds);
+
+        stBAYC.setApprovalForAll(address(mockBnftStBAYC), true);
+        mockBnftStBAYC.mint(testUser, testBaycTokenIds[0]);
+
+        nftPool.claim(address(mockBAYC), testBaycTokenIds, address(0));
+
+        mockBnftStBAYC.burn(testBaycTokenIds[0]);
 
         nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
 
