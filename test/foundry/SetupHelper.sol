@@ -4,7 +4,7 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
 
 import "../../contracts/test/MintableERC20.sol";
 import "../../contracts/test/MintableERC721.sol";
@@ -123,10 +123,14 @@ abstract contract SetupHelper is Test {
         mockApeStaking.addTimeRange(3, 575250000000000000000000, 1693422000, 1701284400, 856000000000000000000);
 
         // staked nfts
-        nftVault = new NftVault(IApeCoinStaking(address(mockApeStaking)), IDelegationRegistry(mockDelegationRegistry));
-        stBAYC = new StBAYC(mockBAYC, nftVault);
-        stMAYC = new StMAYC(mockMAYC, nftVault);
-        stBAKC = new StBAKC(mockBAKC, nftVault);
+        nftVault = new NftVault();
+        nftVault.initialize(IApeCoinStaking(address(mockApeStaking)), IDelegationRegistry(mockDelegationRegistry));
+        stBAYC = new StBAYC();
+        stBAYC.initialize(IERC721MetadataUpgradeable(address(mockBAYC)), nftVault);
+        stMAYC = new StMAYC();
+        stMAYC.initialize(IERC721MetadataUpgradeable(address(mockMAYC)), nftVault);
+        stBAKC = new StBAKC();
+        stBAKC.initialize(IERC721MetadataUpgradeable(address(mockBAKC)), nftVault);
 
         // boundNFTs
         mockBNFTRegistry = new MockBNFTRegistry();

@@ -1,26 +1,42 @@
 [
   {
+    "anonymous": false,
     "inputs": [
       {
-        "internalType": "contract IApeCoinStaking",
-        "name": "apeCoinStaking_",
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
         "type": "address"
       },
       {
-        "internalType": "contract IDelegationRegistry",
-        "name": "delegationRegistry_",
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    "name": "OwnershipTransferred",
+    "type": "event"
   },
   {
     "inputs": [],
     "name": "apeCoin",
     "outputs": [
       {
-        "internalType": "contract IERC20",
+        "internalType": "contract IERC20Upgradeable",
         "name": "",
         "type": "address"
       }
@@ -205,6 +221,24 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "contract IApeCoinStaking",
+        "name": "apeCoinStaking_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IDelegationRegistry",
+        "name": "delegationRegistry_",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "mayc",
     "outputs": [
@@ -246,6 +280,19 @@
         "internalType": "bytes4",
         "name": "",
         "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -369,6 +416,13 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -523,6 +577,19 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

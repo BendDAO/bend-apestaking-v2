@@ -4,8 +4,6 @@ import { ethers } from "hardhat";
 import {
   MintableERC721,
   MintableERC20,
-  IStakedNft,
-  INftVault,
   ApeCoinStaking,
   ICoinPool,
   INftPool,
@@ -20,6 +18,10 @@ import {
   MockBendLendPool,
   MockBendLendPoolLoan,
   LendingMigrator,
+  NftVault,
+  StBAKC,
+  StMAYC,
+  StBAYC,
 } from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -44,10 +46,10 @@ export interface Contracts {
   apeCoin: MintableERC20;
   apeStaking: ApeCoinStaking;
   // staked nft
-  nftVault: INftVault;
-  stBayc: IStakedNft;
-  stMayc: IStakedNft;
-  stBakc: IStakedNft;
+  nftVault: NftVault;
+  stBayc: StBAYC;
+  stMayc: StMAYC;
+  stBakc: StBAKC;
   // bound nft
   bnftRegistry: MockBNFTRegistry;
   bnftStBayc: MockBNFT;
@@ -203,10 +205,14 @@ export async function setupContracts(): Promise<Contracts> {
   ]);
 
   //  staked nft
-  const nftVault = await deployContract<INftVault>("NftVault", [apeStaking.address, delegateCash.address]);
-  const stBayc = await deployContract<IStakedNft>("StBAYC", [bayc.address, nftVault.address]);
-  const stMayc = await deployContract<IStakedNft>("StMAYC", [mayc.address, nftVault.address]);
-  const stBakc = await deployContract<IStakedNft>("StBAKC", [bakc.address, nftVault.address]);
+  const nftVault = await deployContract<NftVault>("NftVault", []);
+  await nftVault.initialize(apeStaking.address, delegateCash.address);
+  const stBayc = await deployContract<StBAYC>("StBAYC", []);
+  await stBayc.initialize(bayc.address, nftVault.address);
+  const stMayc = await deployContract<StMAYC>("StMAYC", []);
+  await stMayc.initialize(mayc.address, nftVault.address);
+  const stBakc = await deployContract<StBAKC>("StBAKC", []);
+  await stBakc.initialize(bakc.address, nftVault.address);
 
   // bound nft
   const bnftRegistry = await deployContract<MockBNFTRegistry>("MockBNFTRegistry", []);

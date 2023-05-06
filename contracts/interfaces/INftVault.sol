@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
-import {IApeCoinStaking} from "./IApeCoinStaking.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-interface INftVault is IERC721Receiver {
+import {IApeCoinStaking} from "./IApeCoinStaking.sol";
+import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
+
+interface INftVault is IERC721ReceiverUpgradeable {
     struct Refund {
         uint256 principal;
         uint256 reward;

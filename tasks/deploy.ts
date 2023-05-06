@@ -16,6 +16,7 @@ import {
 import {
   deployContract,
   deployImplementation,
+  deployProxyContract,
   deployProxyContractWithoutInit,
   getContractAddressFromDB,
   getContractFromDB,
@@ -24,7 +25,7 @@ import {
 } from "./utils/helpers";
 import { verifyEtherscanContract } from "./utils/verification";
 
-task("deploy:full:stnft", "Deploy all contracts for staked nfts").setAction(async (_, { run }) => {
+task("deploy:full:StakedNFT", "Deploy all contracts for staked nfts").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
@@ -41,7 +42,7 @@ task("deploy:NftVault", "Deploy NftVault").setAction(async (_, { network, run })
   const apeStaking = getParams(APE_STAKING, network.name);
   const delegateCash = getParams(DELEAGATE_CASH, network.name);
 
-  await deployContract("NftVault", [apeStaking, delegateCash], false);
+  await deployProxyContract("NftVault", [apeStaking, delegateCash], false);
 });
 
 task("deploy:StBAYC", "Deploy StBAYC").setAction(async (_, { network, run }) => {
@@ -51,7 +52,7 @@ task("deploy:StBAYC", "Deploy StBAYC").setAction(async (_, { network, run }) => 
   const bayc = getParams(BAYC, network.name);
   const nftVault = await getContractAddressFromDB("NftVault");
 
-  await deployContract("StBAYC", [bayc, nftVault], false);
+  await deployProxyContract("StBAYC", [bayc, nftVault], false);
 });
 
 task("deploy:StMAYC", "Deploy StMAYC").setAction(async (_, { network, run }) => {
@@ -61,7 +62,7 @@ task("deploy:StMAYC", "Deploy StMAYC").setAction(async (_, { network, run }) => 
   const mayc = getParams(MAYC, network.name);
   const nftVault = await getContractAddressFromDB("NftVault");
 
-  await deployContract("StMAYC", [mayc, nftVault], false);
+  await deployProxyContract("StMAYC", [mayc, nftVault], false);
 });
 
 task("deploy:StBAKC", "Deploy StBAKC").setAction(async (_, { network, run }) => {
@@ -71,7 +72,7 @@ task("deploy:StBAKC", "Deploy StBAKC").setAction(async (_, { network, run }) => 
   const bakc = getParams(BAKC, network.name);
   const nftVault = await getContractAddressFromDB("NftVault");
 
-  await deployContract("StBAKC", [bakc, nftVault], false);
+  await deployProxyContract("StBAKC", [bakc, nftVault], false);
 });
 
 task("deploy:full:staking", "Deploy all contracts for staking").setAction(async (_, { run }) => {

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
-import {IERC721Metadata} from "@openzeppelin/contracts/interfaces/IERC721Metadata.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/interfaces/IERC721Receiver.sol";
-import {IERC721Enumerable} from "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
+import {IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC721MetadataUpgradeable.sol";
+import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC721ReceiverUpgradeable.sol";
+import {IERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC721EnumerableUpgradeable.sol";
 
-interface IStakedNft is IERC721Metadata, IERC721Receiver, IERC721Enumerable {
+interface IStakedNft is IERC721MetadataUpgradeable, IERC721ReceiverUpgradeable, IERC721EnumerableUpgradeable {
     function mint(address staker, address to, uint256[] calldata tokenIds) external;
 
     function burn(uint256[] calldata tokenIds) external;

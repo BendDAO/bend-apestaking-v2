@@ -3,8 +3,10 @@ pragma solidity 0.8.18;
 
 import {INftVault} from "../interfaces/INftVault.sol";
 
-import {StNft, IERC721Metadata} from "./StNft.sol";
+import {StNft, IERC721MetadataUpgradeable} from "./StNft.sol";
 
 contract StBAKC is StNft {
-    constructor(IERC721Metadata bakc_, INftVault nftVault_) StNft(bakc_, nftVault_, "stBAKC", "Staked BAKC") {}
+    function initialize(IERC721MetadataUpgradeable bakc_, INftVault nftVault_) public initializer {
+        __StNft_init(bakc_, nftVault_, "stBAKC", "Staked BAKC");
+    }
 }

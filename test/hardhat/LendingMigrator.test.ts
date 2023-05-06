@@ -55,7 +55,7 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
       totalBorrowAmounts = totalBorrowAmounts.add(borrowAmounts[i]);
       await contracts.mockBendLendPool
         .connect(owner)
-        .borrow(contracts.weth.address, borrowAmounts[i], contracts.bayc.address, baycTokenIds[i], owner.address, 0);
+        .borrow(contracts.weth.address, borrowAmounts[i], contracts.bayc.address, id, owner.address, 0);
     }
 
     const params = defaultAbiCoder.encode(
@@ -73,7 +73,7 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
       0
     );
 
-    for (const [i, id] of baycTokenIds.entries()) {
+    for (const [, id] of baycTokenIds.entries()) {
       const nftLoanId = await contracts.mockBendLendPoolLoan.getCollateralLoanId(contracts.bayc.address, id);
 
       expect(await contracts.bayc.ownerOf(id)).eq(contracts.nftVault.address);
@@ -97,17 +97,14 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
       totalBorrowAmounts = totalBorrowAmounts.add(borrowAmounts[i]);
       await contracts.mockBendLendPool
         .connect(owner)
-        .borrow(contracts.weth.address, borrowAmounts[i], contracts.bayc.address, baycTokenIds[i], owner.address, 0);
+        .borrow(contracts.weth.address, borrowAmounts[i], contracts.bayc.address, id, owner.address, 0);
     }
 
     // set auction
     let bidFines = [BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)];
     let totalBidFines = BigNumber.from(0);
     for (const [i, id] of baycTokenIds.entries()) {
-      const nftLoanId = await contracts.mockBendLendPoolLoan.getCollateralLoanId(
-        contracts.bayc.address,
-        baycTokenIds[i]
-      );
+      const nftLoanId = await contracts.mockBendLendPoolLoan.getCollateralLoanId(contracts.bayc.address, id);
       bidFines[i] = borrowAmounts[i].mul(5).div(100);
       totalBidFines = totalBidFines.add(bidFines[i]);
       await contracts.mockBendLendPoolLoan.setBidFine(nftLoanId, bidFines[i]);
@@ -130,7 +127,7 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
       0
     );
 
-    for (const [i, id] of baycTokenIds.entries()) {
+    for (const [, id] of baycTokenIds.entries()) {
       const nftLoanId = await contracts.mockBendLendPoolLoan.getCollateralLoanId(contracts.bayc.address, id);
 
       expect(await contracts.bayc.ownerOf(id)).eq(contracts.nftVault.address);

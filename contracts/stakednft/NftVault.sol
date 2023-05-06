@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {SafeCastUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-import {INftVault, IApeCoinStaking, IERC721Receiver} from "../interfaces/INftVault.sol";
+import {INftVault, IApeCoinStaking, IERC721ReceiverUpgradeable} from "../interfaces/INftVault.sol";
 import {IDelegationRegistry} from "../interfaces/IDelegationRegistry.sol";
 
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
-contract NftVault is INftVault {
-    using SafeERC20 for IERC20;
-    using SafeCast for uint256;
-    using SafeCast for uint248;
-    using SafeCast for int256;
+contract NftVault is INftVault, OwnableUpgradeable {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeCastUpgradeable for uint256;
+    using SafeCastUpgradeable for uint248;
+    using SafeCastUpgradeable for int256;
     using ApeStakingLib for IApeCoinStaking;
 
     struct NftStatus {
@@ -32,7 +33,7 @@ contract NftVault is INftVault {
     mapping(address => mapping(address => Position)) private _positions;
 
     IApeCoinStaking public apeCoinStaking;
-    IERC20 public apeCoin;
+    IERC20Upgradeable public apeCoin;
     address public bayc;
     address public mayc;
     address public bakc;
@@ -48,10 +49,12 @@ contract NftVault is INftVault {
         _;
     }
 
-    constructor(IApeCoinStaking apeCoinStaking_, IDelegationRegistry delegationRegistry_) {
+    function initialize(IApeCoinStaking apeCoinStaking_, IDelegationRegistry delegationRegistry_) public initializer {
+        __Ownable_init();
+
         apeCoinStaking = apeCoinStaking_;
         delegationRegistry = delegationRegistry_;
-        apeCoin = IERC20(apeCoinStaking.apeCoin());
+        apeCoin = IERC20Upgradeable(apeCoinStaking.apeCoin());
         bayc = address(apeCoinStaking.bayc());
         mayc = address(apeCoinStaking.mayc());
         bakc = address(apeCoinStaking.bakc());
@@ -64,7 +67,7 @@ contract NftVault is INftVault {
         uint256,
         bytes calldata
     ) external view override onlyApeCaller returns (bytes4) {
-        return IERC721Receiver.onERC721Received.selector;
+        return IERC721ReceiverUpgradeable.onERC721Received.selector;
     }
 
     function stakerOf(address nft_, uint256 tokenId_) external view onlyApe(nft_) returns (address) {
@@ -137,7 +140,7 @@ contract NftVault is INftVault {
             // block partially stake from official contract
             position_ = apeCoinStaking.getNftPosition(nft_, tokenIds_[i]);
             require(position_.stakedAmount == 0, "nftVault: nft already staked");
-            IERC721(nft_).safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
+            IERC721Upgradeable(nft_).safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
             _nfts[nft_][tokenIds_[i]] = NftStatus(msg.sender, staker_);
         }
     }
@@ -386,7 +389,7 @@ contract NftVault is INftVault {
             require(msg.sender == _ownerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft owner");
             delete _nfts[nft_][tokenIds_[i]];
             // transfer nft
-            IERC721(nft_).safeTransferFrom(address(this), msg.sender, tokenIds_[i]);
+            IERC721Upgradeable(nft_).safeTransferFrom(address(this), msg.sender, tokenIds_[i]);
         }
     }
 

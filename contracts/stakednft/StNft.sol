@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
-import {ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ERC721EnumerableUpgradeable, ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 
-import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
-import {IERC165} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/interfaces/IERC721Receiver.sol";
+import {IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC721ReceiverUpgradeable.sol";
 
 import {IStakedNft} from "../interfaces/IStakedNft.sol";
 import {INftVault} from "../interfaces/INftVault.sol";
 
-abstract contract StNft is IStakedNft, ERC721Enumerable {
-    IERC721Metadata private _nft;
+abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgradeable {
+    IERC721MetadataUpgradeable private _nft;
     INftVault public nftVault;
 
     // Mapping from staker to list of staked token IDs
@@ -26,26 +27,36 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
     // Mapping from token ID to minter
     mapping(uint256 => address) public override minterOf;
 
-    constructor(
-        IERC721Metadata nft_,
+    string private _customBaseURI;
+
+    function __StNft_init() internal onlyInitializing {
+        __Ownable_init_unchained();
+    }
+
+    function __StNft_init(
+        IERC721MetadataUpgradeable nft_,
         INftVault nftVault_,
         string memory name_,
         string memory symbol_
-    ) ERC721(name_, symbol_) {
+    ) internal onlyInitializing {
+        __Ownable_init();
+        __ERC721_init(name_, symbol_);
+        __ERC721Enumerable_init();
+
         _nft = nft_;
         nftVault = nftVault_;
-        IERC721Metadata(_nft).setApprovalForAll(address(nftVault), true);
+        _nft.setApprovalForAll(address(nftVault), true);
     }
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC721Enumerable) returns (bool) {
+    ) public view virtual override(IERC165Upgradeable, ERC721EnumerableUpgradeable) returns (bool) {
         return interfaceId == type(IStakedNft).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) external view override returns (bytes4) {
         require(_msgSender() == address(_nft), "StNft: nft not acceptable");
-        return IERC721Receiver.onERC721Received.selector;
+        return IERC721ReceiverUpgradeable.onERC721Received.selector;
     }
 
     function mint(address staker_, address to_, uint256[] calldata tokenIds_) external override {
@@ -125,7 +136,21 @@ abstract contract StNft is IStakedNft, ERC721Enumerable {
         return address(_nft);
     }
 
-    function tokenURI(uint256 tokenId_) public view override(ERC721, IERC721Metadata) returns (string memory) {
+    function setBaseURI(string memory baseURI_) public onlyOwner {
+        _customBaseURI = baseURI_;
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _customBaseURI;
+    }
+
+    function tokenURI(
+        uint256 tokenId_
+    ) public view override(ERC721Upgradeable, IERC721MetadataUpgradeable) returns (string memory) {
+        if (bytes(_customBaseURI).length > 0) {
+            return super.tokenURI(tokenId_);
+        }
+
         return _nft.tokenURI(tokenId_);
     }
 
