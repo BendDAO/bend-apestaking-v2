@@ -24,6 +24,12 @@ interface INftVault is IERC721ReceiverUpgradeable {
 
     function pendingRewards(address nft_, address staker_) external view returns (uint256);
 
+    function totalStakingNft(address nft_, address staker_) external view returns (uint256);
+
+    function stakingNftIdByIndex(address nft_, address staker_, uint256 index_) external view returns (uint256);
+
+    function isStaking(address nft_, address staker_, uint256 tokenId_) external view returns (bool);
+
     // delegate.cash
 
     function setDelegateCash(address delegate_, address nft_, uint256[] calldata tokenIds, bool value) external;

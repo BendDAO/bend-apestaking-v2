@@ -6,6 +6,8 @@ import { BigNumber, constants } from "ethers";
 import { MintableERC721 } from "../../../typechain-types";
 import { advanceBlock, increaseBy } from "../helpers/block-traveller";
 
+/* eslint-disable @typescript-eslint/no-var-requires */
+const _ = require("lodash");
 /* eslint-disable no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable node/no-unsupported-features/es-builtins */
@@ -82,7 +84,10 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
         amount,
       };
       stakeAmount = stakeAmount.add(amount);
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.false;
     }
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(0);
+
     let poolPosition = await contracts.nftVault.positionOf(contracts.bayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(constants.Zero);
     expect(poolPosition.rewardsDebt).eq(constants.Zero);
@@ -101,7 +106,16 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.stakedAmount).eq(nft.amount);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bayc.ownerOf(nft.tokenId)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, nft.tokenId)).be.true;
     }
+    const stakingAmount = await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address);
+    expect(stakingAmount).eq(nfts.length);
+
+    let ids = [];
+    for (let i = 0; i < stakingAmount.toNumber(); i++) {
+      ids.push((await contracts.nftVault.stakingNftIdByIndex(contracts.bayc.address, staker.address, i)).toNumber());
+    }
+    expect(_.sortBy(baycTokenIds)).to.deep.eq(_.sortBy(ids));
     lastRevert = "stakeBaycPool";
     await snapshots.capture(lastRevert);
   });
@@ -152,7 +166,10 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       };
       unstakeAmount = unstakeAmount.add(amount);
       rewardAmount = rewardAmount.add(reward);
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.true;
     }
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(baycTokenIds.length);
 
     await expect(contracts.nftVault.connect(staker).unstakeBaycPool(nfts, recipient.address)).changeTokenBalances(
       contracts.apeCoin,
@@ -167,10 +184,13 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       allPositionRewardsDebt = allPositionRewardsDebt.add(position.rewardsDebt);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(position.stakedAmount).eq(constants.Zero);
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.false;
     }
     const poolPosition = await contracts.nftVault.positionOf(contracts.bayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(allPositionStakedAmount);
     expect(poolPosition.rewardsDebt).eq(allPositionRewardsDebt);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(0);
   });
 
   it("unstakeBaycPool: unstake partially", async () => {
@@ -181,6 +201,8 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     let nfts = [];
     let unstakeAmount = constants.Zero;
     let rewardAmount = constants.Zero;
+    let unstakeNftAmount = 0;
+    let stakingNftIds = [];
     const withdrawAmount = new Map<number, BigNumber>();
     const positions = new Map<number, any>();
 
@@ -191,7 +213,9 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       if (i % 2 === 1) {
         amount = amount.div(2);
         reward = constants.Zero;
+        stakingNftIds.push(id);
       } else {
+        unstakeNftAmount++;
         reward = await contracts.apeStaking.pendingRewards(1, constants.AddressZero, id);
       }
       withdrawAmount.set(id, amount);
@@ -202,13 +226,17 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       unstakeAmount = unstakeAmount.add(amount);
       rewardAmount = rewardAmount.add(reward);
       positions.set(id, posision);
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.true;
     }
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(baycTokenIds.length);
 
     await expect(contracts.nftVault.connect(staker).unstakeBaycPool(nfts, recipient.address)).changeTokenBalances(
       contracts.apeCoin,
       [recipient.address, contracts.nftVault.address, staker.address, owner.address],
       [unstakeAmount.add(rewardAmount), constants.Zero, constants.Zero, constants.Zero]
     );
+
     const accumulatedRewardsPerShare = (await contracts.apeStaking.pools(1)).accumulatedRewardsPerShare;
 
     let allPositionStakedAmount = constants.Zero;
@@ -221,16 +249,27 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       if (withdrawAmount.get(id)?.eq(prePosition.stakedAmount)) {
         expect(position.stakedAmount).eq(constants.Zero);
         expect(position.rewardsDebt).eq(constants.Zero);
+        expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.false;
       } else {
         expect(position.stakedAmount).eq(prePosition.stakedAmount.sub(withdrawAmount.get(id)));
         expect(position.rewardsDebt).eq(
           constants.Zero.sub((withdrawAmount.get(id) as BigNumber).mul(accumulatedRewardsPerShare))
         );
+        expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.true;
       }
     }
     const poolPosition = await contracts.nftVault.positionOf(contracts.bayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(allPositionStakedAmount);
     expect(poolPosition.rewardsDebt).eq(allPositionRewardsDebt);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(
+      baycTokenIds.length - unstakeNftAmount
+    );
+    let ids = [];
+    for (let i = 0; i < baycTokenIds.length - unstakeNftAmount; i++) {
+      ids.push((await contracts.nftVault.stakingNftIdByIndex(contracts.bayc.address, staker.address, i)).toNumber());
+    }
+    expect(_.sortBy(stakingNftIds)).to.deep.eq(_.sortBy(ids));
   });
 
   it("withdrawNft: withdraw nonpaired bayc", async () => {
@@ -246,7 +285,9 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       const position = await contracts.apeStaking.nftPosition(1, id);
       principal = principal.add(position.stakedAmount);
       reward = reward.add(await contracts.apeStaking.pendingRewards(1, constants.AddressZero, id));
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.true;
     }
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(baycTokenIds.length);
 
     await expect(
       contracts.nftVault.connect(owner).withdrawNft(contracts.bayc.address, baycTokenIds)
@@ -261,6 +302,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.stakedAmount).eq(constants.Zero);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bayc.ownerOf(id)).eq(owner.address);
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.false;
     }
     const refund = await contracts.nftVault.refundOf(contracts.bayc.address, staker.address);
     expect(refund.principal).eq(principal);
@@ -268,6 +310,8 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     const poolPosition = await contracts.nftVault.positionOf(contracts.bayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(constants.Zero);
     expect(poolPosition.rewardsDebt).eq(constants.Zero);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(0);
   });
 
   it("stakeMaycPool", async () => {
@@ -280,10 +324,14 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
         amount,
       };
       stakeAmount = stakeAmount.add(amount);
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.false;
     }
     const poolPosition = await contracts.nftVault.positionOf(contracts.mayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(constants.Zero);
     expect(poolPosition.rewardsDebt).eq(constants.Zero);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(0);
+
     await expect(contracts.nftVault.connect(staker).stakeMaycPool(nfts)).changeTokenBalances(
       contracts.apeCoin,
       [staker.address, contracts.nftVault.address, contracts.apeStaking.address],
@@ -299,7 +347,18 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.stakedAmount).eq(nft.amount);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.mayc.ownerOf(nft.tokenId)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, nft.tokenId)).be.true;
     }
+
+    const stakingNftAmount = await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address);
+    expect(stakingNftAmount).eq(nfts.length);
+
+    let ids = [];
+    for (let i = 0; i < stakingNftAmount.toNumber(); i++) {
+      ids.push((await contracts.nftVault.stakingNftIdByIndex(contracts.mayc.address, staker.address, i)).toNumber());
+    }
+    expect(_.sortBy(maycTokenIds)).to.deep.eq(_.sortBy(ids));
+
     lastRevert = "stakeMaycPool";
     await snapshots.capture(lastRevert);
   });
@@ -350,7 +409,9 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       };
       unstakeAmount = unstakeAmount.add(amount);
       rewardAmount = rewardAmount.add(reward);
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.true;
     }
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(maycTokenIds.length);
 
     await expect(contracts.nftVault.connect(staker).unstakeMaycPool(nfts, recipient.address)).changeTokenBalances(
       contracts.apeCoin,
@@ -367,10 +428,12 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       allPositionRewardsDebt = allPositionRewardsDebt.add(position.rewardsDebt);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(position.stakedAmount).eq(constants.Zero);
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.false;
     }
     const poolPosition = await contracts.nftVault.positionOf(contracts.mayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(allPositionStakedAmount);
     expect(poolPosition.rewardsDebt).eq(allPositionRewardsDebt);
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(0);
   });
 
   it("unstakeMaycPool: unstake partially", async () => {
@@ -381,6 +444,8 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     let nfts = [];
     let unstakeAmount = constants.Zero;
     let rewardAmount = constants.Zero;
+    let unstakeNftAmount = 0;
+    let stakingNftIds = [];
     const withdrawAmount = new Map<number, BigNumber>();
     const positions = new Map<number, any>();
     for (let [i, id] of maycTokenIds.entries()) {
@@ -390,7 +455,9 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       if (i % 2 === 1) {
         amount = amount.div(2);
         reward = constants.Zero;
+        stakingNftIds.push(id);
       } else {
+        unstakeNftAmount++;
         reward = await contracts.apeStaking.pendingRewards(2, constants.AddressZero, id);
       }
       nfts[i] = {
@@ -401,7 +468,10 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       rewardAmount = rewardAmount.add(reward);
       withdrawAmount.set(id, amount);
       positions.set(id, position);
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.true;
     }
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(maycTokenIds.length);
 
     await expect(contracts.nftVault.connect(staker).unstakeMaycPool(nfts, recipient.address)).changeTokenBalances(
       contracts.apeCoin,
@@ -421,16 +491,27 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       if (withdrawAmount.get(id)?.eq(prePosition.stakedAmount)) {
         expect(position.stakedAmount).eq(constants.Zero);
         expect(position.rewardsDebt).eq(constants.Zero);
+        expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.false;
       } else {
         expect(position.stakedAmount).eq(prePosition.stakedAmount.sub(withdrawAmount.get(id)));
         expect(position.rewardsDebt).eq(
           constants.Zero.sub((withdrawAmount.get(id) as BigNumber).mul(accumulatedRewardsPerShare))
         );
+        expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.true;
       }
     }
     const poolPosition = await contracts.nftVault.positionOf(contracts.mayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(allPositionStakedAmount);
     expect(poolPosition.rewardsDebt).eq(allPositionRewardsDebt);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(
+      maycTokenIds.length - unstakeNftAmount
+    );
+    let ids = [];
+    for (let i = 0; i < maycTokenIds.length - unstakeNftAmount; i++) {
+      ids.push((await contracts.nftVault.stakingNftIdByIndex(contracts.mayc.address, staker.address, i)).toNumber());
+    }
+    expect(_.sortBy(stakingNftIds)).to.deep.eq(_.sortBy(ids));
   });
 
   it("withdrawNft: withdraw nonpaired mayc", async () => {
@@ -446,7 +527,10 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       const position = await contracts.apeStaking.nftPosition(2, id);
       principal = principal.add(position.stakedAmount);
       reward = reward.add(await contracts.apeStaking.pendingRewards(2, constants.AddressZero, id));
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.true;
     }
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(maycTokenIds.length);
 
     await expect(
       contracts.nftVault.connect(owner).withdrawNft(contracts.mayc.address, maycTokenIds)
@@ -461,6 +545,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.stakedAmount).eq(constants.Zero);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.mayc.ownerOf(id)).eq(owner.address);
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.false;
     }
     const refund = await contracts.nftVault.refundOf(contracts.mayc.address, staker.address);
     expect(refund.principal).eq(principal);
@@ -468,6 +553,8 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     const poolPosition = await contracts.nftVault.positionOf(contracts.mayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(constants.Zero);
     expect(poolPosition.rewardsDebt).eq(constants.Zero);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(0);
   });
 
   it("stakeBakcPool", async () => {
@@ -495,6 +582,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       }
 
       stakeAmount = stakeAmount.add(amount);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, id)).be.false;
     }
     const prePoolPosition = await contracts.nftVault.positionOf(contracts.bakc.address, staker.address);
     expect(prePoolPosition.stakedAmount).eq(constants.Zero);
@@ -519,6 +607,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bakc.ownerOf(nft.bakcTokenId)).eq(contracts.nftVault.address);
       expect(await contracts.bayc.ownerOf(nft.mainTokenId)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, nft.bakcTokenId)).be.true;
     }
 
     for (let nft of maycNfts) {
@@ -529,10 +618,20 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bakc.ownerOf(nft.bakcTokenId)).eq(contracts.nftVault.address);
       expect(await contracts.mayc.ownerOf(nft.mainTokenId)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, nft.bakcTokenId)).be.true;
     }
 
     expect(poolPosition.stakedAmount).eq(allPositionStakedAmount);
     expect(poolPosition.rewardsDebt).eq(allPositionRewardsDebt);
+
+    const stakingNftAmount = await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address);
+    expect(stakingNftAmount).eq(baycNfts.length + maycNfts.length);
+
+    let ids = [];
+    for (let i = 0; i < stakingNftAmount.toNumber(); i++) {
+      ids.push((await contracts.nftVault.stakingNftIdByIndex(contracts.bakc.address, staker.address, i)).toNumber());
+    }
+    expect(_.sortBy(bakcTokenIds)).to.deep.eq(_.sortBy(ids));
 
     lastRevert = "stakeBakcPool";
     await snapshots.capture(lastRevert);
@@ -626,7 +725,11 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       }
       rewardAmount = rewardAmount.add(reward);
       unstakeAmount = unstakeAmount.add(stakedAmount);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, id)).be.true;
     }
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(bakcTokenIds.length);
+
     await expect(
       contracts.nftVault.connect(staker).unstakeBakcPool(baycNfts, maycNfts, recipient.address)
     ).changeTokenBalances(
@@ -654,6 +757,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bakc.ownerOf(nft.bakcTokenId)).eq(contracts.nftVault.address);
       expect(await contracts.bayc.ownerOf(nft.mainTokenId)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, nft.bakcTokenId)).be.false;
     }
 
     for (let nft of maycNfts) {
@@ -664,10 +768,13 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bakc.ownerOf(nft.bakcTokenId)).eq(contracts.nftVault.address);
       expect(await contracts.mayc.ownerOf(nft.mainTokenId)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, nft.bakcTokenId)).be.false;
     }
 
     expect(poolPosition.stakedAmount).eq(allPositionStakedAmount);
     expect(poolPosition.rewardsDebt).eq(allPositionRewardsDebt);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(0);
   });
 
   it("unstakeBakcPool: unstake partially", async () => {
@@ -682,6 +789,8 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     let maycIndex = 0;
     const unstakedAmountMap = new Map<number, BigNumber>();
     const positions = new Map<number, any>();
+    let unstakeNftAmount = 0;
+    let stakingNftIds = [];
     for (let [i, id] of bakcTokenIds.entries()) {
       const position = await contracts.apeStaking.nftPosition(3, id);
       positions.set(id, position);
@@ -689,10 +798,12 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       let reward;
       let fullUnstake = false;
       if (i % 2 === 1) {
+        stakingNftIds.push(id);
         stakedAmount = stakedAmount.div(2);
         reward = constants.Zero;
       } else {
         fullUnstake = true;
+        unstakeNftAmount++;
         reward = await contracts.apeStaking.pendingRewards(3, constants.AddressZero, id);
       }
       const pairStauts = await contracts.apeStaking.bakcToMain(id, 1);
@@ -717,7 +828,11 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       rewardAmount = rewardAmount.add(reward);
       unstakeAmount = unstakeAmount.add(stakedAmount);
       unstakedAmountMap.set(id, stakedAmount);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, id)).be.true;
     }
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(bakcTokenIds.length);
+
     const prePoolPosition = await contracts.nftVault.positionOf(contracts.bakc.address, staker.address);
     await expect(
       contracts.nftVault.connect(staker).unstakeBakcPool(baycNfts, maycNfts, recipient.address)
@@ -748,11 +863,13 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       if (unstakedAmountMap.get(nft.bakcTokenId)?.eq(prePosition.stakedAmount)) {
         expect(position.stakedAmount).eq(constants.Zero);
         expect(position.rewardsDebt).eq(constants.Zero);
+        expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, nft.bakcTokenId)).be.false;
       } else {
         expect(position.stakedAmount).eq(prePosition.stakedAmount.sub(unstakedAmountMap.get(nft.bakcTokenId)));
         expect(position.rewardsDebt).eq(
           constants.Zero.sub((unstakedAmountMap.get(nft.bakcTokenId) as BigNumber).mul(accumulatedRewardsPerShare))
         );
+        expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, nft.bakcTokenId)).be.true;
       }
     }
 
@@ -766,15 +883,26 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       if (unstakedAmountMap.get(nft.bakcTokenId)?.eq(prePosition.stakedAmount)) {
         expect(position.stakedAmount).eq(constants.Zero);
         expect(position.rewardsDebt).eq(constants.Zero);
+        expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, nft.bakcTokenId)).be.false;
       } else {
         expect(position.stakedAmount).eq(prePosition.stakedAmount.sub(unstakedAmountMap.get(nft.bakcTokenId)));
         expect(position.rewardsDebt).eq(
           constants.Zero.sub((unstakedAmountMap.get(nft.bakcTokenId) as BigNumber).mul(accumulatedRewardsPerShare))
         );
+        expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, nft.bakcTokenId)).be.true;
       }
     }
     expect(poolPosition.stakedAmount).eq(allPositionStakedAmount);
     expect(poolPosition.rewardsDebt).eq(allPositionRewardsDebt);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(
+      bakcTokenIds.length - unstakeNftAmount
+    );
+    let ids = [];
+    for (let i = 0; i < bakcTokenIds.length - unstakeNftAmount; i++) {
+      ids.push((await contracts.nftVault.stakingNftIdByIndex(contracts.bakc.address, staker.address, i)).toNumber());
+    }
+    expect(_.sortBy(stakingNftIds)).to.deep.eq(_.sortBy(ids));
   });
 
   it("withdrawNft: withdraw paired and nonpaired bayc", async () => {
@@ -802,8 +930,14 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
           await contracts.apeStaking.pendingRewards(3, constants.AddressZero, pairStatus.tokenId)
         );
         pairedBakcTokenIds.push(pairStatus.tokenId);
+        expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, pairStatus.tokenId)).be.true;
       }
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.true;
     }
+
+    const bakcStakingNftAmount = await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(baycTokenIds.length);
 
     const preBakcPoolPosition = await contracts.nftVault.positionOf(contracts.bakc.address, staker.address);
     await expect(
@@ -817,11 +951,14 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       ]
     );
 
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(0);
+
     for (const id of baycTokenIds) {
       const position = await contracts.apeStaking.nftPosition(1, id);
       expect(position.stakedAmount).eq(constants.Zero);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bayc.ownerOf(id)).eq(owner.address);
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.false;
     }
     const refund = await contracts.nftVault.refundOf(contracts.bayc.address, staker.address);
     expect(refund.principal).eq(baycPrincipal);
@@ -830,11 +967,16 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     expect(poolPosition.stakedAmount).eq(constants.Zero);
     expect(poolPosition.rewardsDebt).eq(constants.Zero);
 
+    expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(
+      bakcStakingNftAmount.sub(pairedBakcTokenIds.length)
+    );
+
     for (const id of pairedBakcTokenIds) {
       const position = await contracts.apeStaking.nftPosition(3, id);
       expect(position.stakedAmount).eq(constants.Zero);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bakc.ownerOf(id)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, id)).be.false;
     }
     const bakcRefund = await contracts.nftVault.refundOf(contracts.bakc.address, staker.address);
     expect(bakcRefund.principal).eq(bakcPrincipal);
@@ -870,8 +1012,14 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
           await contracts.apeStaking.pendingRewards(3, constants.AddressZero, pairStatus.tokenId)
         );
         pairedBakcTokenIds.push(pairStatus.tokenId);
+        expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, pairStatus.tokenId)).be.true;
       }
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.true;
     }
+
+    const bakcStakingNftAmount = await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(maycTokenIds.length);
 
     const preBakcPoolPosition = await contracts.nftVault.positionOf(contracts.bakc.address, staker.address);
     await expect(
@@ -885,6 +1033,8 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       ]
     );
 
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(0);
+
     for (const id of maycTokenIds) {
       const position = await contracts.apeStaking.nftPosition(2, id);
       expect(position.stakedAmount).eq(constants.Zero);
@@ -897,6 +1047,10 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     const poolPosition = await contracts.nftVault.positionOf(contracts.mayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(constants.Zero);
     expect(poolPosition.rewardsDebt).eq(constants.Zero);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(
+      bakcStakingNftAmount.sub(pairedBakcTokenIds.length)
+    );
 
     for (const id of pairedBakcTokenIds) {
       const position = await contracts.apeStaking.nftPosition(3, id);
@@ -938,7 +1092,12 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
         pairStatus = await contracts.apeStaking.bakcToMain(id, 2);
         pairedMaycTokenIds.push(pairStatus.tokenId);
       }
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, id)).be.true;
     }
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(bakcTokenIds.length);
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(baycTokenIds.length);
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(maycTokenIds.length);
 
     const preBakcPoolPosition = await contracts.nftVault.positionOf(contracts.bakc.address, staker.address);
     await expect(
@@ -951,6 +1110,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
 
     for (const id of pairedBaycTokenIds) {
       expect(await contracts.bayc.ownerOf(id)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.bayc.address, staker.address, id)).be.true;
     }
     let refund = await contracts.nftVault.refundOf(contracts.bayc.address, staker.address);
     expect(refund.principal).eq(constants.Zero);
@@ -958,6 +1118,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
 
     for (const id of pairedMaycTokenIds) {
       expect(await contracts.mayc.ownerOf(id)).eq(contracts.nftVault.address);
+      expect(await contracts.nftVault.isStaking(contracts.mayc.address, staker.address, id)).be.true;
     }
     refund = await contracts.nftVault.refundOf(contracts.mayc.address, staker.address);
     expect(refund.principal).eq(constants.Zero);
@@ -968,6 +1129,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(position.stakedAmount).eq(constants.Zero);
       expect(position.rewardsDebt).eq(constants.Zero);
       expect(await contracts.bakc.ownerOf(id)).eq(owner.address);
+      expect(await contracts.nftVault.isStaking(contracts.bakc.address, staker.address, id)).be.false;
     }
     const bakcRefund = await contracts.nftVault.refundOf(contracts.bakc.address, staker.address);
     expect(bakcRefund.principal).eq(bakcPrincipal);
@@ -976,5 +1138,9 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     const bakcPoolPosition = await contracts.nftVault.positionOf(contracts.bakc.address, staker.address);
     expect(bakcPoolPosition.stakedAmount).eq(preBakcPoolPosition.stakedAmount.sub(bakcPrincipal));
     expect(bakcPoolPosition.rewardsDebt).eq(constants.Zero);
+
+    expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(0);
+    expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(baycTokenIds.length);
+    expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(maycTokenIds.length);
   });
 });

@@ -3,8 +3,9 @@ pragma solidity 0.8.18;
 
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {SafeCastUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
-
+import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
@@ -14,6 +15,7 @@ import {IDelegationRegistry} from "../interfaces/IDelegationRegistry.sol";
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
 contract NftVault is INftVault, OwnableUpgradeable {
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeCastUpgradeable for uint256;
     using SafeCastUpgradeable for uint248;
@@ -31,6 +33,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
     mapping(address => mapping(address => Refund)) private _refunds;
     // nft address => staker address => position
     mapping(address => mapping(address => Position)) private _positions;
+    // nft address => staker address => staking nft tokenId array
+    mapping(address => mapping(address => EnumerableSetUpgradeable.UintSet)) private _stakingTokenIds;
 
     IApeCoinStaking public apeCoinStaking;
     IERC20Upgradeable public apeCoin;
@@ -116,6 +120,18 @@ contract NftVault is INftVault, OwnableUpgradeable {
         return
             ((position.stakedAmount * accumulatedRewardsPerShare).toInt256() - position.rewardsDebt).toUint256() /
             ApeStakingLib.APE_COIN_PRECISION;
+    }
+
+    function totalStakingNft(address nft_, address staker_) external view returns (uint256) {
+        return _stakingTokenIds[nft_][staker_].length();
+    }
+
+    function stakingNftIdByIndex(address nft_, address staker_, uint256 index_) external view returns (uint256) {
+        return _stakingTokenIds[nft_][staker_].at(index_);
+    }
+
+    function isStaking(address nft_, address staker_, uint256 tokenId_) external view returns (bool) {
+        return _stakingTokenIds[nft_][staker_].contains(tokenId_);
     }
 
     function setDelegateCash(
@@ -214,6 +230,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
                         amount: vars.stakedAmount.toUint224()
                     });
                     vars.singleNftIndex += 1;
+                    _stakingTokenIds[nft_][vars.staker].remove(vars.tokenId);
                 }
             }
             if (nft_ == bayc) {
@@ -256,6 +273,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
                         isUncommit: true
                     });
                     vars.pairingNftIndex += 1;
+                    _stakingTokenIds[bakc][vars.staker].remove(vars.bakcTokenId);
                 }
             }
             vars.cachedBalance = apeCoin.balanceOf(address(this));
@@ -345,8 +363,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
                             amount: vars.stakedAmount.toUint184(),
                             isUncommit: true
                         });
-
                         vars.baycIndex += 1;
+                        _stakingTokenIds[bakc][vars.staker].remove(vars.tokenId);
                     } else {
                         pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.MAYC_POOL_ID);
                         if (pairingStatus.isPaired) {
@@ -356,8 +374,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
                                 amount: vars.stakedAmount.toUint184(),
                                 isUncommit: true
                             });
-
                             vars.maycIndex += 1;
+                            _stakingTokenIds[bakc][vars.staker].remove(vars.tokenId);
                         }
                     }
                 }
@@ -420,17 +438,19 @@ contract NftVault is INftVault, OwnableUpgradeable {
     }
 
     function stakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override {
+        address nft_ = bayc;
         uint256 totalStakedAmount = 0;
         IApeCoinStaking.SingleNft memory singleNft_;
         for (uint256 i = 0; i < nfts_.length; i++) {
             singleNft_ = nfts_[i];
-            require(msg.sender == _stakerOf(bayc, singleNft_.tokenId), "nftVault: caller must be bayc staker");
+            require(msg.sender == _stakerOf(nft_, singleNft_.tokenId), "nftVault: caller must be bayc staker");
             totalStakedAmount += singleNft_.amount;
+            _stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
         }
         apeCoin.safeTransferFrom(msg.sender, address(this), totalStakedAmount);
         apeCoinStaking.depositBAYC(nfts_);
 
-        _increasePosition(bayc, msg.sender, totalStakedAmount);
+        _increasePosition(nft_, msg.sender, totalStakedAmount);
     }
 
     function unstakeBaycPool(
@@ -439,10 +459,15 @@ contract NftVault is INftVault, OwnableUpgradeable {
     ) external override returns (uint256 principal, uint256 rewards) {
         address nft_ = bayc;
         IApeCoinStaking.SingleNft memory singleNft_;
+        IApeCoinStaking.Position memory position_;
         for (uint256 i = 0; i < nfts_.length; i++) {
             singleNft_ = nfts_[i];
             require(msg.sender == _stakerOf(nft_, singleNft_.tokenId), "nftVault: caller must be nft staker");
             principal += singleNft_.amount;
+            position_ = apeCoinStaking.getNftPosition(nft_, singleNft_.tokenId);
+            if (position_.stakedAmount == singleNft_.amount) {
+                _stakingTokenIds[nft_][msg.sender].remove(singleNft_.tokenId);
+            }
         }
         rewards = apeCoin.balanceOf(recipient_);
         apeCoinStaking.withdrawBAYC(nfts_, recipient_);
@@ -471,16 +496,18 @@ contract NftVault is INftVault, OwnableUpgradeable {
     }
 
     function stakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override {
+        address nft_ = mayc;
         uint256 totalApeCoinAmount = 0;
         IApeCoinStaking.SingleNft memory singleNft_;
         for (uint256 i = 0; i < nfts_.length; i++) {
             singleNft_ = nfts_[i];
-            require(msg.sender == _stakerOf(mayc, singleNft_.tokenId), "nftVault: caller must be mayc staker");
+            require(msg.sender == _stakerOf(nft_, singleNft_.tokenId), "nftVault: caller must be mayc staker");
             totalApeCoinAmount += singleNft_.amount;
+            _stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
         }
         apeCoin.safeTransferFrom(msg.sender, address(this), totalApeCoinAmount);
         apeCoinStaking.depositMAYC(nfts_);
-        _increasePosition(mayc, msg.sender, totalApeCoinAmount);
+        _increasePosition(nft_, msg.sender, totalApeCoinAmount);
     }
 
     function unstakeMaycPool(
@@ -489,10 +516,15 @@ contract NftVault is INftVault, OwnableUpgradeable {
     ) external override returns (uint256 principal, uint256 rewards) {
         address nft_ = mayc;
         IApeCoinStaking.SingleNft memory singleNft_;
+        IApeCoinStaking.Position memory position_;
         for (uint256 i = 0; i < nfts_.length; i++) {
             singleNft_ = nfts_[i];
             require(msg.sender == _stakerOf(nft_, singleNft_.tokenId), "nftVault: caller must be nft staker");
             principal += singleNft_.amount;
+            position_ = apeCoinStaking.getNftPosition(nft_, singleNft_.tokenId);
+            if (position_.stakedAmount == singleNft_.amount) {
+                _stakingTokenIds[nft_][msg.sender].remove(singleNft_.tokenId);
+            }
         }
         rewards = apeCoin.balanceOf(recipient_);
 
@@ -528,27 +560,30 @@ contract NftVault is INftVault, OwnableUpgradeable {
     ) external override {
         uint256 totalStakedAmount = 0;
         IApeCoinStaking.PairNftDepositWithAmount memory pair;
+        address nft_ = bakc;
         for (uint256 i = 0; i < baycPairs_.length; i++) {
             pair = baycPairs_[i];
             require(
-                msg.sender == _stakerOf(bayc, pair.mainTokenId) && msg.sender == _stakerOf(bakc, pair.bakcTokenId),
+                msg.sender == _stakerOf(bayc, pair.mainTokenId) && msg.sender == _stakerOf(nft_, pair.bakcTokenId),
                 "nftVault: caller must be nft staker"
             );
             totalStakedAmount += pair.amount;
+            _stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
         }
 
         for (uint256 i = 0; i < maycPairs_.length; i++) {
             pair = maycPairs_[i];
             require(
-                msg.sender == _stakerOf(mayc, pair.mainTokenId) && msg.sender == _stakerOf(bakc, pair.bakcTokenId),
+                msg.sender == _stakerOf(mayc, pair.mainTokenId) && msg.sender == _stakerOf(nft_, pair.bakcTokenId),
                 "nftVault: caller must be nft staker"
             );
             totalStakedAmount += pair.amount;
+            _stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
         }
         apeCoin.safeTransferFrom(msg.sender, address(this), totalStakedAmount);
         apeCoinStaking.depositBAKC(baycPairs_, maycPairs_);
 
-        _increasePosition(bakc, msg.sender, totalStakedAmount);
+        _increasePosition(nft_, msg.sender, totalStakedAmount);
     }
 
     function unstakeBakcPool(
@@ -567,6 +602,9 @@ contract NftVault is INftVault, OwnableUpgradeable {
             );
             position_ = apeCoinStaking.getNftPosition(nft_, pair.bakcTokenId);
             principal += (pair.isUncommit ? position_.stakedAmount : pair.amount);
+            if (pair.isUncommit) {
+                _stakingTokenIds[nft_][msg.sender].remove(pair.bakcTokenId);
+            }
         }
 
         for (uint256 i = 0; i < maycPairs_.length; i++) {
@@ -577,6 +615,9 @@ contract NftVault is INftVault, OwnableUpgradeable {
             );
             position_ = apeCoinStaking.getNftPosition(nft_, pair.bakcTokenId);
             principal += (pair.isUncommit ? position_.stakedAmount : pair.amount);
+            if (pair.isUncommit) {
+                _stakingTokenIds[nft_][msg.sender].remove(pair.bakcTokenId);
+            }
         }
         rewards = apeCoin.balanceOf(address(this));
         apeCoinStaking.withdrawBAKC(baycPairs_, maycPairs_);
