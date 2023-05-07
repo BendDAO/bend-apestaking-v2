@@ -377,17 +377,17 @@
       },
       {
         "internalType": "contract IStakedNft",
-        "name": "stBayc",
+        "name": "stBayc_",
         "type": "address"
       },
       {
         "internalType": "contract IStakedNft",
-        "name": "stMayc",
+        "name": "stMayc_",
         "type": "address"
       },
       {
         "internalType": "contract IStakedNft",
-        "name": "stBakc",
+        "name": "stBakc_",
         "type": "address"
       }
     ],

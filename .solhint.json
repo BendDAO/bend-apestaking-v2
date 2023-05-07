@@ -6,6 +6,7 @@
     "func-name-mixedcase": "off",
     "not-rely-on-time": "off",
     "reason-string": "off",
-    "no-empty-blocks": "off"
+    "no-empty-blocks": "off",
+    "max-states-count": ["warn", 20]
   }
 }

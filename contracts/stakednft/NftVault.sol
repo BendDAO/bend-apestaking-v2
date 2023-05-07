@@ -514,7 +514,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(msg.sender == _stakerOf(nft_, tokenIds_[i]), "nftVault: caller must be nft staker");
         }
-        rewards = apeCoin.balanceOf(address(recipient_));
+        rewards = apeCoin.balanceOf(recipient_);
         apeCoinStaking.claimMAYC(tokenIds_, recipient_);
         rewards = apeCoin.balanceOf(recipient_) - rewards;
         if (rewards > 0) {
@@ -611,7 +611,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
                 "nftVault: caller must be nft staker"
             );
         }
-        rewards = apeCoin.balanceOf(address(recipient_));
+        rewards = apeCoin.balanceOf(recipient_);
         apeCoinStaking.claimBAKC(baycPairs_, maycPairs_, recipient_);
         rewards = apeCoin.balanceOf(recipient_) - rewards;
         if (rewards > 0) {

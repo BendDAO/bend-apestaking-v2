@@ -204,6 +204,29 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "contract IStakedNft",
+        "name": "stNft_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "mintStNft",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "pendingFeeAmount",
     "outputs": [
@@ -249,6 +272,45 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stBakc",
+    "outputs": [
+      {
+        "internalType": "contract IStakedNft",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stBayc",
+    "outputs": [
+      {
+        "internalType": "contract IStakedNft",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stMayc",
+    "outputs": [
+      {
+        "internalType": "contract IStakedNft",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",

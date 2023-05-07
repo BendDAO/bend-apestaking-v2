@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
@@ -34,13 +35,18 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
     IApeCoinStaking public apeCoinStaking;
     IERC20Upgradeable public apeCoin;
-    address public bayc;
-    address public mayc;
-    address public bakc;
 
     INftVault public nftVault;
     ICoinPool public coinPool;
     INftPool public nftPool;
+
+    IStakedNft public stBayc;
+    IStakedNft public stMayc;
+    IStakedNft public stBakc;
+
+    address public bayc;
+    address public mayc;
+    address public bakc;
 
     address public botAdmin;
 
@@ -59,11 +65,19 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         _;
     }
 
+    modifier onlyNftPool() {
+        require(_msgSender() == address(nftPool), "BendStakeManager: caller is not nft pool");
+        _;
+    }
+
     function initialize(
         IApeCoinStaking apeStaking_,
         ICoinPool coinPool_,
         INftPool nftPool_,
-        INftVault nftVault_
+        INftVault nftVault_,
+        IStakedNft stBayc_,
+        IStakedNft stMayc_,
+        IStakedNft stBakc_
     ) external initializer {
         __Ownable_init();
         apeCoinStaking = apeStaking_;
@@ -77,9 +91,17 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         apeCoin.approve(address(nftPool), type(uint256).max);
         apeCoin.approve(address(nftVault), type(uint256).max);
 
-        bayc = address(apeCoinStaking.bayc());
-        mayc = address(apeCoinStaking.mayc());
-        bakc = address(apeCoinStaking.bakc());
+        stBayc = stBayc_;
+        stMayc = stMayc_;
+        stBakc = stBakc_;
+
+        bayc = stBayc_.underlyingAsset();
+        mayc = stMayc_.underlyingAsset();
+        bakc = stBakc_.underlyingAsset();
+
+        IERC721Upgradeable(bayc).setApprovalForAll(address(stBayc), true);
+        IERC721Upgradeable(mayc).setApprovalForAll(address(stMayc), true);
+        IERC721Upgradeable(bakc).setApprovalForAll(address(stBakc), true);
     }
 
     function updateFee(uint256 fee_) external onlyOwner {
@@ -112,6 +134,20 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
             feeAmount = _calculateFee(rewardsAmount_);
             pendingFeeAmount += feeAmount;
         }
+    }
+
+    function onERC721Received(
+        address /*operator*/,
+        address /*from*/,
+        uint256 /*tokenId*/,
+        bytes calldata /*data*/
+    ) external view returns (bytes4) {
+        require((bayc == msg.sender || mayc == msg.sender || bakc == msg.sender), "BendStakeManager: not ape nft");
+        return this.onERC721Received.selector;
+    }
+
+    function mintStNft(IStakedNft stNft_, address to_, uint256[] memory tokenIds_) external onlyNftPool {
+        stNft_.mint(to_, tokenIds_);
     }
 
     function _coinPoolChangedAmount(uint256 initBalance_) internal view returns (uint256) {

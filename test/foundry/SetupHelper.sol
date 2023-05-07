@@ -152,7 +152,15 @@ abstract contract SetupHelper is Test {
             stMAYC,
             stBAKC
         );
-        stakeManager.initialize(IApeCoinStaking(address(mockApeStaking)), coinPool, nftPool, nftVault);
+        stakeManager.initialize(
+            IApeCoinStaking(address(mockApeStaking)),
+            coinPool,
+            nftPool,
+            nftVault,
+            stBAYC,
+            stMAYC,
+            stBAKC
+        );
 
         // set the strategy contracts
         baycStrategy = new BaycStrategy();

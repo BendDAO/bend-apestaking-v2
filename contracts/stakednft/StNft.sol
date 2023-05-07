@@ -24,9 +24,6 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
     // Mapping from staker to total staked amount of tokens
     mapping(address => uint256) public totalStaked;
 
-    // Mapping from token ID to minter
-    mapping(uint256 => address) public override minterOf;
-
     string private _customBaseURI;
 
     function __StNft_init() internal onlyInitializing {
@@ -59,17 +56,14 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
         return IERC721ReceiverUpgradeable.onERC721Received.selector;
     }
 
-    function mint(address staker_, address to_, uint256[] calldata tokenIds_) external override {
+    function mint(address to_, uint256[] calldata tokenIds_) external override {
+        address staker_ = _msgSender();
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             _nft.safeTransferFrom(_msgSender(), address(this), tokenIds_[i]);
         }
         nftVault.depositNft(address(_nft), tokenIds_, staker_);
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            // set minter
-            minterOf[tokenIds_[i]] = _msgSender();
-
             _addTokenToStakerEnumeration(staker_, tokenIds_[i]);
-
             _safeMint(to_, tokenIds_[i]);
         }
     }
@@ -81,8 +75,6 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
             require(_msgSender() == ownerOf(tokenId_), "stNft: only owner can burn");
             require(address(nftVault) == _nft.ownerOf(tokenId_), "stNft: invalid tokenId_");
 
-            // clear minter at here, cos we can't get staker after burn from vault
-            delete minterOf[tokenId_];
             _removeTokenFromStakerEnumeration(stakerOf(tokenId_), tokenId_);
             _burn(tokenId_);
         }

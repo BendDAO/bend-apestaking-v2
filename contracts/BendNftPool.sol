@@ -49,9 +49,9 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         IDelegationRegistry delegation_,
         ICoinPool coinPool_,
         IStakeManager staker_,
-        IStakedNft stBayc,
-        IStakedNft stMayc,
-        IStakedNft stBakc
+        IStakedNft stBayc_,
+        IStakedNft stMayc_,
+        IStakedNft stBakc_
     ) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -62,16 +62,12 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         coinPool = coinPool_;
         delegation = delegation_;
 
-        bayc = stBayc.underlyingAsset();
-        mayc = stMayc.underlyingAsset();
-        bakc = stBakc.underlyingAsset();
-        poolStates[bayc].stakedNft = stBayc;
-        poolStates[mayc].stakedNft = stMayc;
-        poolStates[bakc].stakedNft = stBakc;
-
-        IERC721Upgradeable(bayc).setApprovalForAll(address(stBayc), true);
-        IERC721Upgradeable(mayc).setApprovalForAll(address(stMayc), true);
-        IERC721Upgradeable(bakc).setApprovalForAll(address(stBakc), true);
+        bayc = stBayc_.underlyingAsset();
+        mayc = stMayc_.underlyingAsset();
+        bakc = stBakc_.underlyingAsset();
+        poolStates[bayc].stakedNft = stBayc_;
+        poolStates[mayc].stakedNft = stMayc_;
+        poolStates[bakc].stakedNft = stBakc_;
 
         apeCoin = IERC20Upgradeable(apeCoinStaking.apeCoin());
         apeCoin.approve(address(coinPool), type(uint256).max);
@@ -84,18 +80,13 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
 
     function deposit(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
         PoolState storage pool = poolStates[nft_];
-
         uint256 tokenId_;
-
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            IERC721Upgradeable(nft_).safeTransferFrom(_msgSender(), address(this), tokenId_);
-
+            IERC721Upgradeable(nft_).safeTransferFrom(_msgSender(), address(staker), tokenId_);
             pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
         }
-
-        pool.stakedNft.mint(address(staker), _msgSender(), tokenIds_);
-
+        staker.mintStNft(pool.stakedNft, _msgSender(), tokenIds_);
         emit NftDeposited(nft_, tokenIds_, _msgSender());
     }
 
@@ -145,7 +136,6 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             }
             require(tokenOwner_ == owner_, "BendNftPool: invalid token owner");
 
-            require(pool.stakedNft.minterOf(tokenId_) == address(this), "BendNftPool: invalid token minter");
             require(pool.stakedNft.stakerOf(tokenId_) == address(staker), "BendNftPool: invalid token staker");
 
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
@@ -232,10 +222,10 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function onERC721Received(
-        address,
-        /*operator*/ address,
-        /*from*/ uint256,
-        /*tokenId*/ bytes calldata /*data*/
+        address /*operator*/,
+        address /*from*/,
+        uint256 /*tokenId*/,
+        bytes calldata /*data*/
     ) external view returns (bytes4) {
         bool isValidNFT = (bayc == msg.sender || mayc == msg.sender || bakc == msg.sender);
         if (!isValidNFT) {
