@@ -386,6 +386,21 @@
         "internalType": "contract INftVault",
         "name": "nftVault_",
         "type": "address"
+      },
+      {
+        "internalType": "contract IStakedNft",
+        "name": "stBayc_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IStakedNft",
+        "name": "stMayc_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IStakedNft",
+        "name": "stBakc_",
+        "type": "address"
       }
     ],
     "name": "initialize",
@@ -404,6 +419,29 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IStakedNft",
+        "name": "stNft_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "mintStNft",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -427,6 +465,40 @@
         "internalType": "contract INftVault",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "onERC721Received",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
       }
     ],
     "stateMutability": "view",
@@ -515,6 +587,45 @@
     "outputs": [
       {
         "internalType": "contract IRewardsStrategy",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stBakc",
+    "outputs": [
+      {
+        "internalType": "contract IStakedNft",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stBayc",
+    "outputs": [
+      {
+        "internalType": "contract IStakedNft",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stMayc",
+    "outputs": [
+      {
+        "internalType": "contract IStakedNft",
         "name": "",
         "type": "address"
       }

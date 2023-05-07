@@ -229,7 +229,10 @@ export async function setupContracts(): Promise<Contracts> {
     apeStaking.address,
     bendCoinPool.address,
     bendNftPool.address,
-    nftVault.address
+    nftVault.address,
+    stBayc.address,
+    stMayc.address,
+    stBakc.address
   );
   await (bendCoinPool as Contract).initialize(apeStaking.address, bendStakeManager.address);
   await (bendNftPool as Contract).initialize(

@@ -2,8 +2,15 @@
 pragma solidity 0.8.18;
 import {IApeCoinStaking} from "./IApeCoinStaking.sol";
 import {IRewardsStrategy} from "./IRewardsStrategy.sol";
+import {IStakedNft} from "./IStakedNft.sol";
 
 interface IStakeManager {
+    function stBayc() external view returns (IStakedNft);
+
+    function stMayc() external view returns (IStakedNft);
+
+    function stBakc() external view returns (IStakedNft);
+
     function totalStakedApeCoin() external view returns (uint256);
 
     function totalPendingRewards() external view returns (uint256);
@@ -26,14 +33,15 @@ interface IStakeManager {
 
     function updateFeeRecipient(address recipient_) external;
 
-    //
-    function withdrawApeCoin(uint256 required) external returns (uint256);
-
     // bot
     function updateBotAdmin(address bot_) external;
 
     // strategy
     function updateRewardsStrategy(address nft_, IRewardsStrategy rewardsStrategy_) external;
+
+    function withdrawApeCoin(uint256 required) external returns (uint256);
+
+    function mintStNft(IStakedNft stNft_, address to_, uint256[] memory tokenIds_) external;
 
     struct NftArgs {
         uint256[] bayc;
