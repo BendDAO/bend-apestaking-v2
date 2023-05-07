@@ -5,6 +5,8 @@ import { makeBN18, mintNft, randomUint, shuffledSubarray, skipHourBlocks } from 
 import { BigNumber, constants, Contract, ContractTransaction } from "ethers";
 import { advanceBlock, increaseBy } from "./helpers/block-traveller";
 import { IApeCoinStaking, IStakeManager } from "../../typechain-types";
+import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { ethers } from "hardhat";
 
 makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapshots) => {
   let owner: SignerWithAddress;
@@ -40,8 +42,10 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     await contracts.apeCoin.connect(owner).approve(contracts.bendCoinPool.address, constants.MaxUint256);
     await contracts.bendCoinPool.connect(owner).deposit(makeBN18(APE_COIN_AMOUNT), owner.address);
 
-    lastRevert = "init";
+    await impersonateAccount(contracts.bendCoinPool.address);
+    await setBalance(contracts.bendCoinPool.address, makeBN18(1));
 
+    lastRevert = "init";
     await snapshots.capture(lastRevert);
   });
 
@@ -1100,5 +1104,65 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     expect(preNftVaultBalance.sub(nftVaultBalance).sub(fee)).closeTo(totalRefund, 5);
 
     expect(preNftVaultBalance.sub(nftVaultBalance)).closeTo(coinPoolBalance.sub(preCoinPoolBalance).add(fee), 5);
+  });
+
+  it("totalStakedApeCoin", async () => {
+    expect(await contracts.bendStakeManager.totalStakedApeCoin()).eq(
+      (await contracts.bendStakeManager.stakedApeCoin(0))
+        .add(await contracts.bendStakeManager.stakedApeCoin(1))
+        .add(await contracts.bendStakeManager.stakedApeCoin(2))
+        .add(await contracts.bendStakeManager.stakedApeCoin(3))
+    );
+    await contracts.bendStakeManager.unstakeBayc(baycTokenIds);
+
+    expect(await contracts.bendStakeManager.totalStakedApeCoin()).eq(
+      (await contracts.bendStakeManager.stakedApeCoin(0))
+        .add(await contracts.bendStakeManager.stakedApeCoin(2))
+        .add(await contracts.bendStakeManager.stakedApeCoin(3))
+    );
+    await contracts.bendStakeManager.unstakeMayc(maycTokenIds);
+    expect(await contracts.bendStakeManager.totalStakedApeCoin()).eq(
+      (await contracts.bendStakeManager.stakedApeCoin(0)).add(await contracts.bendStakeManager.stakedApeCoin(3))
+    );
+    let baycNfts = [];
+    let maycNfts = [];
+    for (let id of bakcTokenIds) {
+      const pairStauts = await contracts.apeStaking.bakcToMain(id, 1);
+      if (pairStauts.isPaired) {
+        baycNfts.push({
+          mainTokenId: pairStauts.tokenId,
+          bakcTokenId: id,
+        });
+      } else {
+        const pairStauts = await contracts.apeStaking.bakcToMain(id, 2);
+        maycNfts.push({
+          mainTokenId: pairStauts.tokenId,
+          bakcTokenId: id,
+        });
+      }
+    }
+    await contracts.bendStakeManager.unstakeBakc(baycNfts, maycNfts);
+    const stakedAmount = await contracts.bendStakeManager.stakedApeCoin(0);
+    expect(await contracts.bendStakeManager.totalStakedApeCoin()).eq(stakedAmount);
+    await contracts.bendStakeManager.unstakeApeCoin(stakedAmount);
+    expect(await contracts.bendStakeManager.totalStakedApeCoin()).eq(0);
+    expect(await contracts.bendStakeManager.stakedApeCoin(0)).eq(0);
+    expect((await contracts.apeStaking.addressPosition(contracts.bendStakeManager.address)).stakedAmount).eq(0);
+  });
+
+  it("withdrawApeCoin: someone burn stNft and withdraw all of ape coin", async () => {
+    await advanceHours(10);
+    await contracts.stBakc.connect(owner).burn([10]);
+    lastRevert = "withdrawApeCoin";
+    await snapshots.capture(lastRevert);
+    const withdrawAmount = (await contracts.bendStakeManager.totalStakedApeCoin())
+      .add(await contracts.bendStakeManager.totalPendingRewards())
+      .add(await contracts.bendStakeManager.totalRefund());
+
+    const coinPoolSigner = await ethers.getSigner(contracts.bendCoinPool.address);
+    const preBalance = await contracts.apeCoin.balanceOf(contracts.bendCoinPool.address);
+    await contracts.bendStakeManager.connect(coinPoolSigner).withdrawApeCoin(withdrawAmount);
+    const received = (await contracts.apeCoin.balanceOf(contracts.bendCoinPool.address)).sub(preBalance);
+    expect(received).closeTo(withdrawAmount, 5);
   });
 });
