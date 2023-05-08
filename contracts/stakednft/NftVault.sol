@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
-import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import {SafeCastUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
@@ -16,10 +14,6 @@ import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
 contract NftVault is INftVault, OwnableUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
-    using SafeERC20Upgradeable for IERC20Upgradeable;
-    using SafeCastUpgradeable for uint256;
-    using SafeCastUpgradeable for uint248;
-    using SafeCastUpgradeable for int256;
     using ApeStakingLib for IApeCoinStaking;
 
     struct NftStatus {
@@ -118,7 +112,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
                 pool.stakedAmount;
         }
         return
-            ((position.stakedAmount * accumulatedRewardsPerShare).toInt256() - position.rewardsDebt).toUint256() /
+            uint256(int256(position.stakedAmount * accumulatedRewardsPerShare) - position.rewardsDebt) /
             ApeStakingLib.APE_COIN_PRECISION;
     }
 
@@ -226,8 +220,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
                 if (vars.stakedAmount > 0) {
                     vars.totalPrincipal += vars.stakedAmount;
                     singleNfts_[vars.singleNftIndex] = IApeCoinStaking.SingleNft({
-                        tokenId: vars.tokenId.toUint32(),
-                        amount: vars.stakedAmount.toUint224()
+                        tokenId: uint32(vars.tokenId),
+                        amount: uint224(vars.stakedAmount)
                     });
                     vars.singleNftIndex += 1;
                     _stakingTokenIds[nft_][vars.staker].remove(vars.tokenId);
@@ -267,9 +261,9 @@ contract NftVault is INftVault, OwnableUpgradeable {
                 if (pairingStatus.isPaired && vars.stakedAmount > 0) {
                     vars.totalPairingPrincipal += vars.stakedAmount;
                     pairingNfts[vars.pairingNftIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                        mainTokenId: vars.tokenId.toUint32(),
-                        bakcTokenId: vars.bakcTokenId.toUint32(),
-                        amount: vars.stakedAmount.toUint184(),
+                        mainTokenId: uint32(vars.tokenId),
+                        bakcTokenId: uint32(vars.bakcTokenId),
+                        amount: uint184(vars.stakedAmount),
                         isUncommit: true
                     });
                     vars.pairingNftIndex += 1;
@@ -358,9 +352,9 @@ contract NftVault is INftVault, OwnableUpgradeable {
                     pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.BAYC_POOL_ID);
                     if (pairingStatus.isPaired) {
                         baycNfts_[vars.baycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                            mainTokenId: pairingStatus.tokenId.toUint32(),
-                            bakcTokenId: vars.tokenId.toUint32(),
-                            amount: vars.stakedAmount.toUint184(),
+                            mainTokenId: uint32(pairingStatus.tokenId),
+                            bakcTokenId: uint32(vars.tokenId),
+                            amount: uint184(vars.stakedAmount),
                             isUncommit: true
                         });
                         vars.baycIndex += 1;
@@ -369,9 +363,9 @@ contract NftVault is INftVault, OwnableUpgradeable {
                         pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.MAYC_POOL_ID);
                         if (pairingStatus.isPaired) {
                             maycNfts_[vars.maycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                                mainTokenId: pairingStatus.tokenId.toUint32(),
-                                bakcTokenId: vars.tokenId.toUint32(),
-                                amount: vars.stakedAmount.toUint184(),
+                                mainTokenId: uint32(pairingStatus.tokenId),
+                                bakcTokenId: uint32(vars.tokenId),
+                                amount: uint184(vars.stakedAmount),
                                 isUncommit: true
                             });
                             vars.maycIndex += 1;
@@ -415,26 +409,24 @@ contract NftVault is INftVault, OwnableUpgradeable {
         Refund memory _refund = _refunds[nft_][msg.sender];
         uint256 amount = _refund.principal + _refund.reward;
         delete _refunds[nft_][msg.sender];
-        apeCoin.safeTransfer(msg.sender, amount);
+        apeCoin.transfer(msg.sender, amount);
     }
 
     function _increasePosition(address nft_, address staker_, uint256 stakedAmount_) private {
         Position storage position_ = _positions[nft_][staker_];
         position_.stakedAmount += stakedAmount_;
-        position_.rewardsDebt += (stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare)
-            .toInt256();
+        position_.rewardsDebt += int256(stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare);
     }
 
     function _decreasePosition(address nft_, address staker_, uint256 stakedAmount_) private {
         Position storage position_ = _positions[nft_][staker_];
         position_.stakedAmount -= stakedAmount_;
-        position_.rewardsDebt -= (stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare)
-            .toInt256();
+        position_.rewardsDebt -= int256(stakedAmount_ * apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare);
     }
 
     function _updateRewardsDebt(address nft_, address staker_, uint256 claimedRewardsAmount_) private {
         Position storage position_ = _positions[nft_][staker_];
-        position_.rewardsDebt += (claimedRewardsAmount_ * ApeStakingLib.APE_COIN_PRECISION).toInt256();
+        position_.rewardsDebt += int256(claimedRewardsAmount_ * ApeStakingLib.APE_COIN_PRECISION);
     }
 
     function stakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override {
@@ -447,7 +439,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
             totalStakedAmount += singleNft_.amount;
             _stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
         }
-        apeCoin.safeTransferFrom(msg.sender, address(this), totalStakedAmount);
+        apeCoin.transferFrom(msg.sender, address(this), totalStakedAmount);
         apeCoinStaking.depositBAYC(nfts_);
 
         _increasePosition(nft_, msg.sender, totalStakedAmount);
@@ -505,7 +497,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
             totalApeCoinAmount += singleNft_.amount;
             _stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
         }
-        apeCoin.safeTransferFrom(msg.sender, address(this), totalApeCoinAmount);
+        apeCoin.transferFrom(msg.sender, address(this), totalApeCoinAmount);
         apeCoinStaking.depositMAYC(nfts_);
         _increasePosition(nft_, msg.sender, totalApeCoinAmount);
     }
@@ -580,7 +572,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
             totalStakedAmount += pair.amount;
             _stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
         }
-        apeCoin.safeTransferFrom(msg.sender, address(this), totalStakedAmount);
+        apeCoin.transferFrom(msg.sender, address(this), totalStakedAmount);
         apeCoinStaking.depositBAKC(baycPairs_, maycPairs_);
 
         _increasePosition(nft_, msg.sender, totalStakedAmount);
@@ -627,7 +619,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
         }
         _decreasePosition(nft_, msg.sender, principal);
 
-        apeCoin.safeTransfer(recipient_, principal + rewards);
+        apeCoin.transfer(recipient_, principal + rewards);
     }
 
     function claimBakcPool(

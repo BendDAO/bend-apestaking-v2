@@ -17,5 +17,18 @@
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getNftRewardsShare",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "nftShare",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ]

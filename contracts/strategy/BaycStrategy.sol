@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
-import {IRewardsStrategy} from "../interfaces/IRewardsStrategy.sol";
+import {BaseRewardsStrategy} from "./BaseRewardsStrategy.sol";
 
-contract BaycStrategy is IRewardsStrategy {
-    function calculateNftRewards(uint256 rewardAmount) external pure returns (uint256 nftRewardsAmount) {
-        nftRewardsAmount = rewardAmount / 2;
+contract BaycStrategy is BaseRewardsStrategy {
+    function getNftRewardsShare() public pure override returns (uint256 nftShare) {
+        nftShare = 7500; // 75%
     }
 }

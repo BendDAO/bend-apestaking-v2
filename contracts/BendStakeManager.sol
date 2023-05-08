@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 import {IStakeManager, IApeCoinStaking} from "./interfaces/IStakeManager.sol";
 import {INftVault} from "./interfaces/INftVault.sol";
@@ -16,7 +15,6 @@ import {IRewardsStrategy} from "./interfaces/IRewardsStrategy.sol";
 import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
 
 contract BendStakeManager is IStakeManager, OwnableUpgradeable {
-    using MathUpgradeable for uint256;
     using ApeStakingLib for IApeCoinStaking;
 
     uint256 public constant PERCENTAGE_FACTOR = 1e4;
@@ -123,7 +121,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _calculateFee(uint256 rewardsAmount_) internal view returns (uint256 feeAmount) {
-        return rewardsAmount_.mulDiv(fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Down);
+        return (rewardsAmount_ * fee) / PERCENTAGE_FACTOR;
     }
 
     function _collectFee(uint256 rewardsAmount_) internal returns (uint256 feeAmount) {
@@ -342,15 +340,15 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
                         pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.BAYC_POOL_ID);
                         if (pairingStatus.isPaired) {
                             baycPairs[baycPairIndex] = IApeCoinStaking.PairNft({
-                                mainTokenId: _toUint128(pairingStatus.tokenId),
-                                bakcTokenId: _toUint128(bakcTokenId)
+                                mainTokenId: uint128(pairingStatus.tokenId),
+                                bakcTokenId: uint128(bakcTokenId)
                             });
                             baycPairIndex += 1;
                         } else {
                             pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.MAYC_POOL_ID);
                             maycPairs[maycPairIndex] = IApeCoinStaking.PairNft({
-                                mainTokenId: _toUint128(pairingStatus.tokenId),
-                                bakcTokenId: _toUint128(bakcTokenId)
+                                mainTokenId: uint128(pairingStatus.tokenId),
+                                bakcTokenId: uint128(bakcTokenId)
                             });
                             maycPairIndex += 1;
                         }
@@ -460,7 +458,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
-            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: _toUint32(tokenId_), amount: _toUint224(maxCap)});
+            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: uint32(tokenId_), amount: uint224(maxCap)});
             apeCoinAmount += maxCap;
         }
         _prepareApeCoin(apeCoinAmount);
@@ -475,8 +473,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
             nfts_[i] = IApeCoinStaking.SingleNft({
-                tokenId: _toUint32(tokenId_),
-                amount: _toUint224(apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount)
+                tokenId: uint32(tokenId_),
+                amount: uint224(apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount)
             });
         }
         uint256 receivedAmount = apeCoin.balanceOf(address(this));
@@ -505,7 +503,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
-            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: _toUint32(tokenId_), amount: _toUint224(maxCap)});
+            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: uint32(tokenId_), amount: uint224(maxCap)});
             apeCoinAmount += maxCap;
         }
         _prepareApeCoin(apeCoinAmount);
@@ -520,8 +518,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
             nfts_[i] = IApeCoinStaking.SingleNft({
-                tokenId: _toUint32(tokenId_),
-                amount: _toUint224(apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount)
+                tokenId: uint32(tokenId_),
+                amount: uint224(apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount)
             });
         }
         uint256 receivedAmount = apeCoin.balanceOf(address(this));
@@ -561,18 +559,18 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < baycPairsWithAmount_.length; i++) {
             pair_ = baycPairs_[i];
             baycPairsWithAmount_[i] = IApeCoinStaking.PairNftDepositWithAmount({
-                mainTokenId: _toUint32(pair_.mainTokenId),
-                bakcTokenId: _toUint32(pair_.bakcTokenId),
-                amount: _toUint184(maxCap)
+                mainTokenId: uint32(pair_.mainTokenId),
+                bakcTokenId: uint32(pair_.bakcTokenId),
+                amount: uint184(maxCap)
             });
             apeCoinAmount += maxCap;
         }
         for (uint256 i = 0; i < maycPairsWithAmount_.length; i++) {
             pair_ = maycPairs_[i];
             maycPairsWithAmount_[i] = IApeCoinStaking.PairNftDepositWithAmount({
-                mainTokenId: _toUint32(pair_.mainTokenId),
-                bakcTokenId: _toUint32(pair_.bakcTokenId),
-                amount: _toUint184(maxCap)
+                mainTokenId: uint32(pair_.mainTokenId),
+                bakcTokenId: uint32(pair_.bakcTokenId),
+                amount: uint184(maxCap)
             });
             apeCoinAmount += maxCap;
         }
@@ -597,8 +595,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < baycPairsWithAmount_.length; i++) {
             pair_ = baycPairs_[i];
             baycPairsWithAmount_[i] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                mainTokenId: _toUint32(pair_.mainTokenId),
-                bakcTokenId: _toUint32(pair_.bakcTokenId),
+                mainTokenId: uint32(pair_.mainTokenId),
+                bakcTokenId: uint32(pair_.bakcTokenId),
                 amount: 0,
                 isUncommit: true
             });
@@ -606,8 +604,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         for (uint256 i = 0; i < maycPairsWithAmount_.length; i++) {
             pair_ = maycPairs_[i];
             maycPairsWithAmount_[i] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                mainTokenId: _toUint32(pair_.mainTokenId),
-                bakcTokenId: _toUint32(pair_.bakcTokenId),
+                mainTokenId: uint32(pair_.mainTokenId),
+                bakcTokenId: uint32(pair_.bakcTokenId),
                 amount: 0,
                 isUncommit: true
             });
@@ -773,25 +771,5 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
             pendingFeeAmount = 0;
             apeCoin.transfer(feeRecipient, pendingFeeAmount);
         }
-    }
-
-    function _toUint224(uint256 value) internal pure returns (uint224) {
-        require(value <= type(uint224).max, "SafeCast: value doesn't fit in 224 bits");
-        return uint224(value);
-    }
-
-    function _toUint184(uint256 value) internal pure returns (uint184) {
-        require(value <= type(uint184).max, "SafeCast: value doesn't fit in 184 bits");
-        return uint184(value);
-    }
-
-    function _toUint128(uint256 value) internal pure returns (uint128) {
-        require(value <= type(uint128).max, "SafeCast: value doesn't fit in 128 bits");
-        return uint128(value);
-    }
-
-    function _toUint32(uint256 value) internal pure returns (uint32) {
-        require(value <= type(uint32).max, "SafeCast: value doesn't fit in 32 bits");
-        return uint32(value);
     }
 }
