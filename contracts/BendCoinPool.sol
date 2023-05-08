@@ -29,7 +29,7 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
     function initialize(IApeCoinStaking apeStaking_, IStakeManager staker_) external initializer {
         apeCoin = IERC20Upgradeable(apeStaking_.apeCoin());
         __Ownable_init();
-        __ERC20_init("Bend Auto-compund ApeCoin", "bacAPE");
+        __ERC20_init("Bend Auto-compound ApeCoin", "bacAPE");
         __ERC4626_init(apeCoin);
         apeCoinStaking = apeStaking_;
         staker = staker_;
