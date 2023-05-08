@@ -284,7 +284,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "operator",
         "type": "address"
       },
       {
@@ -294,12 +294,12 @@
       },
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "tokenId",
         "type": "uint256"
       },
       {
         "internalType": "bytes",
-        "name": "",
+        "name": "data",
         "type": "bytes"
       }
     ],
@@ -311,7 +311,7 @@
         "type": "bytes4"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -848,6 +848,29 @@
       }
     ],
     "name": "withdrawNft",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "address",
+        "name": "receiverOfUnderlying",
+        "type": "address"
+      }
+    ],
+    "name": "withdrawNftToReceiver",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

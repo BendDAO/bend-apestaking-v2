@@ -142,7 +142,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function mintStNft(IStakedNft stNft_, address to_, uint256[] memory tokenIds_) external onlyNftPool {
-        stNft_.mint(to_, tokenIds_);
+        stNft_.mintToReceiver(to_, tokenIds_);
     }
 
     function _changedBalance(

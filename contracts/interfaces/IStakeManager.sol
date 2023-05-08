@@ -3,8 +3,11 @@ pragma solidity 0.8.18;
 import {IApeCoinStaking} from "./IApeCoinStaking.sol";
 import {IRewardsStrategy} from "./IRewardsStrategy.sol";
 import {IStakedNft} from "./IStakedNft.sol";
+import {INftVault} from "./INftVault.sol";
 
 interface IStakeManager {
+    function nftVault() external view returns (INftVault);
+
     function stBayc() external view returns (IStakedNft);
 
     function stMayc() external view returns (IStakedNft);
