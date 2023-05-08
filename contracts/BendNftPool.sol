@@ -79,6 +79,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function deposit(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
+        require(tokenIds_.length > 0, "BendNftPool: empty tokenIds");
         PoolState storage pool = poolStates[nft_];
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -91,6 +92,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function withdraw(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
+        require(tokenIds_.length > 0, "BendNftPool: empty tokenIds");
+
         _claim(_msgSender(), _msgSender(), nft_, tokenIds_);
 
         PoolState storage pool = poolStates[nft_];
@@ -156,6 +159,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         uint256[] calldata tokenIds_,
         address delegateVault_
     ) external override nonReentrant onlyApe(nft_) {
+        require(tokenIds_.length > 0, "BendNftPool: empty tokenIds");
+
         address owner = _msgSender();
         address receiver = _msgSender();
         if (delegateVault_ != address(0)) {
