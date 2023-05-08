@@ -1,10 +1,9 @@
 import { expect } from "chai";
 import { Contracts, Env, makeSuite, Snapshots } from "../setup";
-import { makeBN18, mintNft, randomUint, skipHourBlocks } from "../utils";
+import { advanceHours, makeBN18, mintNft, randomUint } from "../utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, constants } from "ethers";
 import { MintableERC721 } from "../../../typechain-types";
-import { advanceBlock, increaseBy } from "../helpers/block-traveller";
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const _ = require("lodash");
@@ -121,9 +120,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("claimBaycPool", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     let rewardAmount = constants.Zero;
     let rewardMap = new Map<number, BigNumber>();
     for (let id of baycTokenIds) {
@@ -150,9 +147,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("unstakeBaycPool: unstake fully", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
 
     let nfts = [];
     let unstakeAmount = constants.Zero;
@@ -194,9 +189,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("unstakeBaycPool: unstake partially", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
 
     let nfts = [];
     let unstakeAmount = constants.Zero;
@@ -273,9 +266,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("withdrawNft: withdraw nonpaired bayc", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     const preRefund = await contracts.nftVault.refundOf(contracts.bayc.address, staker.address);
     expect(preRefund.principal).eq(constants.Zero);
     expect(preRefund.reward).eq(constants.Zero);
@@ -364,9 +355,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("claimMaycPool", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     let rewardAmount = constants.Zero;
     const rewardMap = new Map<number, BigNumber>();
     for (let id of maycTokenIds) {
@@ -393,9 +382,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("unstakeMaycPool: unstake fully", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
 
     let nfts = [];
     let unstakeAmount = constants.Zero;
@@ -437,9 +424,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("unstakeMaycPool: unstake partially", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
 
     let nfts = [];
     let unstakeAmount = constants.Zero;
@@ -515,9 +500,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("withdrawNft: withdraw nonpaired mayc", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     const preRefund = await contracts.nftVault.refundOf(contracts.mayc.address, staker.address);
     expect(preRefund.principal).eq(constants.Zero);
     expect(preRefund.reward).eq(constants.Zero);
@@ -638,9 +621,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("claimBakcPool", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
 
     let rewardAmount = constants.Zero;
     let rewardMap = new Map<number, BigNumber>();
@@ -692,9 +673,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("unstakeBakcPool: unstake fully", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     let unstakeAmount = constants.Zero;
     let rewardAmount = constants.Zero;
     let baycNfts = [];
@@ -778,9 +757,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("unstakeBakcPool: unstake partially", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     let unstakeAmount = constants.Zero;
     let rewardAmount = constants.Zero;
     let baycNfts = [];
@@ -906,9 +883,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("withdrawNft: withdraw paired and nonpaired bayc", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     const preRefund = await contracts.nftVault.refundOf(contracts.bayc.address, staker.address);
     expect(preRefund.principal).eq(constants.Zero);
     expect(preRefund.reward).eq(constants.Zero);
@@ -988,9 +963,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("withdrawNft: withdraw paired and nonpaired mayc", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     const preRefund = await contracts.nftVault.refundOf(contracts.mayc.address, staker.address);
     expect(preRefund.principal).eq(constants.Zero);
     expect(preRefund.reward).eq(constants.Zero);
@@ -1068,9 +1041,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
   });
 
   it("withdrawNft: withdraw paired bakc", async () => {
-    await increaseBy(randomUint(3600, 3600 * 100));
-    await advanceBlock();
-    await skipHourBlocks(60);
+    await advanceHours(100);
     const preRefund = await contracts.nftVault.refundOf(contracts.mayc.address, staker.address);
     expect(preRefund.principal).eq(constants.Zero);
     expect(preRefund.reward).eq(constants.Zero);

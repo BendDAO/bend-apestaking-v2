@@ -1,9 +1,8 @@
 import { expect } from "chai";
 import { Contracts, Env, makeSuite, Snapshots } from "./setup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { makeBN18, mintNft, randomUint, shuffledSubarray, skipHourBlocks } from "./utils";
+import { advanceHours, makeBN18, mintNft, randomUint, shuffledSubarray } from "./utils";
 import { BigNumber, constants, Contract, ContractTransaction } from "ethers";
-import { advanceBlock, increaseBy } from "./helpers/block-traveller";
 import { IApeCoinStaking, IStakeManager } from "../../typechain-types";
 import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
@@ -110,12 +109,6 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
       contracts.bendStakeManager.connect(owner).updateRewardsStrategy(constants.AddressZero, constants.AddressZero)
     ).revertedWith("Ownable: caller is not the owner");
   });
-
-  const advanceHours = async (hours: number) => {
-    await increaseBy(randomUint(3600, 3600 * hours));
-    await advanceBlock();
-    await skipHourBlocks(60);
-  };
 
   const excludeFee = (amount: BigNumber) => {
     return amount.sub(amount.mul(fee).div(10000));
@@ -1159,6 +1152,24 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
       .add(await contracts.bendStakeManager.totalPendingRewards())
       .add(await contracts.bendStakeManager.totalRefund());
 
+    const coinPoolSigner = await ethers.getSigner(contracts.bendCoinPool.address);
+    const preBalance = await contracts.apeCoin.balanceOf(contracts.bendCoinPool.address);
+    await contracts.bendStakeManager.connect(coinPoolSigner).withdrawApeCoin(withdrawAmount);
+    const received = (await contracts.apeCoin.balanceOf(contracts.bendCoinPool.address)).sub(preBalance);
+    expect(received).closeTo(withdrawAmount, 5);
+  });
+
+  it("withdrawApeCoin: refund only", async () => {
+    const withdrawAmount = await contracts.bendStakeManager.totalRefund();
+    const coinPoolSigner = await ethers.getSigner(contracts.bendCoinPool.address);
+    const preBalance = await contracts.apeCoin.balanceOf(contracts.bendCoinPool.address);
+    await contracts.bendStakeManager.connect(coinPoolSigner).withdrawApeCoin(withdrawAmount);
+    const received = (await contracts.apeCoin.balanceOf(contracts.bendCoinPool.address)).sub(preBalance);
+    expect(received).closeTo(withdrawAmount, 5);
+  });
+
+  it("withdrawApeCoin: refund & coin pool rewards", async () => {
+    const withdrawAmount = await contracts.bendStakeManager.totalRefund();
     const coinPoolSigner = await ethers.getSigner(contracts.bendCoinPool.address);
     const preBalance = await contracts.apeCoin.balanceOf(contracts.bendCoinPool.address);
     await contracts.bendStakeManager.connect(coinPoolSigner).withdrawApeCoin(withdrawAmount);

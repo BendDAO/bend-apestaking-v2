@@ -25,6 +25,7 @@ import {
 } from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
+import { deployContract } from "./utils";
 
 export interface Env {
   initialized: boolean;
@@ -312,11 +313,6 @@ export async function setupContracts(): Promise<Contracts> {
     mockBendLendPoolLoan,
     lendingMigrator,
   } as Contracts;
-}
-
-async function deployContract<ContractType extends Contract>(contractName: string, args: any[]): Promise<ContractType> {
-  const instance = await (await ethers.getContractFactory(contractName)).deploy(...args);
-  return instance as ContractType;
 }
 
 export class Snapshots {

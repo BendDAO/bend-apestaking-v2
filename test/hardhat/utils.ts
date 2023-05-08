@@ -7,7 +7,7 @@ import { ethers } from "hardhat";
 import { BigNumber, Contract } from "ethers";
 import { MintableERC721 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { advanceBlock, latest, increaseTo } from "./helpers/block-traveller";
+import { advanceBlock, latest, increaseTo, increaseBy } from "./helpers/block-traveller";
 
 export function makeBN18(num: any): BigNumber {
   return ethers.utils.parseUnits(num.toString(), 18);
@@ -28,13 +28,19 @@ export const mintNft = async (owner: SignerWithAddress, nft: MintableERC721, tok
   }
 };
 
-export const skipHourBlocks = async (tolerance: number) => {
+const skipHourBlocks = async (tolerance: number) => {
   const currentTime = await latest();
   // skip hour blocks
   if (currentTime % 3600 >= 3600 - tolerance) {
     await increaseTo(Math.round(currentTime / 3600) * 3600 + 1);
     await advanceBlock();
   }
+};
+
+export const advanceHours = async (hours: number) => {
+  await increaseBy(randomUint(3600, 3600 * hours));
+  await advanceBlock();
+  await skipHourBlocks(60);
 };
 
 export const randomUint = (min: number, max: number) => {
@@ -44,3 +50,11 @@ export const randomUint = (min: number, max: number) => {
 export const shuffledSubarray = (originalArray: number[]) => {
   return fc.sample(fc.shuffledSubarray(originalArray, { minLength: 1, maxLength: originalArray.length }), 1)[0];
 };
+
+export async function deployContract<ContractType extends Contract>(
+  contractName: string,
+  args: any[]
+): Promise<ContractType> {
+  const instance = await (await ethers.getContractFactory(contractName)).deploy(...args);
+  return instance as ContractType;
+}

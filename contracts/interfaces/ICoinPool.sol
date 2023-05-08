@@ -6,6 +6,10 @@ import {IERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/interface
 interface ICoinPool is IERC4626Upgradeable {
     event RewardDistributed(uint256 rewardAmount);
 
+    function depositSelf(uint256 assets) external returns (uint256);
+
+    function withdrawSelf(uint256 assets) external returns (uint256);
+
     function pendingApeCoin() external view returns (uint256);
 
     function assetBalanceOf(address account_) external view returns (uint256);

@@ -43,6 +43,14 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
         return amount;
     }
 
+    function depositSelf(uint256 assets) external override returns (uint256) {
+        return deposit(assets, _msgSender());
+    }
+
+    function withdrawSelf(uint256 assets) external override returns (uint256) {
+        return withdraw(assets, _msgSender(), _msgSender());
+    }
+
     function _deposit(
         address caller,
         address receiver,
