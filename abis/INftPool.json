@@ -128,11 +128,6 @@
         "internalType": "uint256[]",
         "name": "tokenIds_",
         "type": "uint256[]"
-      },
-      {
-        "internalType": "address",
-        "name": "delegateVault_",
-        "type": "address"
       }
     ],
     "name": "claim",
@@ -244,19 +239,6 @@
       }
     ],
     "name": "receiveApeCoin",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "bnftRegistry_",
-        "type": "address"
-      }
-    ],
-    "name": "setBNFTRegistry",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

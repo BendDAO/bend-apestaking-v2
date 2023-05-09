@@ -182,8 +182,6 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.maycStrategy.address);
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakcStrategy.address);
 
-  await contracts.bendNftPool.setBNFTRegistry(contracts.bnftRegistry.address);
-
   await contracts.bnftRegistry.setBNFTContract(contracts.stBayc.address, contracts.bnftStBayc.address);
   await contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);
   await contracts.bnftRegistry.setBNFTContract(contracts.stBakc.address, contracts.bnftStBakc.address);
@@ -237,8 +235,8 @@ export async function setupContracts(): Promise<Contracts> {
   );
   await (bendCoinPool as Contract).initialize(apeStaking.address, bendStakeManager.address);
   await (bendNftPool as Contract).initialize(
+    bnftRegistry.address,
     apeStaking.address,
-    delegateCash.address,
     bendCoinPool.address,
     bendStakeManager.address,
     stBayc.address,

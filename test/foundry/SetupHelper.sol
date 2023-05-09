@@ -144,8 +144,8 @@ abstract contract SetupHelper is Test {
 
         coinPool.initialize(IApeCoinStaking(address(mockApeStaking)), stakeManager);
         nftPool.initialize(
+            mockBNFTRegistry,
             IApeCoinStaking(address(mockApeStaking)),
-            IDelegationRegistry(mockDelegationRegistry),
             coinPool,
             stakeManager,
             stBAYC,
@@ -183,7 +183,6 @@ abstract contract SetupHelper is Test {
         vm.stopPrank();
 
         vm.startPrank(poolOwner);
-        nftPool.setBNFTRegistry(address(mockBNFTRegistry));
         stakeManager.updateBotAdmin(botAdmin);
         vm.stopPrank();
 

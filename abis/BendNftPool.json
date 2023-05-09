@@ -225,11 +225,6 @@
         "internalType": "uint256[]",
         "name": "tokenIds_",
         "type": "uint256[]"
-      },
-      {
-        "internalType": "address",
-        "name": "delegateVault_",
-        "type": "address"
       }
     ],
     "name": "claim",
@@ -267,19 +262,6 @@
     "outputs": [
       {
         "internalType": "contract ICoinPool",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "delegation",
-    "outputs": [
-      {
-        "internalType": "contract IDelegationRegistry",
         "name": "",
         "type": "address"
       }
@@ -341,7 +323,7 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "totalNftAmount",
+        "name": "totalNfts",
         "type": "uint256"
       },
       {
@@ -356,13 +338,13 @@
   {
     "inputs": [
       {
-        "internalType": "contract IApeCoinStaking",
-        "name": "apeStaking_",
+        "internalType": "contract IBNFTRegistry",
+        "name": "bnftRegistry_",
         "type": "address"
       },
       {
-        "internalType": "contract IDelegationRegistry",
-        "name": "delegation_",
+        "internalType": "contract IApeCoinStaking",
+        "name": "apeStaking_",
         "type": "address"
       },
       {
@@ -501,19 +483,6 @@
   {
     "inputs": [],
     "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "bnftRegistry_",
-        "type": "address"
-      }
-    ],
-    "name": "setBNFTRegistry",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

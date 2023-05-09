@@ -11,7 +11,6 @@ import {INftVault} from "./interfaces/INftVault.sol";
 import {IStakeManager} from "./interfaces/IStakeManager.sol";
 import {INftPool, IStakedNft, IApeCoinStaking} from "./interfaces/INftPool.sol";
 import {ICoinPool} from "./interfaces/ICoinPool.sol";
-import {IDelegationRegistry} from "./interfaces/IDelegationRegistry.sol";
 import {IBNFTRegistry} from "./interfaces/IBNFTRegistry.sol";
 
 import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
@@ -28,7 +27,6 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     mapping(address => PoolState) public poolStates;
     IStakeManager public override staker;
     ICoinPool public coinPool;
-    IDelegationRegistry public delegation;
     address public bayc;
     address public mayc;
     address public bakc;
@@ -45,8 +43,8 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function initialize(
+        IBNFTRegistry bnftRegistry_,
         IApeCoinStaking apeStaking_,
-        IDelegationRegistry delegation_,
         ICoinPool coinPool_,
         IStakeManager staker_,
         IStakedNft stBayc_,
@@ -60,7 +58,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
 
         staker = staker_;
         coinPool = coinPool_;
-        delegation = delegation_;
+        bnftRegistry = bnftRegistry_;
 
         bayc = stBayc_.underlyingAsset();
         mayc = stMayc_.underlyingAsset();
@@ -71,11 +69,6 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
 
         apeCoin = IERC20Upgradeable(apeCoinStaking.apeCoin());
         apeCoin.approve(address(coinPool), type(uint256).max);
-    }
-
-    function setBNFTRegistry(address bnftRegistry_) public onlyOwner {
-        require(bnftRegistry_ != address(0), "BendNftPool: invalid bnft registry");
-        bnftRegistry = IBNFTRegistry(bnftRegistry_);
     }
 
     function deposit(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
@@ -125,60 +118,36 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         uint256 claimableRewards;
         address tokenOwner_;
 
-        address bnftProxy;
-        if (address(bnftRegistry) != address(0)) {
-            (bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(pool.stakedNft));
-        }
+        (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(pool.stakedNft));
 
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
 
             tokenOwner_ = pool.stakedNft.ownerOf(tokenId_);
-            if (tokenOwner_ == bnftProxy) {
+
+            if (tokenOwner_ != owner_ && bnftProxy != address(0) && tokenOwner_ == bnftProxy) {
                 tokenOwner_ = IERC721Upgradeable(bnftProxy).ownerOf(tokenId_);
             }
+
             require(tokenOwner_ == owner_, "BendNftPool: invalid token owner");
 
             require(pool.stakedNft.stakerOf(tokenId_) == address(staker), "BendNftPool: invalid token staker");
 
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
-                claimableRewards += _round_claimble_rewards(pool.accumulatedRewardsPerNft, pool.rewardsDebt[tokenId_]);
+                claimableRewards += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
                 pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
             }
         }
 
         if (claimableRewards > 0) {
-            coinPool.withdraw(claimableRewards, receiver_, address(this));
-
+            coinPool.redeem(claimableRewards, receiver_, address(this));
             emit RewardClaimed(nft_, tokenIds_, receiver_, claimableRewards, pool.accumulatedRewardsPerNft);
         }
     }
 
-    function claim(
-        address nft_,
-        uint256[] calldata tokenIds_,
-        address delegateVault_
-    ) external override nonReentrant onlyApe(nft_) {
-        require(tokenIds_.length > 0, "BendNftPool: empty tokenIds");
-
+    function claim(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
         address owner = _msgSender();
         address receiver = _msgSender();
-        if (delegateVault_ != address(0)) {
-            uint256 tokenId_;
-            for (uint256 i = 0; i < tokenIds_.length; i++) {
-                tokenId_ = tokenIds_[i];
-                PoolState storage pool = poolStates[nft_];
-                bool isDelegateValid = delegation.checkDelegateForToken(
-                    msg.sender,
-                    delegateVault_,
-                    address(pool.stakedNft),
-                    tokenId_
-                );
-                require(isDelegateValid, "BendNftPool: invalid delegate-vault pairing");
-            }
-
-            owner = delegateVault_;
-        }
         _claim(owner, receiver, nft_, tokenIds_);
     }
 
@@ -188,15 +157,14 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         PoolState storage pool = poolStates[nft_];
 
         uint256 supply = pool.stakedNft.totalStaked(address(staker));
+        uint256 accumulatedShare = coinPool.deposit(rewardsAmount_, address(this));
 
         // In extreme cases all nft give up the earned rewards and exit
         if (supply > 0) {
-            pool.accumulatedRewardsPerNft += ((rewardsAmount_ * APE_COIN_PRECISION) / supply);
+            pool.accumulatedRewardsPerNft += ((accumulatedShare * APE_COIN_PRECISION) / supply);
         }
 
-        coinPool.deposit(rewardsAmount_, address(this));
-
-        emit RewardDistributed(nft_, rewardsAmount_, supply, pool.accumulatedRewardsPerNft);
+        emit RewardDistributed(nft_, accumulatedShare, supply, pool.accumulatedRewardsPerNft);
     }
 
     function claimable(
@@ -204,20 +172,21 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         uint256[] calldata tokenIds_
     ) external view override onlyApe(nft_) returns (uint256 amount) {
         PoolState storage pool = poolStates[nft_];
-        uint256 tokenId_ = 0;
+        uint256 rewardDebt;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            tokenId_ = tokenIds_[i];
-            if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
-                amount += _round_claimble_rewards(pool.accumulatedRewardsPerNft, pool.rewardsDebt[tokenId_]);
+            rewardDebt = pool.rewardsDebt[tokenIds_[i]];
+            if (pool.accumulatedRewardsPerNft > rewardDebt) {
+                amount += (pool.accumulatedRewardsPerNft - rewardDebt) / APE_COIN_PRECISION;
             }
+        }
+        if (amount != 0) {
+            amount = coinPool.previewRedeem(amount);
         }
     }
 
-    function getPoolStateUI(
-        address nft_
-    ) external view returns (uint256 totalNftAmount, uint256 accumulatedRewardsPerNft) {
+    function getPoolStateUI(address nft_) external view returns (uint256 totalNfts, uint256 accumulatedRewardsPerNft) {
         PoolState storage pool = poolStates[nft_];
-        totalNftAmount = pool.stakedNft.totalSupply();
+        totalNfts = pool.stakedNft.totalSupply();
         accumulatedRewardsPerNft = pool.accumulatedRewardsPerNft;
     }
 
@@ -240,19 +209,5 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         }
         require(isValidNFT, "BendNftPool: not ape nft");
         return this.onERC721Received.selector;
-    }
-
-    /*
-     * @dev Rounds down the claimable rewards to the nearest integer.
-     * Because ERC4626 will round down the rewards when withdraw.
-     */
-    function _round_claimble_rewards(
-        uint256 accumulatedRewardsPerNft,
-        uint256 rewardsDebt
-    ) private pure returns (uint256 rewards) {
-        rewards = (accumulatedRewardsPerNft - rewardsDebt) / APE_COIN_PRECISION;
-        if (rewards > 0) {
-            rewards -= 1;
-        }
     }
 }
