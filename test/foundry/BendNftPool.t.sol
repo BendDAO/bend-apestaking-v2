@@ -21,7 +21,7 @@ contract BendNftPoolTest is SetupHelper {
 
         nftPool.deposit(address(mockBAYC), testBaycTokenIds);
 
-        nftPool.claim(address(mockBAYC), testBaycTokenIds, address(0));
+        nftPool.claim(address(mockBAYC), testBaycTokenIds);
 
         nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
 
@@ -48,7 +48,7 @@ contract BendNftPoolTest is SetupHelper {
 
         nftPool.deposit(address(mockBAYC), testBaycTokenIds);
 
-        nftPool.claim(address(mockBAYC), testBaycTokenIds, address(0));
+        nftPool.claim(address(mockBAYC), testBaycTokenIds);
 
         nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
 
@@ -72,7 +72,7 @@ contract BendNftPoolTest is SetupHelper {
         stBAYC.setApprovalForAll(address(mockBnftStBAYC), true);
         mockBnftStBAYC.mint(testUser, testBaycTokenIds[0]);
 
-        nftPool.claim(address(mockBAYC), testBaycTokenIds, address(0));
+        nftPool.claim(address(mockBAYC), testBaycTokenIds);
 
         mockBnftStBAYC.burn(testBaycTokenIds[0]);
 
