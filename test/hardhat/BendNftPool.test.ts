@@ -20,15 +20,17 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     baycTokenIds = [0, 1, 2, 3, 4, 5];
     await mintNft(owner, contracts.bayc, baycTokenIds);
     await contracts.bayc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
+    await contracts.stBayc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
 
     maycTokenIds = [6, 7, 8, 9, 10];
     await mintNft(owner, contracts.mayc, maycTokenIds);
     await contracts.mayc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
+    await contracts.stMayc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
 
     bakcTokenIds = [10, 11, 12, 13, 14];
     await mintNft(owner, contracts.bakc, bakcTokenIds);
     await contracts.bakc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
-    lastRevert = "init";
+    await contracts.stBakc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
 
     expect((await contracts.bendNftPool.getPoolStateUI(contracts.bayc.address)).accumulatedRewardsPerNft).eq(0);
     expect((await contracts.bendNftPool.getPoolStateUI(contracts.mayc.address)).accumulatedRewardsPerNft).eq(0);
@@ -39,6 +41,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     await setBalance(stakeManagerSigner.address, makeBN18(1));
     await contracts.apeCoin.connect(stakeManagerSigner).mint(makeBN18(10000));
 
+    lastRevert = "init";
     await snapshots.capture(lastRevert);
   });
 
@@ -102,6 +105,8 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     const coinAmount = makeBN18(100);
     const tx = contracts.bendNftPool.connect(stakeManagerSigner).receiveApeCoin(contracts.bayc.address, coinAmount);
     await expectIndexChanged((await tx).blockNumber || 0, coinAmount, contracts.bayc.address);
+    lastRevert = "receiveApeCoin:bayc";
+    await snapshots.capture(lastRevert);
   });
 
   it("claimable: bayc", async () => {
@@ -128,6 +133,8 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     const coinAmount = makeBN18(100);
     const tx = contracts.bendNftPool.connect(stakeManagerSigner).receiveApeCoin(contracts.mayc.address, coinAmount);
     await expectIndexChanged((await tx).blockNumber || 0, coinAmount, contracts.mayc.address);
+    lastRevert = "receiveApeCoin:mayc";
+    await snapshots.capture(lastRevert);
   });
 
   it("claimable: mayc", async () => {
@@ -154,6 +161,8 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     const coinAmount = makeBN18(100);
     const tx = contracts.bendNftPool.connect(stakeManagerSigner).receiveApeCoin(contracts.bakc.address, coinAmount);
     await expectIndexChanged((await tx).blockNumber || 0, coinAmount, contracts.bakc.address);
+    lastRevert = "receiveApeCoin:bakc";
+    await snapshots.capture(lastRevert);
   });
 
   it("claimable: bakc", async () => {
@@ -203,8 +212,8 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
   };
 
   it("withdraw", async () => {
-    expectWithdraw(contracts.stBayc as unknown as IStakedNft, shuffledSubarray(baycTokenIds));
-    expectWithdraw(contracts.stMayc as unknown as IStakedNft, shuffledSubarray(maycTokenIds));
-    expectWithdraw(contracts.stBakc as unknown as IStakedNft, shuffledSubarray(bakcTokenIds));
+    await expectWithdraw(contracts.stBayc as unknown as IStakedNft, shuffledSubarray(baycTokenIds));
+    await expectWithdraw(contracts.stMayc as unknown as IStakedNft, shuffledSubarray(maycTokenIds));
+    await expectWithdraw(contracts.stBakc as unknown as IStakedNft, shuffledSubarray(bakcTokenIds));
   });
 });

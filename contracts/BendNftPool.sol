@@ -115,7 +115,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     function _claim(address owner_, address receiver_, address nft_, uint256[] calldata tokenIds_) internal {
         PoolState storage pool = poolStates[nft_];
         uint256 tokenId_;
-        uint256 claimableRewards;
+        uint256 claimableShares;
         address tokenOwner_;
 
         (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(pool.stakedNft));
@@ -134,14 +134,14 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             require(pool.stakedNft.stakerOf(tokenId_) == address(staker), "BendNftPool: invalid token staker");
 
             if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
-                claimableRewards += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
+                claimableShares += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
                 pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
             }
         }
 
-        if (claimableRewards > 0) {
-            coinPool.redeem(claimableRewards, receiver_, address(this));
-            emit RewardClaimed(nft_, tokenIds_, receiver_, claimableRewards, pool.accumulatedRewardsPerNft);
+        if (claimableShares > 0) {
+            uint256 apeCoinAmount = coinPool.redeem(claimableShares, receiver_, address(this));
+            emit RewardClaimed(nft_, tokenIds_, receiver_, apeCoinAmount, pool.accumulatedRewardsPerNft);
         }
     }
 
@@ -164,7 +164,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             pool.accumulatedRewardsPerNft += ((accumulatedShare * APE_COIN_PRECISION) / supply);
         }
 
-        emit RewardDistributed(nft_, accumulatedShare, supply, pool.accumulatedRewardsPerNft);
+        emit RewardDistributed(nft_, rewardsAmount_, supply, pool.accumulatedRewardsPerNft);
     }
 
     function claimable(
