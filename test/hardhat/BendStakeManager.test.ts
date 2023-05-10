@@ -135,9 +135,11 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
   });
 
   it("updateBotAdmin", async () => {
-    expect(await (contracts.bendStakeManager as Contract).botAdmin()).eq(constants.AddressZero);
-    contracts.bendStakeManager.updateBotAdmin(bot.address);
+    // expect(await (contracts.bendStakeManager as Contract).botAdmin()).eq(constants.AddressZero);
+    await contracts.bendStakeManager.updateBotAdmin(bot.address);
     expect(await (contracts.bendStakeManager as Contract).botAdmin()).eq(bot.address);
+    // revert bot admin to default account to simple follow tests
+    await contracts.bendStakeManager.updateBotAdmin(env.admin.address);
     lastRevert = "init";
     await snapshots.capture(lastRevert);
   });

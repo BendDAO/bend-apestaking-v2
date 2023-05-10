@@ -21,6 +21,7 @@ import "../../contracts/interfaces/ICoinPool.sol";
 import "../../contracts/interfaces/INftPool.sol";
 import "../../contracts/interfaces/IStakeManager.sol";
 import "../../contracts/interfaces/IRewardsStrategy.sol";
+import "../../contracts/interfaces/IWithdrawStrategy.sol";
 
 import "../../contracts/stakednft/NftVault.sol";
 import "../../contracts/stakednft/StBAYC.sol";
@@ -34,6 +35,7 @@ import "../../contracts/BendStakeManager.sol";
 import "../../contracts/strategy/BaycStrategy.sol";
 import "../../contracts/strategy/MaycStrategy.sol";
 import "../../contracts/strategy/BakcStrategy.sol";
+import "../../contracts/strategy/DefaultWithdrawStrategy.sol";
 
 import "./UtilitiesHelper.sol";
 
@@ -71,6 +73,7 @@ abstract contract SetupHelper is Test {
     BaycStrategy internal baycStrategy;
     MaycStrategy internal maycStrategy;
     BakcStrategy internal bakcStrategy;
+    DefaultWithdrawStrategy internal withdrawStrategy;
 
     function setUp() public virtual {
         // prepare test users
@@ -166,9 +169,16 @@ abstract contract SetupHelper is Test {
         baycStrategy = new BaycStrategy();
         maycStrategy = new MaycStrategy();
         bakcStrategy = new BakcStrategy();
+        withdrawStrategy = new DefaultWithdrawStrategy(
+            IApeCoinStaking(address(mockApeStaking)),
+            nftVault,
+            coinPool,
+            stakeManager
+        );
         stakeManager.updateRewardsStrategy(address(mockBAYC), IRewardsStrategy(baycStrategy));
         stakeManager.updateRewardsStrategy(address(mockMAYC), IRewardsStrategy(maycStrategy));
         stakeManager.updateRewardsStrategy(address(mockBAKC), IRewardsStrategy(bakcStrategy));
+        stakeManager.updateWithdrawStrategy(IWithdrawStrategy(withdrawStrategy));
 
         // mint some coins
         uint256 totalCoinRewards = 10000000 * 1e18;

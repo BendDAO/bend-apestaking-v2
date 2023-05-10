@@ -149,6 +149,100 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "rewardsAmount_",
+        "type": "uint256"
+      }
+    ],
+    "name": "calculateFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "feeAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "claimApeCoin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "baycPairs_",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "maycPairs_",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "claimBakc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "claimBayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "claimMayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "coinPool",
     "outputs": [
@@ -637,6 +731,87 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "amount_",
+        "type": "uint256"
+      }
+    ],
+    "name": "stakeApeCoin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "baycPairs_",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "maycPairs_",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "stakeBakc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "stakeBayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "stakeMayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "poolId_",
         "type": "uint256"
       }
@@ -707,6 +882,87 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "amount_",
+        "type": "uint256"
+      }
+    ],
+    "name": "unstakeApeCoin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "baycPairs_",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "mainTokenId",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "bakcTokenId",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PairNft[]",
+        "name": "maycPairs_",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "unstakeBakc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "unstakeBayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "unstakeMayc",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "botAdmin_",
         "type": "address"
@@ -764,6 +1020,19 @@
   {
     "inputs": [
       {
+        "internalType": "contract IWithdrawStrategy",
+        "name": "withdrawStrategy_",
+        "type": "address"
+      }
+    ],
+    "name": "updateWithdrawStrategy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "required",
         "type": "uint256"
@@ -777,6 +1046,39 @@
         "type": "uint256"
       }
     ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      }
+    ],
+    "name": "withdrawRefund",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "withdrawStrategy",
+    "outputs": [
+      {
+        "internalType": "contract IWithdrawStrategy",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "withdrawTotalRefund",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   }

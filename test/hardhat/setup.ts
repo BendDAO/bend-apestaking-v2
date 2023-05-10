@@ -22,6 +22,8 @@ import {
   StBAKC,
   StMAYC,
   StBAYC,
+  DefaultWithdrawStrategy,
+  IWithdrawStrategy,
 } from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -63,6 +65,7 @@ export interface Contracts {
   baycStrategy: IRewardsStrategy;
   maycStrategy: IRewardsStrategy;
   bakcStrategy: IRewardsStrategy;
+  withdrawStrategy: DefaultWithdrawStrategy;
   // lending pool
   weth: MintableERC20;
   usdt: MintableERC20;
@@ -181,6 +184,7 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.bayc.address, contracts.baycStrategy.address);
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.maycStrategy.address);
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakcStrategy.address);
+  await contracts.bendStakeManager.updateWithdrawStrategy(contracts.withdrawStrategy.address);
 
   await contracts.bnftRegistry.setBNFTContract(contracts.stBayc.address, contracts.bnftStBayc.address);
   await contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);
@@ -248,6 +252,13 @@ export async function setupContracts(): Promise<Contracts> {
   const maycStrategy = await deployContract<IRewardsStrategy>("MaycStrategy", []);
   const bakcStrategy = await deployContract<IRewardsStrategy>("BakcStrategy", []);
 
+  const withdrawStrategy = await deployContract<IWithdrawStrategy>("DefaultWithdrawStrategy", [
+    apeStaking.address,
+    nftVault.address,
+    bendCoinPool.address,
+    bendStakeManager.address,
+  ]);
+
   // lending pool
   const weth = await deployContract<MintableERC20>("MintableERC20", ["WETH", "WETH", 18]);
   const usdt = await deployContract<MintableERC20>("MintableERC20", ["USDT", "USDT", 6]);
@@ -302,6 +313,7 @@ export async function setupContracts(): Promise<Contracts> {
     baycStrategy,
     maycStrategy,
     bakcStrategy,
+    withdrawStrategy,
     weth,
     usdt,
     mockAaveLendPoolAddressesProvider,
