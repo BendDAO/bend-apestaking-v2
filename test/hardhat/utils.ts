@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import fc from "fast-check";
+import fc, { ShuffledSubarrayConstraints } from "fast-check";
 import { ethers } from "hardhat";
 import { BigNumber, Contract } from "ethers";
 import { MintableERC721 } from "../../typechain-types";
@@ -47,8 +47,15 @@ export const randomUint = (min: number, max: number) => {
   return fc.sample(fc.integer({ min, max }), 1)[0];
 };
 
-export const shuffledSubarray = (originalArray: number[]) => {
-  return fc.sample(fc.shuffledSubarray(originalArray, { minLength: 1, maxLength: originalArray.length }), 1)[0];
+export const shuffledSubarray = (originalArray: number[], constraints?: ShuffledSubarrayConstraints) => {
+  return fc.sample(
+    fc.shuffledSubarray(originalArray, constraints || { minLength: 1, maxLength: originalArray.length }),
+    1
+  )[0];
+};
+
+export const randomItem = (originalArray: number[]) => {
+  return fc.sample(fc.constantFrom(...originalArray), 1)[0];
 };
 
 export async function deployContract<ContractType extends Contract>(
