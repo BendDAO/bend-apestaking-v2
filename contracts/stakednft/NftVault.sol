@@ -194,6 +194,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             vars.tokenId = tokenIds_[i];
             require(msg.sender == _ownerOf(nft_, vars.tokenId), "nftVault: caller must be nft owner");
+            // make sure the bayc/mayc locked in valult
+            require(address(this) == IERC721Upgradeable(nft_).ownerOf(vars.tokenId), "nftVault: invalid token id");
             require(vars.staker == _stakerOf(nft_, vars.tokenId), "nftVault: staker must be same");
             vars.stakedAmount = apeCoinStaking.nftPosition(vars.poolId, vars.tokenId).stakedAmount;
 
@@ -207,7 +209,12 @@ contract NftVault is INftVault, OwnableUpgradeable {
             vars.stakedAmount = apeCoinStaking.nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.bakcTokenId).stakedAmount;
 
             //  Still have ape coin staking in pairing pool
-            if (pairingStatus.isPaired && vars.stakedAmount > 0) {
+            if (
+                pairingStatus.isPaired &&
+                // make sure the bakc locked in valult
+                IERC721Upgradeable(bakc).ownerOf(vars.bakcTokenId) == address(this) &&
+                vars.stakedAmount > 0
+            ) {
                 vars.pairingNftSize += 1;
             }
         }
@@ -258,7 +265,12 @@ contract NftVault is INftVault, OwnableUpgradeable {
                 vars.stakedAmount = apeCoinStaking
                     .nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.bakcTokenId)
                     .stakedAmount;
-                if (pairingStatus.isPaired && vars.stakedAmount > 0) {
+                if (
+                    pairingStatus.isPaired &&
+                    // make sure the bakc locked in valult
+                    IERC721Upgradeable(bakc).ownerOf(vars.bakcTokenId) == address(this) &&
+                    vars.stakedAmount > 0
+                ) {
                     vars.totalPairingPrincipal += vars.stakedAmount;
                     pairingNfts[vars.pairingNftIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
                         mainTokenId: uint32(vars.tokenId),
@@ -323,16 +335,26 @@ contract NftVault is INftVault, OwnableUpgradeable {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             vars.tokenId = tokenIds_[i];
             require(msg.sender == _ownerOf(bakc, vars.tokenId), "nftVault: caller must be nft owner");
+            // make sure the bakc locked in valult
+            require(address(this) == IERC721Upgradeable(bakc).ownerOf(vars.tokenId), "nftVault: invalid token id");
             require(vars.staker == _stakerOf(bakc, vars.tokenId), "nftVault: staker must be same");
 
             vars.stakedAmount = apeCoinStaking.nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.tokenId).stakedAmount;
             if (vars.stakedAmount > 0) {
                 pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.BAYC_POOL_ID);
-                if (pairingStatus.isPaired) {
+
+                // make sure the bayc locked in valult
+                if (
+                    pairingStatus.isPaired && IERC721Upgradeable(bayc).ownerOf(pairingStatus.tokenId) == address(this)
+                ) {
                     vars.baycSize += 1;
                 } else {
                     pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.MAYC_POOL_ID);
-                    if (pairingStatus.isPaired) {
+                    // make sure the mayc locked in valult
+                    if (
+                        pairingStatus.isPaired &&
+                        IERC721Upgradeable(mayc).ownerOf(pairingStatus.tokenId) == address(this)
+                    ) {
                         vars.maycSize += 1;
                     }
                 }
@@ -350,7 +372,11 @@ contract NftVault is INftVault, OwnableUpgradeable {
                 if (vars.stakedAmount > 0) {
                     vars.totalPrincipal += vars.stakedAmount;
                     pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.BAYC_POOL_ID);
-                    if (pairingStatus.isPaired) {
+                    if (
+                        pairingStatus.isPaired &&
+                        // make sure the bayc locked in valult
+                        IERC721Upgradeable(bayc).ownerOf(pairingStatus.tokenId) == address(this)
+                    ) {
                         baycNfts_[vars.baycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
                             mainTokenId: uint32(pairingStatus.tokenId),
                             bakcTokenId: uint32(vars.tokenId),
@@ -361,7 +387,11 @@ contract NftVault is INftVault, OwnableUpgradeable {
                         _stakingTokenIds[bakc][vars.staker].remove(vars.tokenId);
                     } else {
                         pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.MAYC_POOL_ID);
-                        if (pairingStatus.isPaired) {
+                        if (
+                            pairingStatus.isPaired &&
+                            // make sure the mayc locked in valult
+                            IERC721Upgradeable(mayc).ownerOf(pairingStatus.tokenId) == address(this)
+                        ) {
                             maycNfts_[vars.maycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
                                 mainTokenId: uint32(pairingStatus.tokenId),
                                 bakcTokenId: uint32(vars.tokenId),
@@ -374,6 +404,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
                     }
                 }
             }
+
             apeCoinStaking.withdrawBAKC(baycNfts_, maycNfts_);
             vars.totalReward = apeCoin.balanceOf(address(this)) - vars.cachedBalance - vars.totalPrincipal;
             // refund ape coin for bakc
