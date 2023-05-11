@@ -7,6 +7,7 @@ import {
   BAKC,
   BAYC,
   BEND_ADDRESS_PROVIDER,
+  BNFT_REGISTRY,
   DELEAGATE_CASH,
   FEE,
   FEE_RECIPIENT,
@@ -42,7 +43,10 @@ task("deploy:NftVault", "Deploy NftVault").setAction(async (_, { network, run })
   const apeStaking = getParams(APE_STAKING, network.name);
   const delegateCash = getParams(DELEAGATE_CASH, network.name);
 
-  await deployProxyContract("NftVault", [apeStaking, delegateCash], false);
+  await deployContract("VaultLogic", [], true);
+  const vaultLogic = await getContractAddressFromDB("VaultLogic");
+
+  await deployProxyContract("NftVault", [apeStaking, delegateCash], true, undefined, { VaultLogic: vaultLogic });
 });
 
 task("deploy:StBAYC", "Deploy StBAYC").setAction(async (_, { network, run }) => {
@@ -52,7 +56,7 @@ task("deploy:StBAYC", "Deploy StBAYC").setAction(async (_, { network, run }) => 
   const bayc = getParams(BAYC, network.name);
   const nftVault = await getContractAddressFromDB("NftVault");
 
-  await deployProxyContract("StBAYC", [bayc, nftVault], false);
+  await deployProxyContract("StBAYC", [bayc, nftVault], true);
 });
 
 task("deploy:StMAYC", "Deploy StMAYC").setAction(async (_, { network, run }) => {
@@ -62,7 +66,7 @@ task("deploy:StMAYC", "Deploy StMAYC").setAction(async (_, { network, run }) => 
   const mayc = getParams(MAYC, network.name);
   const nftVault = await getContractAddressFromDB("NftVault");
 
-  await deployProxyContract("StMAYC", [mayc, nftVault], false);
+  await deployProxyContract("StMAYC", [mayc, nftVault], true);
 });
 
 task("deploy:StBAKC", "Deploy StBAKC").setAction(async (_, { network, run }) => {
@@ -72,7 +76,7 @@ task("deploy:StBAKC", "Deploy StBAKC").setAction(async (_, { network, run }) => 
   const bakc = getParams(BAKC, network.name);
   const nftVault = await getContractAddressFromDB("NftVault");
 
-  await deployProxyContract("StBAKC", [bakc, nftVault], false);
+  await deployProxyContract("StBAKC", [bakc, nftVault], true);
 });
 
 task("deploy:full:staking", "Deploy all contracts for staking").setAction(async (_, { run }) => {
@@ -86,55 +90,75 @@ task("deploy:full:staking", "Deploy all contracts for staking").setAction(async 
   await run("deploy:config:BendCoinPool");
   await run("deploy:config:BendNftPool");
   await run("deploy:config:BendStakeManager");
+
+  await run("deploy:BaycStrategy");
+  await run("deploy:MaycStrategy");
+  await run("deploy:BakcStrategy");
+  await run("deploy:config:RewardsStrategy");
+
+  await run("deploy:DefaultWithdrawStrategy");
+  await run("deploy:config:WithdrawStrategy");
 });
 
 task("deploy:BendCoinPool", "Deploy BendCoinPool").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployProxyContractWithoutInit("BendCoinPool", [], false);
+  await deployProxyContractWithoutInit("BendCoinPool", [], true);
 });
 
 task("deploy:BendNftPool", "Deploy BendNftPool").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployProxyContractWithoutInit("BendNftPool", [], false);
+  await deployProxyContractWithoutInit("BendNftPool", [], true);
 });
 
 task("deploy:BendStakeManager", "Deploy StakeManager").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployProxyContractWithoutInit("BendStakeManager", [], false);
+  await deployProxyContractWithoutInit("BendStakeManager", [], true);
 });
 
 task("deploy:BaycStrategy", "Deploy BaycStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("BaycStrategy", [], false);
+  await deployContract("BaycStrategy", [], true);
 });
 
 task("deploy:MaycStrategy", "Deploy MaycStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("MaycStrategy", [], false);
+  await deployContract("MaycStrategy", [], true);
 });
 
 task("deploy:BakcStrategy", "Deploy BakcStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("BakcStrategy", [], false);
+  await deployContract("BakcStrategy", [], true);
+});
+
+task("deploy:DefaultWithdrawStrategy", "Deploy DefaultWithdrawStrategy").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  const apeStaking = getParams(APE_STAKING, network.name);
+  const nftVault = await getContractAddressFromDB("NftVault");
+  const coinPool = await getContractAddressFromDB("BendCoinPool");
+  const stakeManager = await getContractAddressFromDB("BendStakeManager");
+
+  await deployContract("DefaultWithdrawStrategy", [apeStaking, nftVault, coinPool, stakeManager], true);
 });
 
 task("deploy:LendingMigrator", "Deploy LendingMigrator").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployProxyContractWithoutInit("LendingMigrator", [], false);
+  await deployProxyContractWithoutInit("LendingMigrator", [], true);
 });
 
 task("deploy:config:BendCoinPool", "Coinfig BendCoinPool").setAction(async (_, { network, run }) => {
@@ -158,7 +182,7 @@ task("deploy:config:BendNftPool", "Coinfig BendNftPool").setAction(async (_, { n
   const nftPool = await getContractFromDB<BendNftPool>("BendNftPool");
 
   const apeStaking = getParams(APE_STAKING, network.name);
-  const delegationCash = getParams(DELEAGATE_CASH, network.name);
+  const bnftRegistry = getParams(BNFT_REGISTRY, network.name);
 
   const coinPool = await getContractAddressFromDB("BendCoinPool");
   const stakeManager = await getContractAddressFromDB("BendStakeManager");
@@ -168,9 +192,7 @@ task("deploy:config:BendNftPool", "Coinfig BendNftPool").setAction(async (_, { n
   const stBakc = await getContractAddressFromDB("StBAKC");
 
   await waitForTx(
-    await nftPool
-      .connect(deployer)
-      .initialize(apeStaking, delegationCash, coinPool, stakeManager, stBayc, stMayc, stBakc)
+    await nftPool.connect(deployer).initialize(bnftRegistry, apeStaking, coinPool, stakeManager, stBayc, stMayc, stBakc)
   );
 
   console.log("ok");
@@ -187,10 +209,16 @@ task("deploy:config:BendStakeManager", "Coinfig BendStakeManager").setAction(asy
   const nftPool = await getContractAddressFromDB("BendNftPool");
   const nftVault = await getContractAddressFromDB("NftVault");
 
+  const stBayc = await getContractAddressFromDB("StBAYC");
+  const stMayc = await getContractAddressFromDB("StMAYC");
+  const stBakc = await getContractAddressFromDB("StBAKC");
+
   const fee = getParams(FEE, network.name);
   const feeRecipient = getParams(FEE_RECIPIENT, network.name);
 
-  await waitForTx(await stakeManager.connect(deployer).initialize(apeStaking, coinPool, nftPool, nftVault));
+  await waitForTx(
+    await stakeManager.connect(deployer).initialize(apeStaking, coinPool, nftPool, nftVault, stBayc, stMayc, stBakc)
+  );
 
   await waitForTx(await stakeManager.connect(deployer).updateFee(fee));
   await waitForTx(await stakeManager.connect(deployer).updateFeeRecipient(feeRecipient));
@@ -215,6 +243,23 @@ task("deploy:config:RewardsStrategy", "Coinfig RewardsStrategy").setAction(async
   await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(bayc, baycStrategy));
   await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(mayc, maycStrategy));
   await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(bakc, bakcStrategy));
+
+  console.log("ok");
+});
+
+task("deploy:config:WithdrawStrategy", "Coinfig WithdrawStrategy").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+  const deployer = await getDeploySigner();
+  const stakeManager = await getContractFromDB<BendStakeManager>("BendStakeManager");
+
+  const bayc = getParams(BAYC, network.name);
+  const mayc = getParams(MAYC, network.name);
+  const bakc = getParams(BAKC, network.name);
+
+  const withdrawStrategy = await getContractAddressFromDB("DefaultWithdrawStrategy");
+
+  await waitForTx(await stakeManager.connect(deployer).updateWithdrawStrategy(withdrawStrategy));
 
   console.log("ok");
 });
@@ -299,4 +344,13 @@ task("forceImport", "force import implmentation to proxy")
     console.log(`Import proxy: ${proxy} with ${implid}`);
     // @ts-ignore
     await upgrades.forceImport(proxy, upgradeable);
+  });
+
+task("verify:Implementation", "verify implmentation")
+  .addParam("impl", "The contract implementation address")
+  .setAction(async ({ impl }, { ethers, upgrades, run }) => {
+    await run("set-DRE");
+    await run("compile");
+
+    await verifyEtherscanContract(impl, []);
   });

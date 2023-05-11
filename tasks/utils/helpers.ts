@@ -2,6 +2,7 @@
 import { constants, Contract, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import { verifyEtherscanContract } from "./verification";
 import { DRE, DB } from "./DRE";
+import { DeployImplementationResponse } from "@openzeppelin/hardhat-upgrades/dist/deploy-implementation";
 
 export const waitForTx = async (tx: ContractTransaction): Promise<ContractReceipt> => await tx.wait(1);
 
@@ -63,11 +64,12 @@ export const deployContract = async <ContractType extends Contract>(
   contractName: string,
   args: any[],
   verify?: boolean,
-  dbKey?: string
+  dbKey?: string,
+  libraries?: { [libraryName: string]: string }
 ): Promise<ContractType> => {
   dbKey = dbKey || contractName;
   console.log("deploy", dbKey);
-  const instance = await (await DRE.ethers.getContractFactory(contractName))
+  const instance = await (await DRE.ethers.getContractFactory(contractName, libraries))
     .connect(await getDeploySigner())
     .deploy(...args);
 
@@ -79,13 +81,19 @@ export const deployProxyContract = async <ContractType extends Contract>(
   contractName: string,
   args: any[],
   verify?: boolean,
-  dbKey?: string
+  dbKey?: string,
+  libraries?: { [libraryName: string]: string }
 ): Promise<ContractType> => {
   dbKey = dbKey || contractName;
   console.log("deploy", dbKey);
-  const factory = await DRE.ethers.getContractFactory(contractName);
+  let hasLib = false;
+  if (libraries) {
+    hasLib = true;
+  }
+  const factory = await DRE.ethers.getContractFactory(contractName, { libraries });
   const instance = await DRE.upgrades.deployProxy(factory, args, {
     timeout: 0,
+    unsafeAllowLinkedLibraries: hasLib,
   });
   await withSaveAndVerify(instance, dbKey, args, verify);
   return instance as ContractType;

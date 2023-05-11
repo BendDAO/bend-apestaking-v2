@@ -7,6 +7,6 @@ import {StNft, IERC721MetadataUpgradeable} from "./StNft.sol";
 
 contract StBAYC is StNft {
     function initialize(IERC721MetadataUpgradeable bayc_, INftVault nftVault_) public initializer {
-        __StNft_init(bayc_, nftVault_, "stBAYC", "Staked BAYC");
+        __StNft_init(bayc_, nftVault_, "Staked BAYC", "stBAYC");
     }
 }

@@ -1,46 +1,50 @@
 {
+  "VaultLogic": {
+    "address": "0x142E16B937AF00ea2F3DF02A4a3C3383CCC4b323",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
   "NftVault": {
-    "address": "0x590EB8082d5Af6afd80282bBaFf5325079e2f3BF",
+    "address": "0x0e5b15F7d1Ca881406f108b56540BB254EF4f258",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "StBAYC": {
-    "address": "0x094CAc60032C008F7B3d249e631e2Ce678932c3b",
+    "address": "0x28E45a238f3e30432411bcA36233dD22Bc2F8681",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "StMAYC": {
-    "address": "0xFa69722bF64B273E3F41aB22C1C354C4dB32A804",
+    "address": "0xd1837d629d7A75a5ab8dfE061379e43c978d1Ad4",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "StBAKC": {
-    "address": "0x541690aC15cEd3911e9F39CFf7B53fd93FE651A0",
+    "address": "0x25876363DECB4De618676bd2d602948C9f33907C",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BendCoinPool": {
-    "address": "0x102A6352D90a1348184298f0184881D9e21F5C8c",
+    "address": "0xfD5d53346B9B66352f1f18BBDD34667dad48409B",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BendNftPool": {
-    "address": "0x0d42Ec76548F573f78880dFAc1E9A8f4a904D868",
+    "address": "0x9230323Dd953322D476590907a1a30D423F38B7c",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BendStakeManager": {
-    "address": "0xfb4F26cAa06f17324C89Ec1bF6a83a8Cb848B009",
+    "address": "0x768B4E53027D266cA391F117Dc81Dd69acdFB638",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BaycStrategy": {
-    "address": "0xa085497AdfABEf1f4BF58A2e54E180537c33FBDC",
+    "address": "0x5BC28048F33406F1dDB511AA904068B19ce7b3b5",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "MaycStrategy": {
-    "address": "0xe3Fa083E153EBeeeC8504232c466E23811Dc4f03",
+    "address": "0x8A959a5A39F4Fb64a90441527E5B3a3947091eDb",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BakcStrategy": {
-    "address": "0x9476880b6B4bA882fC5e0f5f4F8E70150f3331CE",
+    "address": "0x75cc9C65fe5BA9C7dD1203eA78a300D3F1C1E3eF",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
-  "LendingMigrator": {
-    "address": "0xD26AB813453DAf2cCaA07e119BBd6FD93F6ADca0",
+  "DefaultWithdrawStrategy": {
+    "address": "0xeD27d52001Ace4f82Eab11c91D02e34a22A7E18b",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   }
 }
