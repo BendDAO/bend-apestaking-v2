@@ -1,0 +1,170 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract IApeCoinStaking",
+        "name": "apeCoinStaking_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ICoinPool",
+        "name": "coinPool_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IStakeManager",
+        "name": "staker_",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "apeCoinStaking",
+    "outputs": [
+      {
+        "internalType": "contract IApeCoinStaking",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bakc",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bayc",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "coinPool",
+    "outputs": [
+      {
+        "internalType": "contract ICoinPool",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "mayc",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "staker",
+    "outputs": [
+      {
+        "internalType": "contract IStakeManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "viewNftPoolPendingRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "rewards",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "viewPool",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "coinPoolPendingApeCoin",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "coinPoolPendingRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "coinPoolStakedAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "baycPoolMaxCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maycPoolMaxCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bakcPoolMaxCap",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IPoolViewer.PoolState",
+        "name": "poolState",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

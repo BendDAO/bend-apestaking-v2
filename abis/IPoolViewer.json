@@ -1,0 +1,71 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "viewNftPoolPendingRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "viewPool",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "coinPoolPendingApeCoin",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "coinPoolPendingRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "coinPoolStakedAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "baycPoolMaxCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maycPoolMaxCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bakcPoolMaxCap",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IPoolViewer.PoolState",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
