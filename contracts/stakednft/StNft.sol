@@ -68,7 +68,28 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
         }
     }
 
+    function mintToReceiver(address to_, uint256[] calldata tokenIds_) external override {
+        address staker_ = _msgSender();
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            require(address(this) == nftVault.ownerOf(address(_nft), tokenIds_[i]), "StNft: not owner of token");
+            require(staker_ == nftVault.stakerOf(address(_nft), tokenIds_[i]), "StNft: not staker of token");
+        }
+
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            _addTokenToStakerEnumeration(staker_, tokenIds_[i]);
+            _safeMint(to_, tokenIds_[i]);
+        }
+    }
+
     function burn(uint256[] calldata tokenIds_) external override {
+        _burn(tokenIds_, msg.sender);
+    }
+
+    function burnToReceiver(uint256[] calldata tokenIds_, address receiverOfUnderlying) external override {
+        _burn(tokenIds_, receiverOfUnderlying);
+    }
+
+    function _burn(uint256[] calldata tokenIds_, address receiverOfUnderlying) internal {
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
@@ -79,12 +100,7 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
             _burn(tokenId_);
         }
 
-        nftVault.withdrawNft(address(_nft), tokenIds_);
-
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            tokenId_ = tokenIds_[i];
-            _nft.safeTransferFrom(address(this), _msgSender(), tokenIds_[i]);
-        }
+        nftVault.withdrawNftToReceiver(address(_nft), tokenIds_, receiverOfUnderlying);
     }
 
     function stakerOf(uint256 tokenId_) public view override returns (address) {

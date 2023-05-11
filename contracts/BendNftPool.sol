@@ -75,9 +75,14 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         require(tokenIds_.length > 0, "BendNftPool: empty tokenIds");
         PoolState storage pool = poolStates[nft_];
         uint256 tokenId_;
+
+        bytes memory tranPayload = abi.encode(address(pool.stakedNft), address(staker));
+        bytes memory tranData = abi.encode(uint256(1), tranPayload);
+        INftVault nftVault = staker.nftVault();
+
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            IERC721Upgradeable(nft_).safeTransferFrom(_msgSender(), address(staker), tokenId_);
+            IERC721Upgradeable(nft_).safeTransferFrom(_msgSender(), address(nftVault), tokenId_, tranData);
             pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
         }
         staker.mintStNft(pool.stakedNft, _msgSender(), tokenIds_);
@@ -97,15 +102,10 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
             pool.stakedNft.safeTransferFrom(_msgSender(), address(this), tokenId_);
         }
 
-        pool.stakedNft.burn(tokenIds_);
+        pool.stakedNft.burnToReceiver(tokenIds_, _msgSender());
 
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            IERC721Upgradeable(pool.stakedNft.underlyingAsset()).safeTransferFrom(
-                address(this),
-                _msgSender(),
-                tokenId_
-            );
             delete pool.rewardsDebt[tokenId_];
         }
 

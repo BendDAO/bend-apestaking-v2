@@ -48,11 +48,20 @@ contract NftVault is INftVault, OwnableUpgradeable {
     }
 
     function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) external view override onlyApeCaller returns (bytes4) {
+        address operator,
+        address /*from*/,
+        uint256 tokenId,
+        bytes calldata data
+    ) external override onlyApeCaller returns (bytes4) {
+        if (operator == address(this) || (data.length == 0)) {
+            return IERC721ReceiverUpgradeable.onERC721Received.selector;
+        }
+
+        (uint256 flag, bytes memory payload) = abi.decode(data, (uint256, bytes));
+        require(flag == 1, "NftVault: not supported flag");
+        (address owner_, address staker_) = abi.decode(payload, (address, address));
+        _depositOneNftWithourTransfer(msg.sender, tokenId, owner_, staker_);
+
         return IERC721ReceiverUpgradeable.onERC721Received.selector;
     }
 
@@ -126,19 +135,37 @@ contract NftVault is INftVault, OwnableUpgradeable {
     }
 
     function depositNft(address nft_, uint256[] calldata tokenIds_, address staker_) external override onlyApe(nft_) {
-        IApeCoinStaking.Position memory position_;
-
         // transfer nft and set permission
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            // block partially stake from official contract
-            position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, tokenIds_[i]);
-            require(position_.stakedAmount == 0, "nftVault: nft already staked");
             IERC721Upgradeable(nft_).safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
-            _vaultStorage._nfts[nft_][tokenIds_[i]] = NftStatus(msg.sender, staker_);
+
+            _depositOneNftWithourTransfer(nft_, tokenIds_[i], msg.sender, staker_);
         }
     }
 
+    function _depositOneNftWithourTransfer(address nft_, uint256 tokenId, address owner_, address staker_) internal {
+        IApeCoinStaking.Position memory position_;
+
+        // block partially stake from official contract
+        position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, tokenId);
+        require(position_.stakedAmount == 0, "nftVault: nft already staked");
+
+        _vaultStorage._nfts[nft_][tokenId] = NftStatus(owner_, staker_);
+    }
+
     function withdrawNft(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {
+        _withdrawNft(nft_, tokenIds_, msg.sender);
+    }
+
+    function withdrawNftToReceiver(
+        address nft_,
+        uint256[] calldata tokenIds_,
+        address receiverOfUnderlying
+    ) external override onlyApe(nft_) {
+        _withdrawNft(nft_, tokenIds_, receiverOfUnderlying);
+    }
+
+    function _withdrawNft(address nft_, uint256[] calldata tokenIds_, address receiverOfUnderlying) internal {
         require(tokenIds_.length > 0, "nftVault: invalid tokenIds");
         if (nft_ == _vaultStorage.bayc || nft_ == _vaultStorage.mayc) {
             VaultLogic._refundSinglePool(_vaultStorage, nft_, tokenIds_);
@@ -153,7 +180,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
             );
             delete _vaultStorage._nfts[nft_][tokenIds_[i]];
             // transfer nft
-            IERC721Upgradeable(nft_).safeTransferFrom(address(this), msg.sender, tokenIds_[i]);
+            IERC721Upgradeable(nft_).safeTransferFrom(address(this), receiverOfUnderlying, tokenIds_[i]);
         }
     }
 
