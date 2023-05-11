@@ -208,7 +208,8 @@ export async function setupContracts(): Promise<Contracts> {
   ]);
 
   //  staked nft
-  const nftVault = await deployContract<NftVault>("NftVault", []);
+  const vaultLogic = await deployContract("VaultLogic", []);
+  const nftVault = await deployContract<NftVault>("NftVault", [], { VaultLogic: vaultLogic.address });
   await nftVault.initialize(apeStaking.address, delegateCash.address);
   const stBayc = await deployContract<StBAYC>("StBAYC", []);
   await stBayc.initialize(bayc.address, nftVault.address);
