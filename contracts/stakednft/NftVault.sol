@@ -343,16 +343,17 @@ contract NftVault is INftVault, OwnableUpgradeable {
             if (vars.stakedAmount > 0) {
                 pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.BAYC_POOL_ID);
 
-                // make sure the bayc locked in valult
                 if (
-                    pairingStatus.isPaired && IERC721Upgradeable(bayc).ownerOf(pairingStatus.tokenId) == address(this)
+                    pairingStatus.isPaired &&
+                    // make sure the bayc locked in valult
+                    IERC721Upgradeable(bayc).ownerOf(pairingStatus.tokenId) == address(this)
                 ) {
                     vars.baycSize += 1;
                 } else {
                     pairingStatus = apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.MAYC_POOL_ID);
-                    // make sure the mayc locked in valult
                     if (
                         pairingStatus.isPaired &&
+                        // make sure the mayc locked in valult
                         IERC721Upgradeable(mayc).ownerOf(pairingStatus.tokenId) == address(this)
                     ) {
                         vars.maycSize += 1;
