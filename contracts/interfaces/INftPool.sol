@@ -14,15 +14,15 @@ interface INftPool {
 
     event RewardClaimed(
         address indexed nft,
-        uint256[] indexed tokenIds,
+        uint256[] tokenIds,
         address indexed receiver,
         uint256 amount,
         uint256 rewardsDebt
     );
 
-    event NftDeposited(address indexed nft, uint256[] indexed tokenIds, address indexed owner);
+    event NftDeposited(address indexed nft, uint256[] tokenIds, address indexed owner);
 
-    event NftWithdrawn(address indexed nft, uint256[] indexed tokenIds, address indexed owner);
+    event NftWithdrawn(address indexed nft, uint256[] tokenIds, address indexed owner);
 
     struct PoolState {
         IStakedNft stakedNft;
