@@ -131,6 +131,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function updateWithdrawStrategy(IWithdrawStrategy withdrawStrategy_) external override onlyOwner {
+        require(address(withdrawStrategy_) != address(0), "BendStakeManager: invalid withdraw strategy");
         withdrawStrategy = withdrawStrategy_;
     }
 
@@ -138,7 +139,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         return (rewardsAmount_ * fee) / PERCENTAGE_FACTOR;
     }
 
-    function calculateFee(uint256 rewardsAmount_) public view returns (uint256 feeAmount) {
+    function calculateFee(uint256 rewardsAmount_) external view returns (uint256 feeAmount) {
         return _calculateFee(rewardsAmount_);
     }
 
