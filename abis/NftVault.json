@@ -33,50 +33,36 @@
   },
   {
     "inputs": [],
-    "name": "apeCoin",
-    "outputs": [
-      {
-        "internalType": "contract IERC20Upgradeable",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "apeCoinStaking",
+    "name": "_vaultStorage",
     "outputs": [
       {
         "internalType": "contract IApeCoinStaking",
-        "name": "",
+        "name": "apeCoinStaking",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "bakc",
-    "outputs": [
+      },
+      {
+        "internalType": "contract IERC20Upgradeable",
+        "name": "apeCoin",
+        "type": "address"
+      },
       {
         "internalType": "address",
-        "name": "",
+        "name": "bayc",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "bayc",
-    "outputs": [
+      },
       {
         "internalType": "address",
-        "name": "",
+        "name": "mayc",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "bakc",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IDelegationRegistry",
+        "name": "delegationRegistry",
         "type": "address"
       }
     ],
@@ -185,19 +171,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "delegationRegistry",
-    "outputs": [
-      {
-        "internalType": "contract IDelegationRegistry",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -262,19 +235,6 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "mayc",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
       }
     ],
     "stateMutability": "view",

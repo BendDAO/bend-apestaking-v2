@@ -1,10 +1,42 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
-import {IApeCoinStaking} from "./IApeCoinStaking.sol";
+import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 
+import {IApeCoinStaking} from "./IApeCoinStaking.sol";
+import {IDelegationRegistry} from "../interfaces/IDelegationRegistry.sol";
+
 interface INftVault is IERC721ReceiverUpgradeable {
+    struct NftStatus {
+        address owner;
+        address staker;
+    }
+
+    struct VaultStorage {
+        // nft address =>  nft tokenId => nftStatus
+        mapping(address => mapping(uint256 => NftStatus)) _nfts;
+        // nft address => staker address => refund
+        mapping(address => mapping(address => Refund)) _refunds;
+        // nft address => staker address => position
+        mapping(address => mapping(address => Position)) _positions;
+        // nft address => staker address => staking nft tokenId array
+        mapping(address => mapping(address => EnumerableSetUpgradeable.UintSet)) _stakingTokenIds;
+        IApeCoinStaking apeCoinStaking;
+        IERC20Upgradeable apeCoin;
+        address bayc;
+        address mayc;
+        address bakc;
+        IDelegationRegistry delegationRegistry;
+        /**
+         * @dev This empty reserved space is put in place to allow future versions to add new
+         * variables without shifting down storage in the inheritance chain.
+         * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+         */
+        uint256[40] __gap;
+    }
+
     struct Refund {
         uint256 principal;
         uint256 reward;

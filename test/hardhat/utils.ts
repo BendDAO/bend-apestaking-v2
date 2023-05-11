@@ -60,8 +60,10 @@ export const randomItem = (originalArray: number[]) => {
 
 export async function deployContract<ContractType extends Contract>(
   contractName: string,
-  args: any[]
+  args: any[],
+  libraries?: { [libraryName: string]: string }
 ): Promise<ContractType> {
-  const instance = await (await ethers.getContractFactory(contractName)).deploy(...args);
+  // console.log("deployContract:", contractName, args, libraries);
+  const instance = await (await ethers.getContractFactory(contractName, { libraries })).deploy(...args);
   return instance as ContractType;
 }
