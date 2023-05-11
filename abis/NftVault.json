@@ -32,44 +32,6 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "_vaultStorage",
-    "outputs": [
-      {
-        "internalType": "contract IApeCoinStaking",
-        "name": "apeCoinStaking",
-        "type": "address"
-      },
-      {
-        "internalType": "contract IERC20Upgradeable",
-        "name": "apeCoin",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "bayc",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "mayc",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "bakc",
-        "type": "address"
-      },
-      {
-        "internalType": "contract IDelegationRegistry",
-        "name": "delegationRegistry",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "components": [

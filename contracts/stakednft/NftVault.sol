@@ -17,7 +17,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
     using ApeStakingLib for IApeCoinStaking;
 
-    VaultStorage public _vaultStorage;
+    VaultStorage internal _vaultStorage;
 
     modifier onlyApe(address nft_) {
         require(
