@@ -1,6 +1,6 @@
 {
   "VaultLogic": {
-    "address": "0x142E16B937AF00ea2F3DF02A4a3C3383CCC4b323",
+    "address": "0xb66A0197ae15177C7c27c699882601c96f25122d",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "NftVault": {
@@ -45,6 +45,10 @@
   },
   "DefaultWithdrawStrategy": {
     "address": "0xeD27d52001Ace4f82Eab11c91D02e34a22A7E18b",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "PoolViewer": {
+    "address": "0x21750a13e2388cC75D94894b2a6F8cA9C8B75F76",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   }
 }

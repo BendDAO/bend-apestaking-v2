@@ -161,6 +161,17 @@ task("deploy:LendingMigrator", "Deploy LendingMigrator").setAction(async (_, { r
   await deployProxyContractWithoutInit("LendingMigrator", [], true);
 });
 
+task("deploy:PoolViewer", "Deploy PoolViewer").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  const apeStaking = getParams(APE_STAKING, network.name);
+  const coinPool = await getContractAddressFromDB("BendCoinPool");
+  const stakeManager = await getContractAddressFromDB("BendStakeManager");
+
+  await deployContract("PoolViewer", [apeStaking, coinPool, stakeManager], true);
+});
+
 task("deploy:config:BendCoinPool", "Coinfig BendCoinPool").setAction(async (_, { network, run }) => {
   await run("set-DRE");
   await run("compile");
@@ -329,6 +340,28 @@ task("upgrade", "upgrade contract")
     console.log("New implmentation at: ", implAddress);
     await verifyEtherscanContract(implAddress, []);
   });
+
+task("upgrade:NftVault", "upgrade contract").setAction(async (_, { ethers, upgrades, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  await deployContract("VaultLogic", [], true);
+  const vaultLogic = await getContractAddressFromDB("VaultLogic");
+
+  const proxyAddress = await getContractAddressFromDB("NftVault");
+  const upgradeable = await ethers.getContractFactory("NftVault", { libraries: { VaultLogic: vaultLogic } });
+
+  // @ts-ignore
+  const upgraded = await upgrades.upgradeProxy(proxyAddress, upgradeable, {
+    unsafeSkipStorageCheck: true,
+    unsafeAllowLinkedLibraries: true,
+  });
+  await upgraded.deployed();
+
+  const implAddress = await upgrades.erc1967.getImplementationAddress(upgraded.address);
+  console.log("New implmentation at: ", implAddress);
+  await verifyEtherscanContract(implAddress, []);
+});
 
 task("forceImport", "force import implmentation to proxy")
   .addParam("proxy", "The proxy address")
