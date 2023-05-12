@@ -65,7 +65,13 @@ contract BendStakeManagerTest is SetupHelper {
 
         testBaycTokenIds[0] = 100;
         mockBAYC.mint(testBaycTokenIds[0]);
-        nftPool.deposit(address(mockBAYC), testBaycTokenIds);
+
+        address[] memory nfts = new address[](1);
+        uint256[][] memory tokenIds = new uint256[][](1);
+        nfts[0] = address(mockBAYC);
+        tokenIds[0] = testBaycTokenIds;
+
+        nftPool.deposit(nfts, tokenIds);
         vm.stopPrank();
 
         // stake all nfts
@@ -85,10 +91,10 @@ contract BendStakeManagerTest is SetupHelper {
         vm.stopPrank();
 
         vm.startPrank(testUser);
-        uint256 rewardsAmount = nftPool.claimable(address(mockBAYC), testBaycTokenIds);
+        uint256 rewardsAmount = nftPool.claimable(nfts, tokenIds);
         assertGt(rewardsAmount, 0, "rewards should greater than 0");
 
-        nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
+        nftPool.withdraw(nfts, tokenIds);
         uint256 balanceAmount = mockApeCoin.balanceOf(testUser);
         assertEq(balanceAmount, rewardsAmount, "balance not match rewards");
         vm.stopPrank();

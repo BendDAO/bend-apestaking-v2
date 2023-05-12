@@ -217,14 +217,14 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "nft_",
-        "type": "address"
+        "internalType": "address[]",
+        "name": "nfts_",
+        "type": "address[]"
       },
       {
-        "internalType": "uint256[]",
+        "internalType": "uint256[][]",
         "name": "tokenIds_",
-        "type": "uint256[]"
+        "type": "uint256[][]"
       }
     ],
     "name": "claim",
@@ -235,14 +235,14 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "nft_",
-        "type": "address"
+        "internalType": "address[]",
+        "name": "nfts_",
+        "type": "address[]"
       },
       {
-        "internalType": "uint256[]",
+        "internalType": "uint256[][]",
         "name": "tokenIds_",
-        "type": "uint256[]"
+        "type": "uint256[][]"
       }
     ],
     "name": "claimable",
@@ -272,14 +272,14 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "nft_",
-        "type": "address"
+        "internalType": "address[]",
+        "name": "nfts_",
+        "type": "address[]"
       },
       {
-        "internalType": "uint256[]",
+        "internalType": "uint256[][]",
         "name": "tokenIds_",
-        "type": "uint256[]"
+        "type": "uint256[][]"
       }
     ],
     "name": "deposit",
@@ -516,14 +516,14 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "nft_",
-        "type": "address"
+        "internalType": "address[]",
+        "name": "nfts_",
+        "type": "address[]"
       },
       {
-        "internalType": "uint256[]",
+        "internalType": "uint256[][]",
         "name": "tokenIds_",
-        "type": "uint256[]"
+        "type": "uint256[][]"
       }
     ],
     "name": "withdraw",

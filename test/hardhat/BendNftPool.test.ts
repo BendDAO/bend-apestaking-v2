@@ -68,7 +68,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     }
     const index = (await contracts.bendNftPool.getPoolStateUI(contracts.bayc.address)).accumulatedRewardsPerNft;
 
-    await contracts.bendNftPool.connect(owner).deposit(contracts.bayc.address, baycTokenIds);
+    await contracts.bendNftPool.connect(owner).deposit([contracts.bayc.address], [baycTokenIds]);
     for (const id of baycTokenIds) {
       expect(await contracts.stBayc.ownerOf(id)).eq(owner.address);
       expect(await contracts.bendNftPool.getNftStateUI(contracts.bayc.address, id)).eq(index);
@@ -97,7 +97,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
       claimable = claimable.add(poolIndex.sub(index).div(constants.WeiPerEther));
     }
     expect(await contracts.bendCoinPool.previewRedeem(claimable)).eq(
-      await contracts.bendNftPool.claimable(nft, tokenIds)
+      await contracts.bendNftPool.claimable([nft], [tokenIds])
     );
   };
 
@@ -120,7 +120,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     }
     const index = (await contracts.bendNftPool.getPoolStateUI(contracts.mayc.address)).accumulatedRewardsPerNft;
 
-    await contracts.bendNftPool.connect(owner).deposit(contracts.mayc.address, maycTokenIds);
+    await contracts.bendNftPool.connect(owner).deposit([contracts.mayc.address], [maycTokenIds]);
     for (const id of maycTokenIds) {
       expect(await contracts.stMayc.ownerOf(id)).eq(owner.address);
       expect(await contracts.bendNftPool.getNftStateUI(contracts.mayc.address, id)).eq(index);
@@ -148,7 +148,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     }
     const index = (await contracts.bendNftPool.getPoolStateUI(contracts.bakc.address)).accumulatedRewardsPerNft;
 
-    await contracts.bendNftPool.connect(owner).deposit(contracts.bakc.address, bakcTokenIds);
+    await contracts.bendNftPool.connect(owner).deposit([contracts.bakc.address], [bakcTokenIds]);
     for (const id of bakcTokenIds) {
       expect(await contracts.stBakc.ownerOf(id)).eq(owner.address);
       expect(await contracts.bendNftPool.getNftStateUI(contracts.bakc.address, id)).eq(index);
@@ -171,8 +171,8 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
   });
 
   const expectClaim = async (nft: string, tokenIds: number[]) => {
-    const claimable = await contracts.bendNftPool.claimable(nft, tokenIds);
-    await expect(contracts.bendNftPool.connect(owner).claim(nft, tokenIds))
+    const claimable = await contracts.bendNftPool.claimable([nft], [tokenIds]);
+    await expect(contracts.bendNftPool.connect(owner).claim([nft], [tokenIds]))
       .changeTokenBalances(
         contracts.apeCoin,
         [owner.address, contracts.bendNftPool.address],
@@ -193,8 +193,8 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
 
   const expectWithdraw = async (stNft: IStakedNft, tokenIds: number[]) => {
     const nft = await getContract<MintableERC721>("MintableERC721", await stNft.underlyingAsset());
-    const claimable = await contracts.bendNftPool.claimable(nft.address, tokenIds);
-    await expect(contracts.bendNftPool.connect(owner).withdraw(nft.address, tokenIds))
+    const claimable = await contracts.bendNftPool.claimable([nft.address], [tokenIds]);
+    await expect(contracts.bendNftPool.connect(owner).withdraw([nft.address], [tokenIds]))
       .changeTokenBalances(
         contracts.apeCoin,
         [owner.address, contracts.bendNftPool.address],
