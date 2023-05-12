@@ -8,11 +8,7 @@ import {IERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/
 interface IStakedNft is IERC721MetadataUpgradeable, IERC721ReceiverUpgradeable, IERC721EnumerableUpgradeable {
     function mint(address to, uint256[] calldata tokenIds) external;
 
-    function mintToReceiver(address to_, uint256[] calldata tokenIds_) external;
-
     function burn(uint256[] calldata tokenIds) external;
-
-    function burnToReceiver(uint256[] calldata tokenIds_, address receiverOfUnderlying) external;
 
     /**
      * @dev Returns the staker of the `tokenId` token.

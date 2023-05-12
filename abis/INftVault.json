@@ -697,29 +697,6 @@
         "internalType": "address",
         "name": "nft_",
         "type": "address"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "tokenIds_",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "address",
-        "name": "receiverOfUnderlying",
-        "type": "address"
-      }
-    ],
-    "name": "withdrawNftToReceiver",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "nft_",
-        "type": "address"
       }
     ],
     "name": "withdrawRefunds",

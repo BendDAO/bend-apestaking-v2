@@ -159,24 +159,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256[]",
-        "name": "tokenIds_",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "address",
-        "name": "receiverOfUnderlying",
-        "type": "address"
-      }
-    ],
-    "name": "burnToReceiver",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
@@ -249,24 +231,6 @@
       }
     ],
     "name": "mint",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to_",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "tokenIds_",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "mintToReceiver",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

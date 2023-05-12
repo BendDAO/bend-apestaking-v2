@@ -115,10 +115,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         IERC721Upgradeable(_stakerStorage.bakc).setApprovalForAll(address(_stakerStorage.stBakc), true);
     }
 
-    function nftVault() external view override returns (INftVault) {
-        return _stakerStorage.nftVault;
-    }
-
     function stBayc() external view override returns (IStakedNft) {
         return _stakerStorage.stBayc;
     }
@@ -212,7 +208,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function mintStNft(IStakedNft stNft_, address to_, uint256[] calldata tokenIds_) external onlyNftPool {
-        stNft_.mintToReceiver(to_, tokenIds_);
+        stNft_.mint(to_, tokenIds_);
     }
 
     function withdrawApeCoin(uint256 required) external override onlyCoinPool returns (uint256 withdrawn) {

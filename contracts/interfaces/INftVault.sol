@@ -72,8 +72,6 @@ interface INftVault is IERC721ReceiverUpgradeable {
     // withdraw nft
     function withdrawNft(address nft_, uint256[] calldata tokenIds_) external;
 
-    function withdrawNftToReceiver(address nft_, uint256[] calldata tokenIds_, address receiverOfUnderlying) external;
-
     // staker withdraw ape coin
     function withdrawRefunds(address nft_) external;
 

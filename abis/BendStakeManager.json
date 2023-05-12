@@ -467,19 +467,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "nftVault",
-    "outputs": [
-      {
-        "internalType": "contract INftVault",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
