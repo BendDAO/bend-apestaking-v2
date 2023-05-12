@@ -384,6 +384,25 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      }
+    ],
+    "name": "getNftRewardsShare",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "nftShare",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "contract IApeCoinStaking",
         "name": "apeStaking_",
         "type": "address"
