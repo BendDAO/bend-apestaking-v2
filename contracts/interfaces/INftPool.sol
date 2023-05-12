@@ -30,21 +30,18 @@ interface INftPool {
         mapping(uint256 => uint256) rewardsDebt;
     }
 
+    function claimable(address[] calldata nfts_, uint256[][] calldata tokenIds_) external view returns (uint256);
+
     function staker() external view returns (IStakeManager);
 
-    function claimable(address nft_, uint256[] calldata tokenIds_) external view returns (uint256);
+    function deposit(address[] calldata nfts_, uint256[][] calldata tokenIds_) external;
 
-    function deposit(address nft_, uint256[] calldata tokenIds_) external;
+    function withdraw(address[] calldata nfts_, uint256[][] calldata tokenIds_) external;
 
-    function withdraw(address nft_, uint256[] calldata tokenIds_) external;
+    function claim(address[] calldata nfts_, uint256[][] calldata tokenIds_) external;
 
-    // bacAPE
-    function claim(address nft_, uint256[] calldata tokenIds_) external;
-
-    // rewards
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external;
 
-    // query
     function getPoolStateUI(address nft_) external view returns (uint256 totalNfts, uint256 accumulatedRewardsPerNft);
 
     function getNftStateUI(address nft_, uint256 tokenId) external view returns (uint256 rewardsDebt);

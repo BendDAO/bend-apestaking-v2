@@ -37,6 +37,15 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         _;
     }
 
+    modifier onlyApes(address[] calldata nfts_) {
+        address nft_;
+        for (uint256 i = 0; i < nfts_.length; i++) {
+            nft_ = nfts_[i];
+            require(bayc == nft_ || mayc == nft_ || bakc == nft_, "BendNftPool: not ape");
+        }
+        _;
+    }
+
     modifier onlyStaker() {
         require(_msgSender() == address(staker), "BendNftPool: caller is not staker");
         _;
@@ -71,84 +80,120 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         apeCoin.approve(address(coinPool), type(uint256).max);
     }
 
-    function deposit(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
-        require(tokenIds_.length > 0, "BendNftPool: empty tokenIds");
-        PoolState storage pool = poolStates[nft_];
+    function deposit(
+        address[] calldata nfts_,
+        uint256[][] calldata tokenIds_
+    ) external override onlyApes(nfts_) nonReentrant {
+        address nft_;
         uint256 tokenId_;
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            tokenId_ = tokenIds_[i];
-            IERC721Upgradeable(nft_).safeTransferFrom(_msgSender(), address(staker), tokenId_);
-            pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
+        PoolState storage pool_;
+        for (uint256 i = 0; i < nfts_.length; i++) {
+            nft_ = nfts_[i];
+            pool_ = poolStates[nft_];
+            require(tokenIds_[i].length > 0, "BendNftPool: empty tokenIds");
+            for (uint256 j = 0; j < tokenIds_[i].length; j++) {
+                tokenId_ = tokenIds_[i][j];
+                IERC721Upgradeable(nft_).safeTransferFrom(_msgSender(), address(staker), tokenId_);
+                pool_.rewardsDebt[tokenId_] = pool_.accumulatedRewardsPerNft;
+            }
+            staker.mintStNft(pool_.stakedNft, _msgSender(), tokenIds_[i]);
+            emit NftDeposited(nft_, tokenIds_[i], _msgSender());
         }
-        staker.mintStNft(pool.stakedNft, _msgSender(), tokenIds_);
-        emit NftDeposited(nft_, tokenIds_, _msgSender());
     }
 
-    function withdraw(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
-        require(tokenIds_.length > 0, "BendNftPool: empty tokenIds");
+    function withdraw(
+        address[] calldata nfts_,
+        uint256[][] calldata tokenIds_
+    ) external override onlyApes(nfts_) nonReentrant {
+        _claim(_msgSender(), _msgSender(), nfts_, tokenIds_);
 
-        _claim(_msgSender(), _msgSender(), nft_, tokenIds_);
-
-        PoolState storage pool = poolStates[nft_];
-
+        PoolState storage pool_;
         uint256 tokenId_;
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            tokenId_ = tokenIds_[i];
-            pool.stakedNft.safeTransferFrom(_msgSender(), address(this), tokenId_);
+        address nft_;
+
+        for (uint256 i = 0; i < nfts_.length; i++) {
+            require(tokenIds_[i].length > 0, "BendNftPool: empty tokenIds");
+            nft_ = nfts_[i];
+            pool_ = poolStates[nft_];
+            for (uint256 j = 0; j < tokenIds_[i].length; j++) {
+                tokenId_ = tokenIds_[i][j];
+                pool_.stakedNft.safeTransferFrom(_msgSender(), address(this), tokenId_);
+            }
+
+            pool_.stakedNft.burn(tokenIds_[i]);
+
+            for (uint256 j = 0; j < tokenIds_[i].length; j++) {
+                tokenId_ = tokenIds_[i][j];
+                IERC721Upgradeable(pool_.stakedNft.underlyingAsset()).safeTransferFrom(
+                    address(this),
+                    _msgSender(),
+                    tokenId_
+                );
+                delete pool_.rewardsDebt[tokenId_];
+            }
+
+            emit NftWithdrawn(nft_, tokenIds_[i], _msgSender());
         }
-
-        pool.stakedNft.burn(tokenIds_);
-
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            tokenId_ = tokenIds_[i];
-            IERC721Upgradeable(pool.stakedNft.underlyingAsset()).safeTransferFrom(
-                address(this),
-                _msgSender(),
-                tokenId_
-            );
-            delete pool.rewardsDebt[tokenId_];
-        }
-
-        emit NftWithdrawn(nft_, tokenIds_, _msgSender());
     }
 
-    function _claim(address owner_, address receiver_, address nft_, uint256[] calldata tokenIds_) internal {
-        PoolState storage pool = poolStates[nft_];
+    function _claim(
+        address owner_,
+        address receiver_,
+        address[] calldata nfts_,
+        uint256[][] calldata tokenIds_
+    ) internal {
+        address nft_;
+        PoolState storage pool_;
         uint256 tokenId_;
         uint256 claimableShares;
+        uint256 totalClaimableShares;
         address tokenOwner_;
 
-        (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(pool.stakedNft));
+        for (uint256 i = 0; i < nfts_.length; i++) {
+            require(tokenIds_[i].length > 0, "BendNftPool: empty tokenIds");
+            nft_ = nfts_[i];
+            pool_ = poolStates[nft_];
+            (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(pool_.stakedNft));
+            claimableShares = 0;
 
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            tokenId_ = tokenIds_[i];
+            for (uint256 j = 0; j < tokenIds_[i].length; j++) {
+                tokenId_ = tokenIds_[i][j];
+                tokenOwner_ = pool_.stakedNft.ownerOf(tokenId_);
+                if (tokenOwner_ != owner_ && bnftProxy != address(0) && tokenOwner_ == bnftProxy) {
+                    tokenOwner_ = IERC721Upgradeable(bnftProxy).ownerOf(tokenId_);
+                }
+                require(tokenOwner_ == owner_, "BendNftPool: invalid token owner");
+                require(pool_.stakedNft.stakerOf(tokenId_) == address(staker), "BendNftPool: invalid token staker");
 
-            tokenOwner_ = pool.stakedNft.ownerOf(tokenId_);
-
-            if (tokenOwner_ != owner_ && bnftProxy != address(0) && tokenOwner_ == bnftProxy) {
-                tokenOwner_ = IERC721Upgradeable(bnftProxy).ownerOf(tokenId_);
+                claimableShares += _calculateRewards(pool_, tokenId_);
+                // set token rewards debt with pool index
+                pool_.rewardsDebt[tokenId_] = pool_.accumulatedRewardsPerNft;
+            }
+            if (claimableShares > 0) {
+                emit RewardClaimed(
+                    nft_,
+                    tokenIds_[i],
+                    receiver_,
+                    coinPool.previewRedeem(claimableShares),
+                    pool_.accumulatedRewardsPerNft
+                );
             }
 
-            require(tokenOwner_ == owner_, "BendNftPool: invalid token owner");
-
-            require(pool.stakedNft.stakerOf(tokenId_) == address(staker), "BendNftPool: invalid token staker");
-
-            if (pool.accumulatedRewardsPerNft > pool.rewardsDebt[tokenId_]) {
-                claimableShares += (pool.accumulatedRewardsPerNft - pool.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
-                pool.rewardsDebt[tokenId_] = pool.accumulatedRewardsPerNft;
-            }
+            totalClaimableShares += claimableShares;
         }
 
-        if (claimableShares > 0) {
-            uint256 apeCoinAmount = coinPool.redeem(claimableShares, receiver_, address(this));
-            emit RewardClaimed(nft_, tokenIds_, receiver_, apeCoinAmount, pool.accumulatedRewardsPerNft);
+        if (totalClaimableShares > 0) {
+            coinPool.redeem(totalClaimableShares, receiver_, address(this));
         }
     }
 
-    function claim(address nft_, uint256[] calldata tokenIds_) external override nonReentrant onlyApe(nft_) {
+    function claim(
+        address[] calldata nfts_,
+        uint256[][] calldata tokenIds_
+    ) external override onlyApes(nfts_) nonReentrant {
         address owner = _msgSender();
         address receiver = _msgSender();
-        _claim(owner, receiver, nft_, tokenIds_);
+        _claim(owner, receiver, nfts_, tokenIds_);
     }
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
@@ -168,19 +213,26 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function claimable(
-        address nft_,
-        uint256[] calldata tokenIds_
-    ) external view override onlyApe(nft_) returns (uint256 amount) {
-        PoolState storage pool = poolStates[nft_];
-        uint256 rewardDebt;
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            rewardDebt = pool.rewardsDebt[tokenIds_[i]];
-            if (pool.accumulatedRewardsPerNft > rewardDebt) {
-                amount += (pool.accumulatedRewardsPerNft - rewardDebt) / APE_COIN_PRECISION;
+        address[] calldata nfts_,
+        uint256[][] calldata tokenIds_
+    ) external view override onlyApes(nfts_) returns (uint256 amount) {
+        PoolState storage pool_;
+        address nft_;
+        for (uint256 i = 0; i < nfts_.length; i++) {
+            nft_ = nfts_[i];
+            pool_ = poolStates[nft_];
+            for (uint256 j = 0; j < tokenIds_[i].length; j++) {
+                amount += _calculateRewards(pool_, tokenIds_[i][j]);
             }
         }
         if (amount != 0) {
             amount = coinPool.previewRedeem(amount);
+        }
+    }
+
+    function _calculateRewards(PoolState storage pool_, uint256 tokenId_) internal view returns (uint256 rewards) {
+        if (pool_.accumulatedRewardsPerNft > pool_.rewardsDebt[tokenId_]) {
+            rewards = (pool_.accumulatedRewardsPerNft - pool_.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
         }
     }
 

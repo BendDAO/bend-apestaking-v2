@@ -18,12 +18,16 @@ contract BendNftPoolTest is SetupHelper {
 
         testBaycTokenIds[0] = 100;
         mockBAYC.mint(testBaycTokenIds[0]);
+        address[] memory nfts = new address[](1);
+        uint256[][] memory tokenIds = new uint256[][](1);
 
-        nftPool.deposit(address(mockBAYC), testBaycTokenIds);
+        nfts[0] = address(mockBAYC);
+        tokenIds[0] = testBaycTokenIds;
+        nftPool.deposit(nfts, tokenIds);
 
-        nftPool.claim(address(mockBAYC), testBaycTokenIds);
+        nftPool.claim(nfts, tokenIds);
 
-        nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
+        nftPool.withdraw(nfts, tokenIds);
 
         vm.stopPrank();
     }
@@ -46,11 +50,17 @@ contract BendNftPoolTest is SetupHelper {
         testBaycTokenIds[2] = 300;
         mockBAYC.mint(testBaycTokenIds[2]);
 
-        nftPool.deposit(address(mockBAYC), testBaycTokenIds);
+        address[] memory nfts = new address[](1);
+        uint256[][] memory tokenIds = new uint256[][](1);
 
-        nftPool.claim(address(mockBAYC), testBaycTokenIds);
+        nfts[0] = address(mockBAYC);
+        tokenIds[0] = testBaycTokenIds;
 
-        nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
+        nftPool.deposit(nfts, tokenIds);
+
+        nftPool.claim(nfts, tokenIds);
+
+        nftPool.withdraw(nfts, tokenIds);
 
         vm.stopPrank();
     }
@@ -67,16 +77,22 @@ contract BendNftPoolTest is SetupHelper {
         testBaycTokenIds[0] = 100;
         mockBAYC.mint(testBaycTokenIds[0]);
 
-        nftPool.deposit(address(mockBAYC), testBaycTokenIds);
+        address[] memory nfts = new address[](1);
+        uint256[][] memory tokenIds = new uint256[][](1);
+
+        nfts[0] = address(mockBAYC);
+        tokenIds[0] = testBaycTokenIds;
+
+        nftPool.deposit(nfts, tokenIds);
 
         stBAYC.setApprovalForAll(address(mockBnftStBAYC), true);
         mockBnftStBAYC.mint(testUser, testBaycTokenIds[0]);
 
-        nftPool.claim(address(mockBAYC), testBaycTokenIds);
+        nftPool.claim(nfts, tokenIds);
 
         mockBnftStBAYC.burn(testBaycTokenIds[0]);
 
-        nftPool.withdraw(address(mockBAYC), testBaycTokenIds);
+        nftPool.withdraw(nfts, tokenIds);
 
         vm.stopPrank();
     }

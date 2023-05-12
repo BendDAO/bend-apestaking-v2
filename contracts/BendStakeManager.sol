@@ -706,6 +706,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         // transfer fee to recipient
         if (_stakerStorage.pendingFeeAmount > MAX_PENDING_FEE && _stakerStorage.feeRecipient != address(0)) {
             _stakerStorage.apeCoin.transfer(_stakerStorage.feeRecipient, _stakerStorage.pendingFeeAmount);
+            // solhint-disable-next-line
             _stakerStorage.pendingFeeAmount = 0;
         }
     }

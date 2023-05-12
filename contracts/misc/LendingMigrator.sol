@@ -161,7 +161,11 @@ contract LendingMigrator is
         IERC721Upgradeable(vars.nftAsset).safeTransferFrom(vars.borrower, address(address(this)), vars.nftTokenId);
         vars.nftTokenIds = new uint256[](1);
         vars.nftTokenIds[0] = vars.nftTokenId;
-        nftPool.deposit(vars.nftAsset, vars.nftTokenIds);
+        address[] memory nfts = new address[](1);
+        nfts[0] = vars.nftAsset;
+        uint256[][] memory tokenIds = new uint256[][](1);
+        tokenIds[0] = vars.nftTokenIds;
+        nftPool.deposit(nfts, tokenIds);
 
         // borrow new debt with the staked nft
         vars.balanceBeforeBorrow = IERC20Upgradeable(vars.debtReserve).balanceOf(address(this));

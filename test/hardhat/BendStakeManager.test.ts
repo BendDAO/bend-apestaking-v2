@@ -26,17 +26,21 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     baycTokenIds = [0, 1, 2, 3, 4, 5];
     await mintNft(owner, contracts.bayc, baycTokenIds);
     await contracts.bayc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
-    await contracts.bendNftPool.connect(owner).deposit(contracts.bayc.address, baycTokenIds);
 
     maycTokenIds = [6, 7, 8, 9, 10];
     await mintNft(owner, contracts.mayc, maycTokenIds);
     await contracts.mayc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
-    await contracts.bendNftPool.connect(owner).deposit(contracts.mayc.address, maycTokenIds);
 
     bakcTokenIds = [10, 11, 12, 13, 14];
     await mintNft(owner, contracts.bakc, bakcTokenIds);
     await contracts.bakc.connect(owner).setApprovalForAll(contracts.bendNftPool.address, true);
-    await contracts.bendNftPool.connect(owner).deposit(contracts.bakc.address, bakcTokenIds);
+
+    await contracts.bendNftPool
+      .connect(owner)
+      .deposit(
+        [contracts.bayc.address, contracts.mayc.address, contracts.bakc.address],
+        [baycTokenIds, maycTokenIds, bakcTokenIds]
+      );
 
     await contracts.apeCoin.connect(owner).approve(contracts.bendCoinPool.address, constants.MaxUint256);
     await contracts.bendCoinPool.connect(owner).deposit(makeBN18(APE_COIN_AMOUNT), owner.address);
