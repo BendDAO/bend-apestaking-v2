@@ -1,38 +1,6 @@
 [
   {
     "inputs": [],
-    "name": "PERCENTAGE_FACTOR",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "rewardAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "calculateNftRewards",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "nftRewardsAmount",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "getNftRewardsShare",
     "outputs": [
       {

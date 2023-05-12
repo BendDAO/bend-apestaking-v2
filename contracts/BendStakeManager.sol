@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 import {IStakeManager, IApeCoinStaking} from "./interfaces/IStakeManager.sol";
 import {INftVault} from "./interfaces/INftVault.sol";
@@ -17,6 +18,7 @@ import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
 
 contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     using ApeStakingLib for IApeCoinStaking;
+    using MathUpgradeable for uint256;
 
     uint256 public constant PERCENTAGE_FACTOR = 1e4;
     uint256 public constant MAX_FEE = 1000;
@@ -165,6 +167,10 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function getNftRewardsShare(address nft_) external view returns (uint256 nftShare) {
+        require(
+            address(_stakerStorage.rewardsStrategies[nft_]) != address(0),
+            "BendStakeManager: invalid withdraw strategy"
+        );
         nftShare = _stakerStorage.rewardsStrategies[nft_].getNftRewardsShare();
     }
 
@@ -174,7 +180,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function _calculateFee(uint256 rewardsAmount_) internal view returns (uint256 feeAmount) {
-        return (rewardsAmount_ * _stakerStorage.fee) / PERCENTAGE_FACTOR;
+        return rewardsAmount_.mulDiv(_stakerStorage.fee, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Down);
     }
 
     function calculateFee(uint256 rewardsAmount_) external view returns (uint256 feeAmount) {
@@ -581,8 +587,9 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
             address(_stakerStorage.rewardsStrategies[nft_]) != address(0),
             "BendStakeManager: reward strategy can't be zero address"
         );
-        //TODO: static call
-        uint256 nftPoolRewards = _stakerStorage.rewardsStrategies[nft_].calculateNftRewards(rewardsAmount_);
+        uint256 nftShare = _stakerStorage.rewardsStrategies[nft_].getNftRewardsShare();
+        require(nftShare < PERCENTAGE_FACTOR, "BaseRewardsStrategy: nft share is too high");
+        uint256 nftPoolRewards = rewardsAmount_.mulDiv(nftShare, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Down);
 
         uint256 apeCoinPoolRewards = rewardsAmount_ - nftPoolRewards;
         _stakerStorage.coinPool.receiveApeCoin(0, apeCoinPoolRewards);
@@ -698,8 +705,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
 
         // transfer fee to recipient
         if (_stakerStorage.pendingFeeAmount > MAX_PENDING_FEE && _stakerStorage.feeRecipient != address(0)) {
-            _stakerStorage.pendingFeeAmount = 0;
             _stakerStorage.apeCoin.transfer(_stakerStorage.feeRecipient, _stakerStorage.pendingFeeAmount);
+            _stakerStorage.pendingFeeAmount = 0;
         }
     }
 }

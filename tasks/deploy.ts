@@ -247,15 +247,11 @@ task("deploy:config:RewardsStrategy", "Coinfig RewardsStrategy").setAction(async
   console.log("ok");
 });
 
-task("deploy:config:WithdrawStrategy", "Coinfig WithdrawStrategy").setAction(async (_, { network, run }) => {
+task("deploy:config:WithdrawStrategy", "Coinfig WithdrawStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
   const deployer = await getDeploySigner();
   const stakeManager = await getContractFromDB<BendStakeManager>("BendStakeManager");
-
-  const bayc = getParams(BAYC, network.name);
-  const mayc = getParams(MAYC, network.name);
-  const bakc = getParams(BAKC, network.name);
 
   const withdrawStrategy = await getContractAddressFromDB("DefaultWithdrawStrategy");
 
@@ -348,7 +344,7 @@ task("forceImport", "force import implmentation to proxy")
 
 task("verify:Implementation", "verify implmentation")
   .addParam("impl", "The contract implementation address")
-  .setAction(async ({ impl }, { ethers, upgrades, run }) => {
+  .setAction(async ({ impl }, { run }) => {
     await run("set-DRE");
     await run("compile");
 

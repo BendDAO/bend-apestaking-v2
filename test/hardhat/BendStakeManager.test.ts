@@ -3,7 +3,7 @@ import { Contracts, Env, makeSuite, Snapshots } from "./setup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { advanceHours, makeBN18, mintNft, randomUint, shuffledSubarray } from "./utils";
 import { BigNumber, constants, Contract, ContractTransaction } from "ethers";
-import { IApeCoinStaking, IStakeManager } from "../../typechain-types";
+import { IApeCoinStaking, IRewardsStrategy, IStakeManager } from "../../typechain-types";
 import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 
@@ -359,13 +359,18 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     expect(await contracts.bendStakeManager.pendingRewards(1)).eq(0);
   });
 
+  const calculateNftRewards = async (rewards: BigNumber, strategy: IRewardsStrategy) => {
+    return rewards.mul(await strategy.getNftRewardsShare()).div(10000);
+  };
+
   it("unstakeBayc: unstake fully", async () => {
     await advanceHours(10);
     const rewards = await contracts.bendStakeManager.pendingRewards(1);
     const realRewards = await contracts.bendStakeManager.pendingRewardsIncludeFee(1);
     const fee = realRewards.sub(rewards);
 
-    const baycPoolRewards = await contracts.baycStrategy.calculateNftRewards(rewards);
+    const baycPoolRewards = await calculateNftRewards(rewards, contracts.baycStrategy);
+
     const unstakeAmount = await contracts.bendStakeManager.stakedApeCoin(1);
 
     const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
@@ -410,7 +415,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const rewards = excludeFee(realRewards);
     const fee = realRewards.sub(rewards);
 
-    const baycPoolRewards = await contracts.baycStrategy.calculateNftRewards(rewards);
+    const baycPoolRewards = await calculateNftRewards(rewards, contracts.baycStrategy);
     const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
     await expect(contracts.bendStakeManager.unstakeBayc(unstakeBaycTokenId)).changeTokenBalances(
       contracts.apeCoin,
@@ -481,7 +486,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const rewards = await contracts.bendStakeManager.pendingRewards(2);
     const realRewards = await contracts.bendStakeManager.pendingRewardsIncludeFee(2);
     const fee = realRewards.sub(rewards);
-    const maycPoolRewards = await contracts.maycStrategy.calculateNftRewards(rewards);
+    const maycPoolRewards = await calculateNftRewards(rewards, contracts.maycStrategy);
     const unstakeAmount = await contracts.bendStakeManager.stakedApeCoin(2);
 
     const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
@@ -527,7 +532,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const rewards = excludeFee(realRewards);
     const fee = realRewards.sub(rewards);
 
-    const maycPoolRewards = await contracts.maycStrategy.calculateNftRewards(rewards);
+    const maycPoolRewards = await calculateNftRewards(rewards, contracts.maycStrategy);
     const preCoinshares = await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address);
     await expect(contracts.bendStakeManager.unstakeMayc(unstakeMaycTokenId)).changeTokenBalances(
       contracts.apeCoin,
@@ -597,7 +602,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     expect(rewards).eq(excludeFee(realRewards));
     const fee = realRewards.sub(rewards);
 
-    const bakcPoolRewards = await contracts.bakcStrategy.calculateNftRewards(rewards);
+    const bakcPoolRewards = await calculateNftRewards(rewards, contracts.bakcStrategy);
 
     let baycNfts = [];
     let maycNfts = [];
@@ -638,7 +643,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const rewards = await contracts.bendStakeManager.pendingRewards(3);
     const realRewards = await contracts.bendStakeManager.pendingRewardsIncludeFee(3);
     const fee = realRewards.sub(rewards);
-    const bakcPoolRewards = await contracts.bakcStrategy.calculateNftRewards(rewards);
+    const bakcPoolRewards = await calculateNftRewards(rewards, contracts.bakcStrategy);
     const unstakeAmount = await contracts.bendStakeManager.stakedApeCoin(3);
 
     let baycNfts = [];
@@ -701,7 +706,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     }
     const rewards = excludeFee(realRewards);
     const fee = realRewards.sub(rewards);
-    const bakcPoolRewards = await contracts.bakcStrategy.calculateNftRewards(rewards);
+    const bakcPoolRewards = await calculateNftRewards(rewards, contracts.bakcStrategy);
 
     let baycNfts = [];
     let maycNfts = [];
@@ -798,7 +803,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preBakcStakedAmount.sub(bakcPooStakedAmount));
     expect(await contracts.bendStakeManager.pendingRewards(3)).eq(preBakcPendingRewards.sub(bakcPoolRewards));
 
-    const baycRewards = await contracts.baycStrategy.calculateNftRewards(baycPoolRewards);
+    const baycRewards = await calculateNftRewards(baycPoolRewards, contracts.baycStrategy);
     let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
 
     await expect(contracts.bendStakeManager.withdrawRefund(contracts.bayc.address)).changeTokenBalances(
@@ -813,7 +818,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     let nftPoolDelta = (await contracts.bendCoinPool.balanceOf(contracts.bendNftPool.address)).sub(preNftPool);
     expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(baycRewards, 10);
 
-    const bakcRewards = await contracts.bakcStrategy.calculateNftRewards(bakcPoolRewards);
+    const bakcRewards = await calculateNftRewards(bakcPoolRewards, contracts.bakcStrategy);
     preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
 
     await expect(contracts.bendStakeManager.withdrawRefund(contracts.bakc.address)).changeTokenBalances(
@@ -867,7 +872,8 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preBakcStakedAmount);
     expect(await contracts.bendStakeManager.pendingRewards(3)).eq(preBakcPendingRewards);
 
-    const baycRewards = await contracts.baycStrategy.calculateNftRewards(baycPoolRewards);
+    const baycRewards = await calculateNftRewards(baycPoolRewards, contracts.baycStrategy);
+
     let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
 
     await expect(contracts.bendStakeManager.withdrawRefund(contracts.bayc.address)).changeTokenBalances(
@@ -935,7 +941,8 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preBakcStakedAmount.sub(bakcPooStakedAmount));
     expect(await contracts.bendStakeManager.pendingRewards(3)).eq(preBakcPendingRewards.sub(bakcPoolRewards));
 
-    const maycRewards = await contracts.maycStrategy.calculateNftRewards(maycPoolRewards);
+    const maycRewards = await calculateNftRewards(maycPoolRewards, contracts.maycStrategy);
+
     let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
 
     await expect(contracts.bendStakeManager.withdrawRefund(contracts.mayc.address)).changeTokenBalances(
@@ -951,7 +958,8 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
 
     expect(await contracts.bendCoinPool.convertToAssets(nftPoolDelta)).closeTo(maycRewards, 10);
 
-    const bakcRewards = await contracts.bakcStrategy.calculateNftRewards(bakcPoolRewards);
+    const bakcRewards = await calculateNftRewards(bakcPoolRewards, contracts.bakcStrategy);
+
     preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
 
     await expect(contracts.bendStakeManager.withdrawRefund(contracts.bakc.address)).changeTokenBalances(
@@ -1006,7 +1014,8 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preBakcStakedAmount);
     expect(await contracts.bendStakeManager.pendingRewards(3)).eq(preBakcPendingRewards);
 
-    const maycRewards = await contracts.maycStrategy.calculateNftRewards(maycPoolRewards);
+    const maycRewards = await calculateNftRewards(maycPoolRewards, contracts.maycStrategy);
+
     let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
 
     await expect(contracts.bendStakeManager.withdrawRefund(contracts.mayc.address)).changeTokenBalances(
@@ -1048,7 +1057,8 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preStakedAmount.sub(pooStakedAmount));
     expect(await contracts.bendStakeManager.pendingRewards(3)).eq(prePendingRewards.sub(poolRewards));
 
-    const bakcRewards = await contracts.bakcStrategy.calculateNftRewards(poolRewards);
+    const bakcRewards = await calculateNftRewards(poolRewards, contracts.bakcStrategy);
+
     let preNftPool = await contracts.bendCoinPool.balanceOf(contracts.bendCoinPool.address);
 
     await expect(contracts.bendStakeManager.withdrawRefund(contracts.bakc.address)).changeTokenBalances(

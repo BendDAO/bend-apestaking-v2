@@ -2,7 +2,6 @@
 import { constants, Contract, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import { verifyEtherscanContract } from "./verification";
 import { DRE, DB } from "./DRE";
-import { DeployImplementationResponse } from "@openzeppelin/hardhat-upgrades/dist/deploy-implementation";
 
 export const waitForTx = async (tx: ContractTransaction): Promise<ContractReceipt> => await tx.wait(1);
 
