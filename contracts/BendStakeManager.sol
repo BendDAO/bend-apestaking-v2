@@ -613,8 +613,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function refundOf(address nft_) external view onlyApe(nft_) returns (uint256 amount) {
-        (uint256 pricipal, uint256 reward) = _refundOf(nft_);
-        amount = pricipal + reward;
+        (uint256 principal, uint256 reward) = _refundOf(nft_);
+        amount = principal + reward;
         if (_stakerStorage.fee > 0) {
             amount -= _calculateFee(reward);
         }
@@ -635,8 +635,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function totalRefund() external view override returns (uint256 amount) {
-        (uint256 pricipal, uint256 reward) = _totalRefund();
-        amount = pricipal + reward;
+        (uint256 principal, uint256 reward) = _totalRefund();
+        amount = principal + reward;
         if (_stakerStorage.fee > 0) {
             amount -= _calculateFee(reward);
         }
