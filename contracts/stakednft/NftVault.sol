@@ -114,6 +114,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
         uint256[] calldata tokenIds_,
         bool value_
     ) external override onlyApe(nft_) {
+        require(delegate_ != address(0), "nftVault: invalid delegate");
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];

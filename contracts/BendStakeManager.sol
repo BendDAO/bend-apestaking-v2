@@ -152,6 +152,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
     }
 
     function updateBotAdmin(address botAdmin_) external override onlyOwner {
+        require(botAdmin_ != address(0), "BendStakeManager: invalid bot admin");
         _stakerStorage.botAdmin = botAdmin_;
     }
 
@@ -159,6 +160,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         address nft_,
         IRewardsStrategy rewardsStrategy_
     ) external override onlyOwner onlyApe(nft_) {
+        require(address(rewardsStrategy_) != address(0), "BendStakeManager: invalid reward strategy");
         _stakerStorage.rewardsStrategies[nft_] = rewardsStrategy_;
     }
 
