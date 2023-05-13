@@ -13,13 +13,9 @@ import {INftPool, IStakedNft, IApeCoinStaking} from "./interfaces/INftPool.sol";
 import {ICoinPool} from "./interfaces/ICoinPool.sol";
 import {IBNFTRegistry} from "./interfaces/IBNFTRegistry.sol";
 
-import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
-
 contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeERC20Upgradeable for ICoinPool;
-    using ApeStakingLib for IApeCoinStaking;
-
     uint256 private constant APE_COIN_PRECISION = 1e18;
 
     IApeCoinStaking public apeCoinStaking;
