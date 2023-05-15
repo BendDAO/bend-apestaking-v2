@@ -4,18 +4,18 @@ import { BigNumber, constants, Contract } from "ethers";
 import { deployContract, makeBN18 } from "./utils";
 import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
-import { ICoinPool, MockBendStakeManager } from "../../typechain-types";
+import { BendCoinPool, MockBendStakeManager } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots) => {
   let lastRevert: string;
   let staker: MockBendStakeManager;
-  let pool: ICoinPool;
+  let pool: BendCoinPool;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
 
   before(async () => {
-    pool = await deployContract<ICoinPool>("BendCoinPool", []);
+    pool = await deployContract<BendCoinPool>("BendCoinPool", []);
     staker = await deployContract<MockBendStakeManager>("MockBendStakeManager", [
       contracts.apeCoin.address,
       pool.address,
@@ -45,6 +45,15 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
       (await pool.pendingApeCoin({ blockTag })).sub(await pool.pendingApeCoin({ blockTag: blockTag - 1 })).eq(delta)
     );
   };
+
+  it("deposit: revert when paused", async () => {
+    let depositAmount = makeBN18(10000);
+
+    await pool.setPause(true);
+    await expect(pool.connect(bob).depositSelf(depositAmount)).revertedWith("Pausable: paused");
+    await pool.setPause(false);
+  });
+
   it("deposit", async () => {
     let depositAmount = makeBN18(10000);
     let tx = pool.connect(alice).depositSelf(depositAmount);
@@ -66,6 +75,14 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
 
     lastRevert = "deposit";
     await snapshots.capture(lastRevert);
+  });
+
+  it("withdraw: revert when paused", async () => {
+    const withdrawAmount = await pool.assetBalanceOf(bob.address);
+
+    await pool.setPause(true);
+    await expect(pool.connect(bob).withdrawSelf(withdrawAmount)).revertedWith("Pausable: paused");
+    await pool.setPause(false);
   });
 
   it("withdraw: from pending ape coin", async () => {

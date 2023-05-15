@@ -5,8 +5,6 @@ import {
   MintableERC721,
   MintableERC20,
   ApeCoinStaking,
-  ICoinPool,
-  INftPool,
   BendStakeManagerTester,
   IDelegationRegistry,
   IRewardsStrategy,
@@ -24,6 +22,8 @@ import {
   StBAYC,
   DefaultWithdrawStrategy,
   IWithdrawStrategy,
+  BendCoinPool,
+  BendNftPool,
 } from "../../typechain-types";
 import { Contract, BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -60,8 +60,8 @@ export interface Contracts {
   bnftStBakc: MockBNFT;
   // bend ape staking v2
   bendStakeManager: BendStakeManagerTester;
-  bendCoinPool: ICoinPool;
-  bendNftPool: INftPool;
+  bendCoinPool: BendCoinPool;
+  bendNftPool: BendNftPool;
   baycStrategy: IRewardsStrategy;
   maycStrategy: IRewardsStrategy;
   bakcStrategy: IRewardsStrategy;
@@ -226,8 +226,8 @@ export async function setupContracts(): Promise<Contracts> {
 
   // bend staking v2
   const bendStakeManager = await deployContract<BendStakeManagerTester>("BendStakeManagerTester", []);
-  const bendCoinPool = await deployContract<ICoinPool>("BendCoinPool", []);
-  const bendNftPool = await deployContract<INftPool>("BendNftPool", []);
+  const bendCoinPool = await deployContract<BendCoinPool>("BendCoinPool", []);
+  const bendNftPool = await deployContract<BendNftPool>("BendNftPool", []);
 
   await (bendStakeManager as Contract).initialize(
     apeStaking.address,

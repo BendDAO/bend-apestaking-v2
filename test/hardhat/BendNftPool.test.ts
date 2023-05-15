@@ -62,6 +62,14 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     expect((await contracts.bendNftPool.getPoolStateUI(contracts.bakc.address)).accumulatedRewardsPerNft).eq(0);
   });
 
+  it("deposit: revert when paused", async () => {
+    await contracts.bendNftPool.setPause(true);
+    await expect(contracts.bendNftPool.connect(owner).deposit([contracts.bayc.address], [baycTokenIds])).revertedWith(
+      "Pausable: paused"
+    );
+    await contracts.bendNftPool.setPause(false);
+  });
+
   it("deposit: deposit bayc", async () => {
     for (const id of baycTokenIds) {
       await expect(contracts.stBayc.ownerOf(id)).revertedWith("ERC721: invalid token ID");
@@ -189,6 +197,14 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     await expectClaim(contracts.bayc.address, shuffledSubarray(baycTokenIds));
     await expectClaim(contracts.mayc.address, shuffledSubarray(maycTokenIds));
     await expectClaim(contracts.bakc.address, shuffledSubarray(bakcTokenIds));
+  });
+
+  it("withdraw: revert when paused", async () => {
+    await contracts.bendNftPool.setPause(true);
+    await expect(contracts.bendNftPool.connect(owner).withdraw([contracts.bayc.address], [baycTokenIds])).revertedWith(
+      "Pausable: paused"
+    );
+    await contracts.bendNftPool.setPause(false);
   });
 
   const expectWithdraw = async (stNft: IStakedNft, tokenIds: number[]) => {
