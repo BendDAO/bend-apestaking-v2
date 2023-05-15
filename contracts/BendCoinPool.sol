@@ -6,12 +6,19 @@ import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-u
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 import {IApeCoinStaking} from "./interfaces/IApeCoinStaking.sol";
 import {ICoinPool} from "./interfaces/ICoinPool.sol";
 import {IStakeManager} from "./interfaces/IStakeManager.sol";
 
-contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable {
+contract BendCoinPool is
+    ICoinPool,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    ERC4626Upgradeable
+{
     using MathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -56,7 +63,7 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
         address receiver,
         uint256 assets,
         uint256 shares
-    ) internal override(ERC4626Upgradeable) nonReentrant {
+    ) internal override(ERC4626Upgradeable) nonReentrant whenNotPaused {
         // transfer ape coin from caller
         super._deposit(caller, receiver, assets, shares);
         // increase pending amount
@@ -69,7 +76,7 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
         address owner,
         uint256 assets,
         uint256 shares
-    ) internal override(ERC4626Upgradeable) nonReentrant {
+    ) internal override(ERC4626Upgradeable) nonReentrant whenNotPaused {
         if (pendingApeCoin < assets) {
             uint256 required = assets - pendingApeCoin;
             require(staker.withdrawApeCoin(required) >= (required), "BendCoinPool: withdraw failed");
@@ -96,5 +103,13 @@ contract BendCoinPool is ICoinPool, ERC4626Upgradeable, ReentrancyGuardUpgradeab
     function pullApeCoin(uint256 amount_) external override onlyStaker {
         pendingApeCoin -= amount_;
         apeCoin.safeTransfer(address(staker), amount_);
+    }
+
+    function setPause(bool flag) public onlyOwner {
+        if (flag) {
+            _pause();
+        } else {
+            _unpause();
+        }
     }
 }

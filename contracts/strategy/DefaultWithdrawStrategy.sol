@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IApeCoinStaking} from "../interfaces/IApeCoinStaking.sol";
@@ -12,7 +14,7 @@ import {IWithdrawStrategy} from "../interfaces/IWithdrawStrategy.sol";
 
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
-contract DefaultWithdrawStrategy is IWithdrawStrategy {
+contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeable {
     using ApeStakingLib for IApeCoinStaking;
 
     IApeCoinStaking public apeCoinStaking;
@@ -53,7 +55,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy {
         uint256 initBalance;
     }
 
-    function withdrawApeCoin(uint256 required) external override onlyStaker returns (uint256 withdrawn) {
+    function withdrawApeCoin(uint256 required) external override nonReentrant onlyStaker returns (uint256 withdrawn) {
         WithdrawApeCoinVars memory vars;
         vars.initBalance = apeCoin.balanceOf(address(coinPool));
 

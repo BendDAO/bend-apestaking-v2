@@ -6,6 +6,7 @@ import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-u
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 import {INftVault} from "./interfaces/INftVault.sol";
 import {IStakeManager} from "./interfaces/IStakeManager.sol";
@@ -13,7 +14,7 @@ import {INftPool, IStakedNft, IApeCoinStaking} from "./interfaces/INftPool.sol";
 import {ICoinPool} from "./interfaces/ICoinPool.sol";
 import {IBNFTRegistry} from "./interfaces/IBNFTRegistry.sol";
 
-contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable {
+contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeERC20Upgradeable for ICoinPool;
     uint256 private constant APE_COIN_PRECISION = 1e18;
@@ -79,7 +80,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     function deposit(
         address[] calldata nfts_,
         uint256[][] calldata tokenIds_
-    ) external override onlyApes(nfts_) nonReentrant {
+    ) external override onlyApes(nfts_) nonReentrant whenNotPaused {
         address nft_;
         uint256 tokenId_;
         PoolState storage pool_;
@@ -100,7 +101,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     function withdraw(
         address[] calldata nfts_,
         uint256[][] calldata tokenIds_
-    ) external override onlyApes(nfts_) nonReentrant {
+    ) external override onlyApes(nfts_) nonReentrant whenNotPaused {
         _claim(_msgSender(), _msgSender(), nfts_, tokenIds_);
 
         PoolState storage pool_;
@@ -186,7 +187,7 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
     function claim(
         address[] calldata nfts_,
         uint256[][] calldata tokenIds_
-    ) external override onlyApes(nfts_) nonReentrant {
+    ) external override onlyApes(nfts_) nonReentrant whenNotPaused {
         address owner = _msgSender();
         address receiver = _msgSender();
         _claim(owner, receiver, nfts_, tokenIds_);
@@ -257,5 +258,13 @@ contract BendNftPool is INftPool, ReentrancyGuardUpgradeable, OwnableUpgradeable
         }
         require(isValidNFT, "BendNftPool: not ape nft");
         return this.onERC721Received.selector;
+    }
+
+    function setPause(bool flag) public onlyOwner {
+        if (flag) {
+            _pause();
+        } else {
+            _unpause();
+        }
     }
 }

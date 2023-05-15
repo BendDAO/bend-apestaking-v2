@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {ERC721EnumerableUpgradeable, ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 
 import {IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
@@ -11,7 +12,7 @@ import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/in
 import {IStakedNft} from "../interfaces/IStakedNft.sol";
 import {INftVault} from "../interfaces/INftVault.sol";
 
-abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgradeable {
+abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgradeable, ERC721EnumerableUpgradeable {
     IERC721MetadataUpgradeable private _nft;
     INftVault public nftVault;
 
@@ -56,7 +57,7 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
         return IERC721ReceiverUpgradeable.onERC721Received.selector;
     }
 
-    function mint(address to_, uint256[] calldata tokenIds_) external override {
+    function mint(address to_, uint256[] calldata tokenIds_) external override nonReentrant {
         address staker_ = _msgSender();
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             _nft.safeTransferFrom(_msgSender(), address(this), tokenIds_[i]);
@@ -69,7 +70,7 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
         emit Minted(to_, tokenIds_);
     }
 
-    function burn(uint256[] calldata tokenIds_) external override {
+    function burn(uint256[] calldata tokenIds_) external override nonReentrant {
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];

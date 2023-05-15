@@ -5,6 +5,7 @@ import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import {IStakeManager, IApeCoinStaking} from "./interfaces/IStakeManager.sol";
 import {INftVault} from "./interfaces/INftVault.sol";
@@ -16,7 +17,7 @@ import {IWithdrawStrategy} from "./interfaces/IWithdrawStrategy.sol";
 
 import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
 
-contract BendStakeManager is IStakeManager, OwnableUpgradeable {
+contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using ApeStakingLib for IApeCoinStaking;
     using MathUpgradeable for uint256;
 
@@ -43,12 +44,6 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         address mayc;
         address bakc;
         address botAdmin;
-        /**
-         * @dev This empty reserved space is put in place to allow future versions to add new
-         * variables without shifting down storage in the inheritance chain.
-         * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-         */
-        uint256[32] __gap;
     }
     StakerStorage internal _stakerStorage;
 
@@ -644,7 +639,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable {
         }
     }
 
-    function compound(CompoundArgs calldata args_) external override onlyBot {
+    function compound(CompoundArgs calldata args_) external override nonReentrant onlyBot {
         // withdraw refunds which caused by users active burn the staked NFT
         address nft_ = _stakerStorage.bayc;
         (uint256 principal, uint256 reward) = _refundOf(nft_);
