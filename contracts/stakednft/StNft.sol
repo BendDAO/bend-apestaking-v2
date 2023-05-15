@@ -66,6 +66,7 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
             _addTokenToStakerEnumeration(staker_, tokenIds_[i]);
             _safeMint(to_, tokenIds_[i]);
         }
+        emit Minted(to_, tokenIds_);
     }
 
     function burn(uint256[] calldata tokenIds_) external override {
@@ -85,6 +86,7 @@ abstract contract StNft is IStakedNft, ERC721EnumerableUpgradeable, OwnableUpgra
             tokenId_ = tokenIds_[i];
             _nft.safeTransferFrom(address(this), _msgSender(), tokenIds_[i]);
         }
+        emit Burned(_msgSender(), tokenIds_);
     }
 
     function stakerOf(uint256 tokenId_) public view override returns (address) {

@@ -6,6 +6,9 @@ import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/in
 import {IERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC721EnumerableUpgradeable.sol";
 
 interface IStakedNft is IERC721MetadataUpgradeable, IERC721ReceiverUpgradeable, IERC721EnumerableUpgradeable {
+    event Minted(address indexed to, uint256[] tokenId);
+    event Burned(address indexed from, uint256[] tokenId);
+
     function mint(address to, uint256[] calldata tokenIds) external;
 
     function burn(uint256[] calldata tokenIds) external;
