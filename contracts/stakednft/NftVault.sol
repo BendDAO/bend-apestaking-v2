@@ -137,6 +137,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
             IERC721Upgradeable(nft_).safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
             _vaultStorage._nfts[nft_][tokenIds_[i]] = NftStatus(msg.sender, staker_);
         }
+        emit NftDeposited(nft_, msg.sender, staker_, tokenIds_);
     }
 
     function withdrawNft(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) {
@@ -156,6 +157,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
             // transfer nft
             IERC721Upgradeable(nft_).safeTransferFrom(address(this), msg.sender, tokenIds_[i]);
         }
+        emit NftWithdrawn(nft_, msg.sender, VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[0]), tokenIds_);
     }
 
     function withdrawRefunds(address nft_) external override onlyApe(nft_) {
@@ -182,6 +184,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
         _vaultStorage.apeCoinStaking.depositBAYC(nfts_);
 
         VaultLogic._increasePosition(_vaultStorage, nft_, msg.sender, totalStakedAmount);
+
+        emit SingleNftStaked(nft_, msg.sender, nfts_);
     }
 
     function unstakeBaycPool(
@@ -211,6 +215,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
         }
 
         VaultLogic._decreasePosition(_vaultStorage, nft_, msg.sender, principal);
+
+        emit SingleNftUnstaked(nft_, msg.sender, nfts_);
     }
 
     function claimBaycPool(
@@ -230,6 +236,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
         if (rewards > 0) {
             VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
         }
+        emit SingleNftClaimed(nft_, msg.sender, tokenIds_, rewards);
     }
 
     function stakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override {
@@ -248,6 +255,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
         _vaultStorage.apeCoin.transferFrom(msg.sender, address(this), totalApeCoinAmount);
         _vaultStorage.apeCoinStaking.depositMAYC(nfts_);
         VaultLogic._increasePosition(_vaultStorage, nft_, msg.sender, totalApeCoinAmount);
+
+        emit SingleNftStaked(nft_, msg.sender, nfts_);
     }
 
     function unstakeMaycPool(
@@ -279,6 +288,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
         }
 
         VaultLogic._decreasePosition(_vaultStorage, nft_, msg.sender, principal);
+
+        emit SingleNftUnstaked(nft_, msg.sender, nfts_);
     }
 
     function claimMaycPool(
@@ -298,6 +309,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
         if (rewards > 0) {
             VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
         }
+        emit SingleNftClaimed(nft_, msg.sender, tokenIds_, rewards);
     }
 
     function stakeBakcPool(
@@ -332,6 +344,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
         _vaultStorage.apeCoinStaking.depositBAKC(baycPairs_, maycPairs_);
 
         VaultLogic._increasePosition(_vaultStorage, nft_, msg.sender, totalStakedAmount);
+
+        emit PairedNftStaked(msg.sender, baycPairs_, maycPairs_);
     }
 
     function unstakeBakcPool(
@@ -378,6 +392,8 @@ contract NftVault is INftVault, OwnableUpgradeable {
         VaultLogic._decreasePosition(_vaultStorage, nft_, msg.sender, principal);
 
         _vaultStorage.apeCoin.transfer(recipient_, principal + rewards);
+
+        emit PairedNftUnstaked(msg.sender, baycPairs_, maycPairs_);
     }
 
     function claimBakcPool(
@@ -410,5 +426,7 @@ contract NftVault is INftVault, OwnableUpgradeable {
         if (rewards > 0) {
             VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
         }
+
+        emit PairedNftClaimed(msg.sender, baycPairs_, maycPairs_, rewards);
     }
 }

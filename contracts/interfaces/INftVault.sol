@@ -9,6 +9,30 @@ import {IApeCoinStaking} from "./IApeCoinStaking.sol";
 import {IDelegationRegistry} from "../interfaces/IDelegationRegistry.sol";
 
 interface INftVault is IERC721ReceiverUpgradeable {
+    event NftDeposited(address indexed nft, address indexed owner, address indexed staker, uint256[] tokenIds);
+    event NftWithdrawn(address indexed nft, address indexed owner, address indexed staker, uint256[] tokenIds);
+
+    event SingleNftStaked(address indexed nft, address indexed staker, IApeCoinStaking.SingleNft[] nfts);
+    event PairedNftStaked(
+        address indexed staker,
+        IApeCoinStaking.PairNftDepositWithAmount[] baycPairs,
+        IApeCoinStaking.PairNftDepositWithAmount[] maycPairs
+    );
+    event SingleNftUnstaked(address indexed nft, address indexed staker, IApeCoinStaking.SingleNft[] nfts);
+    event PairedNftUnstaked(
+        address indexed staker,
+        IApeCoinStaking.PairNftWithdrawWithAmount[] baycPairs,
+        IApeCoinStaking.PairNftWithdrawWithAmount[] maycPairs
+    );
+
+    event SingleNftClaimed(address indexed nft, address indexed staker, uint256[] tokenIds, uint256 rewards);
+    event PairedNftClaimed(
+        address indexed staker,
+        IApeCoinStaking.PairNft[] baycPairs,
+        IApeCoinStaking.PairNft[] maycPairs,
+        uint256 rewards
+    );
+
     struct NftStatus {
         address owner;
         address staker;

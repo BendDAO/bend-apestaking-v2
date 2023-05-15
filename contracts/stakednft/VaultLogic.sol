@@ -10,6 +10,13 @@ import {INftVault} from "../interfaces/INftVault.sol";
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
 library VaultLogic {
+    event SingleNftUnstaked(address indexed nft, address indexed staker, IApeCoinStaking.SingleNft[] nfts);
+    event PairedNftUnstaked(
+        address indexed staker,
+        IApeCoinStaking.PairNftWithdrawWithAmount[] baycPairs,
+        IApeCoinStaking.PairNftWithdrawWithAmount[] maycPairs
+    );
+
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
     using ApeStakingLib for IApeCoinStaking;
 
@@ -170,6 +177,7 @@ library VaultLogic {
                 _updateRewardsDebt(_vaultStorage, nft_, vars.staker, vars.totalReward);
             }
             _decreasePosition(_vaultStorage, nft_, vars.staker, vars.totalPrincipal);
+            emit SingleNftUnstaked(nft_, msg.sender, singleNfts_);
         }
 
         if (vars.pairingNftSize > 0) {
@@ -207,8 +215,10 @@ library VaultLogic {
 
             if (nft_ == _vaultStorage.bayc) {
                 _vaultStorage.apeCoinStaking.withdrawBAKC(pairingNfts, emptyNfts);
+                emit PairedNftUnstaked(msg.sender, pairingNfts, emptyNfts);
             } else {
                 _vaultStorage.apeCoinStaking.withdrawBAKC(emptyNfts, pairingNfts);
+                emit PairedNftUnstaked(msg.sender, emptyNfts, pairingNfts);
             }
             vars.totalPairingReward =
                 _vaultStorage.apeCoin.balanceOf(address(this)) -
@@ -360,6 +370,7 @@ library VaultLogic {
                 _updateRewardsDebt(_vaultStorage, _vaultStorage.bakc, vars.staker, vars.totalReward);
             }
             _decreasePosition(_vaultStorage, _vaultStorage.bakc, vars.staker, vars.totalPrincipal);
+            emit PairedNftUnstaked(msg.sender, baycNfts_, maycNfts_);
         }
     }
 }
