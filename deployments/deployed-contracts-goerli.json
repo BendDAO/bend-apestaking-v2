@@ -44,7 +44,7 @@
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "DefaultWithdrawStrategy": {
-    "address": "0x9A2A323F9BAa7B1bDf5f96d3cDA3ff60Ae1Fc672",
+    "address": "0xF810De7b3557D5DB252EDa2e6E263aFFFAd3892E",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "PoolViewer": {

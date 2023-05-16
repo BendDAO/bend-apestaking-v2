@@ -55,7 +55,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
         uint256 initBalance;
     }
 
-    function withdrawApeCoin(uint256 required) external override nonReentrant onlyStaker returns (uint256 withdrawn) {
+    function withdrawApeCoin(uint256 required) external override onlyStaker returns (uint256 withdrawn) {
         WithdrawApeCoinVars memory vars;
         vars.initBalance = apeCoin.balanceOf(address(coinPool));
 
