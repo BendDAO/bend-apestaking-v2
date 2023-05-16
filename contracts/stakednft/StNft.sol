@@ -119,7 +119,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
         // This also deletes the contents at the last position of the array
         delete _stakedTokensIndex[tokenId_];
         delete _stakedTokens[staker_][lastTokenIndex];
-        totalStaked[stakerOf(tokenId_)] -= 1;
+        totalStaked[staker_] -= 1;
     }
 
     function tokenOfStakerByIndex(address staker_, uint256 index) external view override returns (uint256) {
