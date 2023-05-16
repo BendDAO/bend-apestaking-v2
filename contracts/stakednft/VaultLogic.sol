@@ -177,7 +177,7 @@ library VaultLogic {
                 _updateRewardsDebt(_vaultStorage, nft_, vars.staker, vars.totalReward);
             }
             _decreasePosition(_vaultStorage, nft_, vars.staker, vars.totalPrincipal);
-            emit SingleNftUnstaked(nft_, msg.sender, singleNfts_);
+            emit SingleNftUnstaked(nft_, vars.staker, singleNfts_);
         }
 
         if (vars.pairingNftSize > 0) {
@@ -215,10 +215,10 @@ library VaultLogic {
 
             if (nft_ == _vaultStorage.bayc) {
                 _vaultStorage.apeCoinStaking.withdrawBAKC(pairingNfts, emptyNfts);
-                emit PairedNftUnstaked(msg.sender, pairingNfts, emptyNfts);
+                emit PairedNftUnstaked(vars.staker, pairingNfts, emptyNfts);
             } else {
                 _vaultStorage.apeCoinStaking.withdrawBAKC(emptyNfts, pairingNfts);
-                emit PairedNftUnstaked(msg.sender, emptyNfts, pairingNfts);
+                emit PairedNftUnstaked(vars.staker, emptyNfts, pairingNfts);
             }
             vars.totalPairingReward =
                 _vaultStorage.apeCoin.balanceOf(address(this)) -
@@ -370,7 +370,7 @@ library VaultLogic {
                 _updateRewardsDebt(_vaultStorage, _vaultStorage.bakc, vars.staker, vars.totalReward);
             }
             _decreasePosition(_vaultStorage, _vaultStorage.bakc, vars.staker, vars.totalPrincipal);
-            emit PairedNftUnstaked(msg.sender, baycNfts_, maycNfts_);
+            emit PairedNftUnstaked(vars.staker, baycNfts_, maycNfts_);
         }
     }
 }

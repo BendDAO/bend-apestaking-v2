@@ -6606,6 +6606,316 @@
           }
         }
       }
+    },
+    "bb392f4beaec3aa9857adadf5b5625f34ea6c5153ae9642af22278272e89b5ba": {
+      "address": "0xb1a5aa0f702EF33Ec51098a936705f83F3016C76",
+      "txHash": "0xe5f90316c0246e379a5dc352a7e5d5c7c3b1dbfcedf4e8616e1fa9ba95748f13",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "_vaultStorage",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_struct(VaultStorage)17364_storage",
+            "contract": "NftVault",
+            "src": "contracts/stakednft/NftVault.sol:21"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IApeCoinStaking)16793": {
+            "label": "contract IApeCoinStaking",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IDelegationRegistry)17077": {
+            "label": "contract IDelegationRegistry",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Upgradeable)1367": {
+            "label": "contract IERC20Upgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_int256": {
+            "label": "int256",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_struct(Position)17374_storage))": {
+            "label": "mapping(address => mapping(address => struct INftVault.Position))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_struct(Refund)17369_storage))": {
+            "label": "mapping(address => mapping(address => struct INftVault.Refund))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_struct(UintSet)5838_storage))": {
+            "label": "mapping(address => mapping(address => struct EnumerableSetUpgradeable.UintSet))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_struct(NftStatus)17320_storage))": {
+            "label": "mapping(address => mapping(uint256 => struct INftVault.NftStatus))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Position)17374_storage)": {
+            "label": "mapping(address => struct INftVault.Position)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Refund)17369_storage)": {
+            "label": "mapping(address => struct INftVault.Refund)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(UintSet)5838_storage)": {
+            "label": "mapping(address => struct EnumerableSetUpgradeable.UintSet)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(NftStatus)17320_storage)": {
+            "label": "mapping(uint256 => struct INftVault.NftStatus)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(NftStatus)17320_storage": {
+            "label": "struct INftVault.NftStatus",
+            "members": [
+              {
+                "label": "owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "staker",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Position)17374_storage": {
+            "label": "struct INftVault.Position",
+            "members": [
+              {
+                "label": "stakedAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "rewardsDebt",
+                "type": "t_int256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Refund)17369_storage": {
+            "label": "struct INftVault.Refund",
+            "members": [
+              {
+                "label": "principal",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "reward",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Set)5366_storage": {
+            "label": "struct EnumerableSetUpgradeable.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(UintSet)5838_storage": {
+            "label": "struct EnumerableSetUpgradeable.UintSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)5366_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(VaultStorage)17364_storage": {
+            "label": "struct INftVault.VaultStorage",
+            "members": [
+              {
+                "label": "_nfts",
+                "type": "t_mapping(t_address,t_mapping(t_uint256,t_struct(NftStatus)17320_storage))",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_refunds",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_struct(Refund)17369_storage))",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "_positions",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_struct(Position)17374_storage))",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "_stakingTokenIds",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_struct(UintSet)5838_storage))",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "apeCoinStaking",
+                "type": "t_contract(IApeCoinStaking)16793",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "apeCoin",
+                "type": "t_contract(IERC20Upgradeable)1367",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "bayc",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "mayc",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "bakc",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "delegationRegistry",
+                "type": "t_contract(IDelegationRegistry)17077",
+                "offset": 0,
+                "slot": "9"
+              }
+            ],
+            "numberOfBytes": "320"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
     }
   }
 }

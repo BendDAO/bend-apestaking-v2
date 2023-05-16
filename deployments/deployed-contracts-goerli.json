@@ -1,7 +1,7 @@
 {
   "VaultLogic": {
-    "address": "0x7A7eA90d4987cF51D56c685e56793AD58E98fb6B",
-    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+    "address": "0xd516d3792d938d206Cd5F874BB4abD97ed81B9b8",
+    "deployer": "0xcbb8a164d498e0c2312F0DDcF0a6Ee2F5bad983A"
   },
   "NftVault": {
     "address": "0x0e5b15F7d1Ca881406f108b56540BB254EF4f258",
