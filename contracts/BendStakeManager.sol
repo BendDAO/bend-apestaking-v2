@@ -166,7 +166,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     function getNftRewardsShare(address nft_) external view returns (uint256 nftShare) {
         require(
             address(_stakerStorage.rewardsStrategies[nft_]) != address(0),
-            "BendStakeManager: invalid withdraw strategy"
+            "BendStakeManager: invalid reward strategy"
         );
         nftShare = _stakerStorage.rewardsStrategies[nft_].getNftRewardsShare();
     }
