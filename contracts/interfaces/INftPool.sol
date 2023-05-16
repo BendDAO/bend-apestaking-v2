@@ -5,12 +5,7 @@ import {IStakeManager} from "./IStakeManager.sol";
 import {IStakedNft} from "./IStakedNft.sol";
 
 interface INftPool {
-    event RewardDistributed(
-        address indexed nft,
-        uint256 rewardAmount,
-        uint256 stakedNftAmount,
-        uint256 accumulatedRewardsPerNft
-    );
+    event RewardDistributed(address indexed nft, uint256 rewardAmount);
 
     event RewardClaimed(
         address indexed nft,
@@ -28,6 +23,13 @@ interface INftPool {
         IStakedNft stakedNft;
         uint256 accumulatedRewardsPerNft;
         mapping(uint256 => uint256) rewardsDebt;
+        uint256 pendingApeCoin;
+    }
+
+    struct PoolUI {
+        uint256 totalStakedNft;
+        uint256 accumulatedRewardsPerNft;
+        uint256 pendingApeCoin;
     }
 
     function claimable(address[] calldata nfts_, uint256[][] calldata tokenIds_) external view returns (uint256);
@@ -42,7 +44,11 @@ interface INftPool {
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external;
 
-    function getPoolStateUI(address nft_) external view returns (uint256 totalNfts, uint256 accumulatedRewardsPerNft);
+    function compoundApeCoin(address nft_) external;
+
+    function pendingApeCoin(address nft_) external view returns (uint256);
+
+    function getPoolStateUI(address nft_) external view returns (PoolUI memory);
 
     function getNftStateUI(address nft_, uint256 tokenId) external view returns (uint256 rewardsDebt);
 }
