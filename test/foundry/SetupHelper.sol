@@ -166,9 +166,9 @@ abstract contract SetupHelper is Test {
         );
 
         // set the strategy contracts
-        baycStrategy = new BaycStrategy();
-        maycStrategy = new MaycStrategy();
-        bakcStrategy = new BakcStrategy();
+        baycStrategy = new BaycStrategy(2400);
+        maycStrategy = new MaycStrategy(2700);
+        bakcStrategy = new BakcStrategy(2700);
         withdrawStrategy = new DefaultWithdrawStrategy(
             IApeCoinStaking(address(mockApeStaking)),
             nftVault,

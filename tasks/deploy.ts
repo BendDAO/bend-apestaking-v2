@@ -90,6 +90,11 @@ task("deploy:full:staking", "Deploy all contracts for staking").setAction(async 
   await run("deploy:config:BendCoinPool");
   await run("deploy:config:BendNftPool");
   await run("deploy:config:BendStakeManager");
+});
+
+task("deploy:full:strategy", "Deploy all contracts for strategy").setAction(async (_, { run }) => {
+  await run("set-DRE");
+  await run("compile");
 
   await run("deploy:BaycStrategy");
   await run("deploy:MaycStrategy");
@@ -125,21 +130,21 @@ task("deploy:BaycStrategy", "Deploy BaycStrategy").setAction(async (_, { run }) 
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("BaycStrategy", [], true);
+  await deployContract("BaycStrategy", [2400], true);
 });
 
 task("deploy:MaycStrategy", "Deploy MaycStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("MaycStrategy", [], true);
+  await deployContract("MaycStrategy", [2700], true);
 });
 
 task("deploy:BakcStrategy", "Deploy BakcStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("BakcStrategy", [], true);
+  await deployContract("BakcStrategy", [2700], true);
 });
 
 task("deploy:DefaultWithdrawStrategy", "Deploy DefaultWithdrawStrategy").setAction(async (_, { network, run }) => {
@@ -382,4 +387,17 @@ task("verify:Implementation", "verify implmentation")
     await run("compile");
 
     await verifyEtherscanContract(impl, []);
+  });
+
+task("verify:Contract", "verify contract")
+  .addParam("address", "The contract address")
+  .addOptionalParam("args", "The contract constructor args")
+  .addOptionalParam("contract", "The contract file path")
+  .setAction(async ({ address, args, contract }, { run }) => {
+    await run("set-DRE");
+    await run("compile");
+
+    const argsList = (args as string).split(",");
+
+    await verifyEtherscanContract(address, argsList, contract);
   });

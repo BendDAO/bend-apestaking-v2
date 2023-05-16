@@ -1,54 +1,54 @@
 {
   "VaultLogic": {
-    "address": "0xd516d3792d938d206Cd5F874BB4abD97ed81B9b8",
-    "deployer": "0xcbb8a164d498e0c2312F0DDcF0a6Ee2F5bad983A"
+    "address": "0x801EADE90cb0B762A7726e48ab9C09ee1c353b56",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "NftVault": {
-    "address": "0x0e5b15F7d1Ca881406f108b56540BB254EF4f258",
+    "address": "0x5bb44dDaAc51010a651ABDc4B64BE30418A6fB3F",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "StBAYC": {
-    "address": "0x28E45a238f3e30432411bcA36233dD22Bc2F8681",
+    "address": "0x2bc83d944a6e063Bb032fb2e5a8a97C74139FE29",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "StMAYC": {
-    "address": "0xd1837d629d7A75a5ab8dfE061379e43c978d1Ad4",
+    "address": "0x13c8843a3d2DEe70CAC440EEc0e7D5F587fC3e92",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "StBAKC": {
-    "address": "0x25876363DECB4De618676bd2d602948C9f33907C",
+    "address": "0x4F803291a81f0Fa78892d38457399DCbf47786d1",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BendCoinPool": {
-    "address": "0xfD5d53346B9B66352f1f18BBDD34667dad48409B",
+    "address": "0xa8483A910d2d4bD35fB4DF323c8601b023Ac81c6",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BendNftPool": {
-    "address": "0x9230323Dd953322D476590907a1a30D423F38B7c",
+    "address": "0x3610C6e06cc3C556Be0F20F2bBE32e6Ad8e0693D",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BendStakeManager": {
-    "address": "0x768B4E53027D266cA391F117Dc81Dd69acdFB638",
+    "address": "0x20Fe8a86Edcb1E387FFD8d8b873236728da3D147",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BaycStrategy": {
-    "address": "0x5BC28048F33406F1dDB511AA904068B19ce7b3b5",
+    "address": "0x6134C224190e431b07a3E0B02e704c4dd2047531",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "MaycStrategy": {
-    "address": "0x8A959a5A39F4Fb64a90441527E5B3a3947091eDb",
+    "address": "0x9060c1EC1DE6C5e2D30bc4C880b448648fFE1881",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BakcStrategy": {
-    "address": "0x75cc9C65fe5BA9C7dD1203eA78a300D3F1C1E3eF",
+    "address": "0x48b27bb52c1c77719bB3630cDa0aa3834520D2E5",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "DefaultWithdrawStrategy": {
-    "address": "0xeD27d52001Ace4f82Eab11c91D02e34a22A7E18b",
+    "address": "0x9A2A323F9BAa7B1bDf5f96d3cDA3ff60Ae1Fc672",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "PoolViewer": {
-    "address": "0x21750a13e2388cC75D94894b2a6F8cA9C8B75F76",
+    "address": "0x6353AbfD4FBe4419551b31f723b46F862784AD11",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   }
 }
