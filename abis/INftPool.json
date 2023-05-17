@@ -42,11 +42,42 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "owner",
+        "name": "receiver",
         "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "rewardsDebt",
+        "type": "uint256"
       }
     ],
-    "name": "NftWithdrawn",
+    "name": "NftRewardClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "nft",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "rewardAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "NftRewardDistributed",
     "type": "event"
   },
   {
@@ -67,42 +98,11 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "receiver",
+        "name": "owner",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "rewardsDebt",
-        "type": "uint256"
       }
     ],
-    "name": "RewardClaimed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "nft",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "rewardAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "RewardDistributed",
+    "name": "NftWithdrawn",
     "type": "event"
   },
   {

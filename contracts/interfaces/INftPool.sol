@@ -5,9 +5,9 @@ import {IStakeManager} from "./IStakeManager.sol";
 import {IStakedNft} from "./IStakedNft.sol";
 
 interface INftPool {
-    event RewardDistributed(address indexed nft, uint256 rewardAmount);
+    event NftRewardDistributed(address indexed nft, uint256 rewardAmount);
 
-    event RewardClaimed(
+    event NftRewardClaimed(
         address indexed nft,
         uint256[] tokenIds,
         address indexed receiver,
