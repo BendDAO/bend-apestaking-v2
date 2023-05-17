@@ -87,6 +87,7 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         for (uint256 i = 0; i < nfts_.length; i++) {
             nft_ = nfts_[i];
             pool_ = poolStates[nft_];
+            _compoundApeCoin(pool_);
             require(tokenIds_[i].length > 0, "BendNftPool: empty tokenIds");
             for (uint256 j = 0; j < tokenIds_[i].length; j++) {
                 tokenId_ = tokenIds_[i][j];
@@ -153,6 +154,8 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
             (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(pool_.stakedNft));
             claimableShares = 0;
 
+            _compoundApeCoin(pool_);
+
             for (uint256 j = 0; j < tokenIds_[i].length; j++) {
                 tokenId_ = tokenIds_[i][j];
                 tokenOwner_ = pool_.stakedNft.ownerOf(tokenId_);
@@ -162,12 +165,12 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
                 require(tokenOwner_ == owner_, "BendNftPool: invalid token owner");
                 require(pool_.stakedNft.stakerOf(tokenId_) == address(staker), "BendNftPool: invalid token staker");
 
-                claimableShares += _calculateRewards(pool_, tokenId_);
+                claimableShares += _calculateRewards(pool_.accumulatedRewardsPerNft, pool_.rewardsDebt[tokenId_]);
                 // set token rewards debt with pool index
                 pool_.rewardsDebt[tokenId_] = pool_.accumulatedRewardsPerNft;
             }
             if (claimableShares > 0) {
-                emit RewardClaimed(
+                emit NftRewardClaimed(
                     nft_,
                     tokenIds_[i],
                     receiver_,
@@ -195,18 +198,37 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
         apeCoin.safeTransferFrom(_msgSender(), address(this), rewardsAmount_);
+        poolStates[nft_].pendingApeCoin += rewardsAmount_;
+        emit NftRewardDistributed(nft_, rewardsAmount_);
+    }
 
-        PoolState storage pool = poolStates[nft_];
+    function _compoundApeCoin(PoolState storage pool_) internal {
+        uint256 rewardsAmount_ = pool_.pendingApeCoin;
+        if (rewardsAmount_ == 0) {
+            return;
+        }
 
-        uint256 supply = pool.stakedNft.totalStaked(address(staker));
+        uint256 supply = pool_.stakedNft.totalStaked(address(staker));
         uint256 accumulatedShare = coinPool.deposit(rewardsAmount_, address(this));
+
+        pool_.pendingApeCoin = 0;
 
         // In extreme cases all nft give up the earned rewards and exit
         if (supply > 0) {
-            pool.accumulatedRewardsPerNft += ((accumulatedShare * APE_COIN_PRECISION) / supply);
+            pool_.accumulatedRewardsPerNft = _calculatePoolIndex(
+                pool_.accumulatedRewardsPerNft,
+                accumulatedShare,
+                supply
+            );
         }
+    }
 
-        emit RewardDistributed(nft_, rewardsAmount_, supply, pool.accumulatedRewardsPerNft);
+    function compoundApeCoin(address nft_) external override onlyApe(nft_) onlyStaker {
+        _compoundApeCoin(poolStates[nft_]);
+    }
+
+    function pendingApeCoin(address nft_) external view returns (uint256) {
+        return poolStates[nft_].pendingApeCoin;
     }
 
     function claimable(
@@ -215,11 +237,18 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
     ) external view override onlyApes(nfts_) returns (uint256 amount) {
         PoolState storage pool_;
         address nft_;
+        uint256 accumulatedRewardsPerNft_;
         for (uint256 i = 0; i < nfts_.length; i++) {
             nft_ = nfts_[i];
             pool_ = poolStates[nft_];
+            accumulatedRewardsPerNft_ = _calculatePoolIndex(
+                pool_.accumulatedRewardsPerNft,
+                coinPool.previewDeposit(pool_.pendingApeCoin),
+                pool_.stakedNft.totalStaked(address(staker))
+            );
+
             for (uint256 j = 0; j < tokenIds_[i].length; j++) {
-                amount += _calculateRewards(pool_, tokenIds_[i][j]);
+                amount += _calculateRewards(accumulatedRewardsPerNft_, pool_.rewardsDebt[tokenIds_[i][j]]);
             }
         }
         if (amount != 0) {
@@ -227,16 +256,28 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         }
     }
 
-    function _calculateRewards(PoolState storage pool_, uint256 tokenId_) internal view returns (uint256 rewards) {
-        if (pool_.accumulatedRewardsPerNft > pool_.rewardsDebt[tokenId_]) {
-            rewards = (pool_.accumulatedRewardsPerNft - pool_.rewardsDebt[tokenId_]) / APE_COIN_PRECISION;
+    function _calculateRewards(
+        uint256 accumulatedRewardsPerNft,
+        uint256 rewardDebt
+    ) internal pure returns (uint256 rewards) {
+        if (accumulatedRewardsPerNft > rewardDebt) {
+            rewards = (accumulatedRewardsPerNft - rewardDebt) / APE_COIN_PRECISION;
         }
     }
 
-    function getPoolStateUI(address nft_) external view returns (uint256 totalNfts, uint256 accumulatedRewardsPerNft) {
+    function _calculatePoolIndex(
+        uint256 accumulatedRewardsPerNft,
+        uint256 accumulatedShare,
+        uint256 nftSupply
+    ) internal pure returns (uint256 rewards) {
+        return accumulatedRewardsPerNft + ((accumulatedShare * APE_COIN_PRECISION) / nftSupply);
+    }
+
+    function getPoolStateUI(address nft_) external view returns (PoolUI memory poolUI) {
         PoolState storage pool = poolStates[nft_];
-        totalNfts = pool.stakedNft.totalSupply();
-        accumulatedRewardsPerNft = pool.accumulatedRewardsPerNft;
+        poolUI.totalStakedNft = pool.stakedNft.totalStaked(address(staker));
+        poolUI.accumulatedRewardsPerNft = pool.accumulatedRewardsPerNft;
+        poolUI.pendingApeCoin = pool.pendingApeCoin;
     }
 
     function getNftStateUI(address nft_, uint256 tokenId) external view returns (uint256 rewardsDebt) {

@@ -639,6 +639,16 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         }
     }
 
+    function _compoudNftPool() internal {
+        _stakerStorage.nftPool.compoundApeCoin(_stakerStorage.bayc);
+        _stakerStorage.nftPool.compoundApeCoin(_stakerStorage.mayc);
+        _stakerStorage.nftPool.compoundApeCoin(_stakerStorage.bakc);
+    }
+
+    function compoudNftPool() external onlyBot {
+        _compoudNftPool();
+    }
+
     function compound(CompoundArgs calldata args_) external override nonReentrant onlyBot {
         // withdraw refunds which caused by users active burn the staked NFT
         address nft_ = _stakerStorage.bayc;
@@ -694,6 +704,9 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         if (args_.stake.baycPairs.length > 0 || args_.stake.maycPairs.length > 0) {
             _stakeBakc(args_.stake.baycPairs, args_.stake.maycPairs);
         }
+
+        // compound ape coin in nft pool
+        _compoudNftPool();
 
         // stake ape coin to coin pool
         if (_stakerStorage.coinPool.pendingApeCoin() >= args_.coinStakeThreshold) {

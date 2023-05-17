@@ -29,12 +29,26 @@ contract BendStakeManagerTester is BendStakeManager {
     }
 
     function refundOfIncludeFee(address nft_) external view onlyApe(nft_) returns (uint256 amount) {
-        (uint256 pricipal, uint256 reward) = _refundOf(nft_);
-        amount = pricipal + reward;
+        (uint256 principal, uint256 reward) = _refundOf(nft_);
+        amount = principal + reward;
+    }
+
+    function refundOfDetails(
+        address nft_
+    ) external view onlyApe(nft_) returns (uint256 principal, uint256 reward, uint256 fee) {
+        (principal, reward) = _refundOf(nft_);
+        fee = _calculateFee(reward);
+        reward -= fee;
     }
 
     function totalRefundIncludeFee() external view returns (uint256 amount) {
-        (uint256 pricipal, uint256 reward) = _totalRefund();
-        amount = pricipal + reward;
+        (uint256 principal, uint256 reward) = _totalRefund();
+        amount = principal + reward;
+    }
+
+    function totalRefundDetails() external view returns (uint256 principal, uint256 reward, uint256 fee) {
+        (principal, reward) = _totalRefund();
+        fee = _calculateFee(reward);
+        reward -= fee;
     }
 }
