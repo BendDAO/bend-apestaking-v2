@@ -14,13 +14,13 @@ import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
 contract PoolViewer is IPoolViewer {
     using ApeStakingLib for IApeCoinStaking;
-    IApeCoinStaking public apeCoinStaking;
-    IStakeManager public staker;
-    ICoinPool public coinPool;
+    IApeCoinStaking public immutable apeCoinStaking;
+    IStakeManager public immutable staker;
+    ICoinPool public immutable coinPool;
 
-    address public bayc;
-    address public mayc;
-    address public bakc;
+    address public immutable bayc;
+    address public immutable mayc;
+    address public immutable bakc;
 
     constructor(IApeCoinStaking apeCoinStaking_, ICoinPool coinPool_, IStakeManager staker_) {
         apeCoinStaking = apeCoinStaking_;
