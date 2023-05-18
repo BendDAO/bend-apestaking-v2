@@ -148,6 +148,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     function withdrawNft(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) nonReentrant {
         require(tokenIds_.length > 0, "nftVault: invalid tokenIds");
+        address staker_ = VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[0]);
         if (nft_ == _vaultStorage.bayc || nft_ == _vaultStorage.mayc) {
             VaultLogic._refundSinglePool(_vaultStorage, nft_, tokenIds_);
         } else if (nft_ == _vaultStorage.bakc) {
@@ -159,11 +160,15 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 msg.sender == VaultLogic._ownerOf(_vaultStorage, nft_, tokenIds_[i]),
                 "nftVault: caller must be nft owner"
             );
+            require(
+                staker_ == VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[i]),
+                "nftVault: staker must be same"
+            );
             delete _vaultStorage._nfts[nft_][tokenIds_[i]];
             // transfer nft
             IERC721Upgradeable(nft_).safeTransferFrom(address(this), msg.sender, tokenIds_[i]);
         }
-        emit NftWithdrawn(nft_, msg.sender, VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[0]), tokenIds_);
+        emit NftWithdrawn(nft_, msg.sender, staker_, tokenIds_);
     }
 
     function withdrawRefunds(address nft_) external override onlyApe(nft_) nonReentrant {
