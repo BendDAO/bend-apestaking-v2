@@ -134,7 +134,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     }
 
     function updateFee(uint256 fee_) external onlyOwner {
-        require(fee_ >= 0 && fee_ <= MAX_FEE, "BendStakeManager: invalid fee");
+        require(fee_ <= MAX_FEE, "BendStakeManager: invalid fee");
         _stakerStorage.fee = fee_;
     }
 

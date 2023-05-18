@@ -192,9 +192,7 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         address[] calldata nfts_,
         uint256[][] calldata tokenIds_
     ) external override onlyApes(nfts_) nonReentrant whenNotPaused {
-        address owner = _msgSender();
-        address receiver = _msgSender();
-        _claim(owner, receiver, nfts_, tokenIds_);
+        _claim(_msgSender(), _msgSender(), nfts_, tokenIds_);
     }
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
