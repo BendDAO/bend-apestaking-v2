@@ -36,6 +36,8 @@ contract BendCoinPool is
     function initialize(IApeCoinStaking apeStaking_, IStakeManager staker_) external initializer {
         apeCoin = IERC20Upgradeable(apeStaking_.apeCoin());
         __Ownable_init();
+        __Pausable_init();
+        __ReentrancyGuard_init();
         __ERC20_init("Bend Auto-compound ApeCoin", "bacAPE");
         __ERC4626_init(apeCoin);
         apeCoinStaking = apeStaking_;

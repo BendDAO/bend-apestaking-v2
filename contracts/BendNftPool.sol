@@ -58,6 +58,7 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         IStakedNft stBakc_
     ) external initializer {
         __Ownable_init();
+        __Pausable_init();
         __ReentrancyGuard_init();
 
         apeCoinStaking = apeStaking_;

@@ -88,6 +88,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         IStakedNft stBakc_
     ) external initializer {
         __Ownable_init();
+        __ReentrancyGuard_init();
         _stakerStorage.apeCoinStaking = apeStaking_;
         _stakerStorage.coinPool = coinPool_;
         _stakerStorage.nftPool = nftPool_;

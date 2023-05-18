@@ -38,6 +38,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     function initialize(IApeCoinStaking apeCoinStaking_, IDelegationRegistry delegationRegistry_) public initializer {
         __Ownable_init();
+        __ReentrancyGuard_init();
 
         _vaultStorage.apeCoinStaking = apeCoinStaking_;
         _vaultStorage.delegationRegistry = delegationRegistry_;
