@@ -76,7 +76,6 @@ contract BendCoinPool is
         _withdrawApeCoin(assets);
         uint256 shares = previewWithdraw(assets);
         _withdraw(_msgSender(), receiver, owner, assets, shares);
-        pendingApeCoin -= assets;
         return shares;
     }
 
@@ -93,7 +92,6 @@ contract BendCoinPool is
             // loop calculate & withdraw assets, because the share price may change when `_withdrawApeCoin`
         } while (assets != previewRedeem(shares));
         _withdraw(_msgSender(), receiver, owner, assets, shares);
-        pendingApeCoin -= assets;
         return assets;
     }
 

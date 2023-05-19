@@ -86,6 +86,7 @@ contract BendStakeManagerTest is SetupHelper {
 
         vm.startPrank(botAdmin);
         IStakeManager.CompoundArgs memory compoundArgs2;
+        compoundArgs2.claimCoinPool = true;
         compoundArgs2.claim.bayc = testBaycTokenIds;
         stakeManager.compound(compoundArgs2);
         vm.stopPrank();
