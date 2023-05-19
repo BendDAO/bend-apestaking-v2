@@ -651,6 +651,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     }
 
     function compound(CompoundArgs calldata args_) external override nonReentrant onlyBot {
+        uint256 claimedNfts;
+
         // withdraw refunds which caused by users active burn the staked NFT
         address nft_ = _stakerStorage.bayc;
         (uint256 principal, uint256 reward) = _refundOf(nft_);
@@ -675,12 +677,16 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
 
         // claim rewards from NFT pool
         if (args_.claim.bayc.length > 0) {
+            claimedNfts += args_.claim.bayc.length;
             _claimBayc(args_.claim.bayc);
         }
         if (args_.claim.mayc.length > 0) {
+            claimedNfts += args_.claim.mayc.length;
             _claimMayc(args_.claim.mayc);
         }
         if (args_.claim.baycPairs.length > 0 || args_.claim.maycPairs.length > 0) {
+            claimedNfts += args_.claim.baycPairs.length;
+            claimedNfts += args_.claim.maycPairs.length;
             _claimBakc(args_.claim.baycPairs, args_.claim.maycPairs);
         }
 
@@ -720,5 +726,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
             // solhint-disable-next-line
             _stakerStorage.pendingFeeAmount = 0;
         }
+
+        emit Compounded(args_.claimCoinPool, claimedNfts);
     }
 }
