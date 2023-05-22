@@ -48,7 +48,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     StakerStorage internal _stakerStorage;
 
     modifier onlyBot() {
-        require(_msgSender() == _stakerStorage.botAdmin, "BendStakeManager: caller is not bot admin");
+        require(msg.sender == _stakerStorage.botAdmin, "BendStakeManager: caller is not bot admin");
         _;
     }
 
@@ -61,18 +61,18 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     }
 
     modifier onlyCoinPool() {
-        require(_msgSender() == address(_stakerStorage.coinPool), "BendStakeManager: caller is not coin pool");
+        require(msg.sender == address(_stakerStorage.coinPool), "BendStakeManager: caller is not coin pool");
         _;
     }
 
     modifier onlyNftPool() {
-        require(_msgSender() == address(_stakerStorage.nftPool), "BendStakeManager: caller is not nft pool");
+        require(msg.sender == address(_stakerStorage.nftPool), "BendStakeManager: caller is not nft pool");
         _;
     }
 
     modifier onlyWithdrawStrategyOrBot() {
         require(
-            (_msgSender() == address(_stakerStorage.withdrawStrategy)) || (_msgSender() == _stakerStorage.botAdmin),
+            (msg.sender == address(_stakerStorage.withdrawStrategy)) || (msg.sender == _stakerStorage.botAdmin),
             "BendStakeManager: caller is not authorized"
         );
         _;

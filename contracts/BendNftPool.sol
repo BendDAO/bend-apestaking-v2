@@ -44,7 +44,7 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
     }
 
     modifier onlyStaker() {
-        require(_msgSender() == address(staker), "BendNftPool: caller is not staker");
+        require(msg.sender == address(staker), "BendNftPool: caller is not staker");
         _;
     }
 
@@ -92,11 +92,11 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
             require(tokenIds_[i].length > 0, "BendNftPool: empty tokenIds");
             for (uint256 j = 0; j < tokenIds_[i].length; j++) {
                 tokenId_ = tokenIds_[i][j];
-                IERC721Upgradeable(nft_).safeTransferFrom(_msgSender(), address(staker), tokenId_);
+                IERC721Upgradeable(nft_).safeTransferFrom(msg.sender, address(staker), tokenId_);
                 pool_.rewardsDebt[tokenId_] = pool_.accumulatedRewardsPerNft;
             }
-            staker.mintStNft(pool_.stakedNft, _msgSender(), tokenIds_[i]);
-            emit NftDeposited(nft_, tokenIds_[i], _msgSender());
+            staker.mintStNft(pool_.stakedNft, msg.sender, tokenIds_[i]);
+            emit NftDeposited(nft_, tokenIds_[i], msg.sender);
         }
     }
 
@@ -104,7 +104,7 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         address[] calldata nfts_,
         uint256[][] calldata tokenIds_
     ) external override onlyApes(nfts_) nonReentrant whenNotPaused {
-        _claim(_msgSender(), _msgSender(), nfts_, tokenIds_);
+        _claim(msg.sender, msg.sender, nfts_, tokenIds_);
 
         PoolState storage pool_;
         uint256 tokenId_;
@@ -116,7 +116,7 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
             pool_ = poolStates[nft_];
             for (uint256 j = 0; j < tokenIds_[i].length; j++) {
                 tokenId_ = tokenIds_[i][j];
-                pool_.stakedNft.safeTransferFrom(_msgSender(), address(this), tokenId_);
+                pool_.stakedNft.safeTransferFrom(msg.sender, address(this), tokenId_);
             }
 
             pool_.stakedNft.burn(tokenIds_[i]);
@@ -125,13 +125,13 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
                 tokenId_ = tokenIds_[i][j];
                 IERC721Upgradeable(pool_.stakedNft.underlyingAsset()).safeTransferFrom(
                     address(this),
-                    _msgSender(),
+                    msg.sender,
                     tokenId_
                 );
                 delete pool_.rewardsDebt[tokenId_];
             }
 
-            emit NftWithdrawn(nft_, tokenIds_[i], _msgSender());
+            emit NftWithdrawn(nft_, tokenIds_[i], msg.sender);
         }
     }
 
@@ -192,11 +192,11 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         address[] calldata nfts_,
         uint256[][] calldata tokenIds_
     ) external override onlyApes(nfts_) nonReentrant whenNotPaused {
-        _claim(_msgSender(), _msgSender(), nfts_, tokenIds_);
+        _claim(msg.sender, msg.sender, nfts_, tokenIds_);
     }
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
-        apeCoin.safeTransferFrom(_msgSender(), address(this), rewardsAmount_);
+        apeCoin.safeTransferFrom(msg.sender, address(this), rewardsAmount_);
         poolStates[nft_].pendingApeCoin += rewardsAmount_;
         if (rewardsAmount_ > 0) {
             emit NftRewardDistributed(nft_, rewardsAmount_);
