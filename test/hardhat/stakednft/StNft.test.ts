@@ -37,6 +37,16 @@ export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [
       }
     });
 
+    it("onlyAuthorized: reverts", async () => {
+      await expect(stNft.connect(staker).mint(stNftOwner.address, tokenIds)).revertedWith(
+        "StNft: caller is not authorized"
+      );
+
+      await stNft.connect(env.admin).authorise(staker.address, true);
+      lastRevert = "init";
+      await snapshots.capture(lastRevert);
+    });
+
     it("mint", async () => {
       expect(await stNft.totalStaked(staker.address)).eq(0);
       expect(await stNft.totalStaked(stNftOwner.address)).eq(0);

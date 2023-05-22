@@ -36,6 +36,11 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         _;
     }
 
+    modifier onlyAuthorized() {
+        require(_vaultStorage.authorized[_msgSender()], "StNft: caller is not authorized");
+        _;
+    }
+
     function initialize(IApeCoinStaking apeCoinStaking_, IDelegationRegistry delegationRegistry_) public initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -67,16 +72,16 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     function refundOf(address nft_, address staker_) external view onlyApe(nft_) returns (Refund memory) {
-        return _vaultStorage._refunds[nft_][staker_];
+        return _vaultStorage.refunds[nft_][staker_];
     }
 
     function positionOf(address nft_, address staker_) external view onlyApe(nft_) returns (Position memory) {
-        return _vaultStorage._positions[nft_][staker_];
+        return _vaultStorage.positions[nft_][staker_];
     }
 
     function pendingRewards(address nft_, address staker_) external view onlyApe(nft_) returns (uint256) {
         IApeCoinStaking.PoolWithoutTimeRange memory pool = _vaultStorage.apeCoinStaking.getNftPool(nft_);
-        Position memory position = _vaultStorage._positions[nft_][staker_];
+        Position memory position = _vaultStorage.positions[nft_][staker_];
 
         (uint256 rewardsSinceLastCalculated, ) = _vaultStorage.apeCoinStaking.getNftRewardsBy(
             nft_,
@@ -99,15 +104,19 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     function totalStakingNft(address nft_, address staker_) external view returns (uint256) {
-        return _vaultStorage._stakingTokenIds[nft_][staker_].length();
+        return _vaultStorage.stakingTokenIds[nft_][staker_].length();
     }
 
     function stakingNftIdByIndex(address nft_, address staker_, uint256 index_) external view returns (uint256) {
-        return _vaultStorage._stakingTokenIds[nft_][staker_].at(index_);
+        return _vaultStorage.stakingTokenIds[nft_][staker_].at(index_);
     }
 
     function isStaking(address nft_, address staker_, uint256 tokenId_) external view returns (bool) {
-        return _vaultStorage._stakingTokenIds[nft_][staker_].contains(tokenId_);
+        return _vaultStorage.stakingTokenIds[nft_][staker_].contains(tokenId_);
+    }
+
+    function authorise(address addr_, bool authorized_) external override onlyOwner {
+        _vaultStorage.authorized[addr_] = authorized_;
     }
 
     function setDelegateCash(
@@ -115,7 +124,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address nft_,
         uint256[] calldata tokenIds_,
         bool value_
-    ) external override onlyApe(nft_) {
+    ) external override onlyAuthorized onlyApe(nft_) {
         require(delegate_ != address(0), "nftVault: invalid delegate");
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -132,7 +141,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address nft_,
         uint256[] calldata tokenIds_,
         address staker_
-    ) external override onlyApe(nft_) nonReentrant {
+    ) external override onlyApe(nft_) onlyAuthorized nonReentrant {
         IApeCoinStaking.Position memory position_;
 
         // transfer nft and set permission
@@ -141,12 +150,15 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
             position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, tokenIds_[i]);
             require(position_.stakedAmount == 0, "nftVault: nft already staked");
             IERC721Upgradeable(nft_).safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
-            _vaultStorage._nfts[nft_][tokenIds_[i]] = NftStatus(msg.sender, staker_);
+            _vaultStorage.nfts[nft_][tokenIds_[i]] = NftStatus(msg.sender, staker_);
         }
         emit NftDeposited(nft_, msg.sender, staker_, tokenIds_);
     }
 
-    function withdrawNft(address nft_, uint256[] calldata tokenIds_) external override onlyApe(nft_) nonReentrant {
+    function withdrawNft(
+        address nft_,
+        uint256[] calldata tokenIds_
+    ) external override onlyApe(nft_) onlyAuthorized nonReentrant {
         require(tokenIds_.length > 0, "nftVault: invalid tokenIds");
         address staker_ = VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[0]);
         if (nft_ == _vaultStorage.bayc || nft_ == _vaultStorage.mayc) {
@@ -164,21 +176,21 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 staker_ == VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[i]),
                 "nftVault: staker must be same"
             );
-            delete _vaultStorage._nfts[nft_][tokenIds_[i]];
+            delete _vaultStorage.nfts[nft_][tokenIds_[i]];
             // transfer nft
             IERC721Upgradeable(nft_).safeTransferFrom(address(this), msg.sender, tokenIds_[i]);
         }
         emit NftWithdrawn(nft_, msg.sender, staker_, tokenIds_);
     }
 
-    function withdrawRefunds(address nft_) external override onlyApe(nft_) nonReentrant {
-        Refund memory _refund = _vaultStorage._refunds[nft_][msg.sender];
+    function withdrawRefunds(address nft_) external override onlyApe(nft_) onlyAuthorized nonReentrant {
+        Refund memory _refund = _vaultStorage.refunds[nft_][msg.sender];
         uint256 amount = _refund.principal + _refund.reward;
-        delete _vaultStorage._refunds[nft_][msg.sender];
+        delete _vaultStorage.refunds[nft_][msg.sender];
         _vaultStorage.apeCoin.transfer(msg.sender, amount);
     }
 
-    function stakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override nonReentrant {
+    function stakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override onlyAuthorized nonReentrant {
         address nft_ = _vaultStorage.bayc;
         uint256 totalStakedAmount = 0;
         IApeCoinStaking.SingleNft memory singleNft_;
@@ -189,7 +201,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 "nftVault: caller must be bayc staker"
             );
             totalStakedAmount += singleNft_.amount;
-            _vaultStorage._stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
+            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
         }
         _vaultStorage.apeCoin.transferFrom(msg.sender, address(this), totalStakedAmount);
         _vaultStorage.apeCoinStaking.depositBAYC(nfts_);
@@ -202,7 +214,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function unstakeBaycPool(
         IApeCoinStaking.SingleNft[] calldata nfts_,
         address recipient_
-    ) external override nonReentrant returns (uint256 principal, uint256 rewards) {
+    ) external override onlyAuthorized nonReentrant returns (uint256 principal, uint256 rewards) {
         address nft_ = _vaultStorage.bayc;
         IApeCoinStaking.SingleNft memory singleNft_;
         IApeCoinStaking.Position memory position_;
@@ -215,7 +227,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
             principal += singleNft_.amount;
             position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, singleNft_.tokenId);
             if (position_.stakedAmount == singleNft_.amount) {
-                _vaultStorage._stakingTokenIds[nft_][msg.sender].remove(singleNft_.tokenId);
+                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(singleNft_.tokenId);
             }
         }
         rewards = _vaultStorage.apeCoin.balanceOf(recipient_);
@@ -233,7 +245,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function claimBaycPool(
         uint256[] calldata tokenIds_,
         address recipient_
-    ) external override nonReentrant returns (uint256 rewards) {
+    ) external override onlyAuthorized nonReentrant returns (uint256 rewards) {
         address nft_ = _vaultStorage.bayc;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(
@@ -250,7 +262,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         emit SingleNftClaimed(nft_, msg.sender, tokenIds_, rewards);
     }
 
-    function stakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override nonReentrant {
+    function stakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override onlyAuthorized nonReentrant {
         address nft_ = _vaultStorage.mayc;
         uint256 totalApeCoinAmount = 0;
         IApeCoinStaking.SingleNft memory singleNft_;
@@ -261,7 +273,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 "nftVault: caller must be mayc staker"
             );
             totalApeCoinAmount += singleNft_.amount;
-            _vaultStorage._stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
+            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
         }
         _vaultStorage.apeCoin.transferFrom(msg.sender, address(this), totalApeCoinAmount);
         _vaultStorage.apeCoinStaking.depositMAYC(nfts_);
@@ -273,7 +285,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function unstakeMaycPool(
         IApeCoinStaking.SingleNft[] calldata nfts_,
         address recipient_
-    ) external override nonReentrant returns (uint256 principal, uint256 rewards) {
+    ) external override onlyAuthorized nonReentrant returns (uint256 principal, uint256 rewards) {
         address nft_ = _vaultStorage.mayc;
         IApeCoinStaking.SingleNft memory singleNft_;
         IApeCoinStaking.Position memory position_;
@@ -286,7 +298,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
             principal += singleNft_.amount;
             position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, singleNft_.tokenId);
             if (position_.stakedAmount == singleNft_.amount) {
-                _vaultStorage._stakingTokenIds[nft_][msg.sender].remove(singleNft_.tokenId);
+                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(singleNft_.tokenId);
             }
         }
         rewards = _vaultStorage.apeCoin.balanceOf(recipient_);
@@ -306,7 +318,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function claimMaycPool(
         uint256[] calldata tokenIds_,
         address recipient_
-    ) external override nonReentrant returns (uint256 rewards) {
+    ) external override onlyAuthorized nonReentrant returns (uint256 rewards) {
         address nft_ = _vaultStorage.mayc;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(
@@ -326,7 +338,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function stakeBakcPool(
         IApeCoinStaking.PairNftDepositWithAmount[] calldata baycPairs_,
         IApeCoinStaking.PairNftDepositWithAmount[] calldata maycPairs_
-    ) external override nonReentrant {
+    ) external override onlyAuthorized nonReentrant {
         uint256 totalStakedAmount = 0;
         IApeCoinStaking.PairNftDepositWithAmount memory pair;
         address nft_ = _vaultStorage.bakc;
@@ -338,7 +350,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 "nftVault: caller must be nft staker"
             );
             totalStakedAmount += pair.amount;
-            _vaultStorage._stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
+            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
         }
 
         for (uint256 i = 0; i < maycPairs_.length; i++) {
@@ -349,7 +361,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 "nftVault: caller must be nft staker"
             );
             totalStakedAmount += pair.amount;
-            _vaultStorage._stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
+            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
         }
         _vaultStorage.apeCoin.transferFrom(msg.sender, address(this), totalStakedAmount);
         _vaultStorage.apeCoinStaking.depositBAKC(baycPairs_, maycPairs_);
@@ -363,7 +375,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         IApeCoinStaking.PairNftWithdrawWithAmount[] calldata baycPairs_,
         IApeCoinStaking.PairNftWithdrawWithAmount[] calldata maycPairs_,
         address recipient_
-    ) external override nonReentrant returns (uint256 principal, uint256 rewards) {
+    ) external override onlyAuthorized nonReentrant returns (uint256 principal, uint256 rewards) {
         address nft_ = _vaultStorage.bakc;
         IApeCoinStaking.Position memory position_;
         IApeCoinStaking.PairNftWithdrawWithAmount memory pair;
@@ -377,7 +389,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
             position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, pair.bakcTokenId);
             principal += (pair.isUncommit ? position_.stakedAmount : pair.amount);
             if (pair.isUncommit) {
-                _vaultStorage._stakingTokenIds[nft_][msg.sender].remove(pair.bakcTokenId);
+                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(pair.bakcTokenId);
             }
         }
 
@@ -391,7 +403,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
             position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, pair.bakcTokenId);
             principal += (pair.isUncommit ? position_.stakedAmount : pair.amount);
             if (pair.isUncommit) {
-                _vaultStorage._stakingTokenIds[nft_][msg.sender].remove(pair.bakcTokenId);
+                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(pair.bakcTokenId);
             }
         }
         rewards = _vaultStorage.apeCoin.balanceOf(address(this));
@@ -411,7 +423,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         IApeCoinStaking.PairNft[] calldata baycPairs_,
         IApeCoinStaking.PairNft[] calldata maycPairs_,
         address recipient_
-    ) external override nonReentrant returns (uint256 rewards) {
+    ) external override onlyAuthorized nonReentrant returns (uint256 rewards) {
         address nft_ = _vaultStorage.bakc;
         IApeCoinStaking.PairNft memory pair;
         for (uint256 i = 0; i < baycPairs_.length; i++) {

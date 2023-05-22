@@ -180,6 +180,16 @@ abstract contract SetupHelper is Test {
         stakeManager.updateRewardsStrategy(address(mockBAKC), IRewardsStrategy(bakcStrategy));
         stakeManager.updateWithdrawStrategy(IWithdrawStrategy(withdrawStrategy));
 
+        // authorise
+        stBAYC.authorise(address(stakeManager), true);
+        stMAYC.authorise(address(stakeManager), true);
+        stBAKC.authorise(address(stakeManager), true);
+
+        nftVault.authorise(address(stakeManager), true);
+        nftVault.authorise(address(stBAYC), true);
+        nftVault.authorise(address(stMAYC), true);
+        nftVault.authorise(address(stBAKC), true);
+
         // mint some coins
         uint256 totalCoinRewards = 10000000 * 1e18;
         mockApeCoin.mint(totalCoinRewards);

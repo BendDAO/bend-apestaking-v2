@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { task } from "hardhat/config";
-import { BendCoinPool, BendNftPool, BendStakeManager, LendingMigrator } from "../typechain-types";
+import {
+  BendCoinPool,
+  BendNftPool,
+  BendStakeManager,
+  INftVault,
+  IStakedNft,
+  LendingMigrator,
+} from "../typechain-types";
 import {
   AAVE_ADDRESS_PROVIDER,
   APE_STAKING,
@@ -90,6 +97,7 @@ task("deploy:full:staking", "Deploy all contracts for staking").setAction(async 
   await run("deploy:config:BendCoinPool");
   await run("deploy:config:BendNftPool");
   await run("deploy:config:BendStakeManager");
+  await run("deploy:config:Authorise");
 });
 
 task("deploy:full:strategy", "Deploy all contracts for strategy").setAction(async (_, { run }) => {
@@ -293,6 +301,29 @@ task("deploy:config:LendingMigrator", "Coinfig LendingMigrator").setAction(async
   await waitForTx(
     await migrator.connect(deployer).initialize(aaveProvider, bendProvider, nftPool, stBayc, stMayc, stBakc)
   );
+
+  console.log("ok");
+});
+
+task("deploy:config:Authorise", "Authorise stBAYC,stMAYC,stBAKC,NftVault").setAction(async (_, { run }) => {
+  await run("set-DRE");
+  await run("compile");
+  const deployer = await getDeploySigner();
+  const stBayc = await getContractFromDB<IStakedNft>("StBAYC");
+  const stMayc = await getContractFromDB<IStakedNft>("StMAYC");
+  const stBakc = await getContractFromDB<IStakedNft>("StBAKC");
+  const nftVault = await getContractFromDB<INftVault>("NftVault");
+
+  const staker = await getContractAddressFromDB("BendStakeManager");
+
+  await waitForTx(await stBayc.connect(deployer).authorise(staker, true));
+  await waitForTx(await stMayc.connect(deployer).authorise(staker, true));
+  await waitForTx(await stBakc.connect(deployer).authorise(staker, true));
+
+  await waitForTx(await nftVault.connect(deployer).authorise(stBayc.address, true));
+  await waitForTx(await nftVault.connect(deployer).authorise(stMayc.address, true));
+  await waitForTx(await nftVault.connect(deployer).authorise(stBakc.address, true));
+  await waitForTx(await nftVault.connect(deployer).authorise(staker, true));
 
   console.log("ok");
 });

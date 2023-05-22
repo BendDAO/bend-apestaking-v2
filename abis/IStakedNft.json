@@ -134,6 +134,24 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "addr_",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "authorized_",
+        "type": "bool"
+      }
+    ],
+    "name": "authorise",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "owner",
         "type": "address"
       }
