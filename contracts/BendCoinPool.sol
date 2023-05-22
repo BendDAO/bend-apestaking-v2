@@ -29,7 +29,7 @@ contract BendCoinPool is
     uint256 public override pendingApeCoin;
 
     modifier onlyStaker() {
-        require(_msgSender() == address(staker), "BendCoinPool: caller is not staker");
+        require(msg.sender == address(staker), "BendCoinPool: caller is not staker");
         _;
     }
 
@@ -52,19 +52,19 @@ contract BendCoinPool is
     }
 
     function mintSelf(uint256 shares) external override returns (uint256) {
-        return mint(shares, _msgSender());
+        return mint(shares, msg.sender);
     }
 
     function depositSelf(uint256 assets) external override returns (uint256) {
-        return deposit(assets, _msgSender());
+        return deposit(assets, msg.sender);
     }
 
     function withdrawSelf(uint256 assets) external override returns (uint256) {
-        return withdraw(assets, _msgSender(), _msgSender());
+        return withdraw(assets, msg.sender, msg.sender);
     }
 
     function redeemSelf(uint256 shares) external override returns (uint256) {
-        return redeem(shares, _msgSender(), _msgSender());
+        return redeem(shares, msg.sender, msg.sender);
     }
 
     function withdraw(
@@ -75,7 +75,7 @@ contract BendCoinPool is
         require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
         _withdrawApeCoin(assets);
         uint256 shares = previewWithdraw(assets);
-        _withdraw(_msgSender(), receiver, owner, assets, shares);
+        _withdraw(msg.sender, receiver, owner, assets, shares);
         return shares;
     }
 
@@ -91,7 +91,7 @@ contract BendCoinPool is
             _withdrawApeCoin(assets);
             // loop calculate & withdraw assets, because the share price may change when `_withdrawApeCoin`
         } while (assets != previewRedeem(shares));
-        _withdraw(_msgSender(), receiver, owner, assets, shares);
+        _withdraw(msg.sender, receiver, owner, assets, shares);
         return assets;
     }
 
@@ -133,7 +133,7 @@ contract BendCoinPool is
 
     function receiveApeCoin(uint256 principalAmount, uint256 rewardsAmount_) external override onlyStaker {
         uint256 totalAmount = principalAmount + rewardsAmount_;
-        apeCoin.safeTransferFrom(_msgSender(), address(this), totalAmount);
+        apeCoin.safeTransferFrom(msg.sender, address(this), totalAmount);
         pendingApeCoin += totalAmount;
         if (rewardsAmount_ > 0) {
             emit RewardDistributed(rewardsAmount_);

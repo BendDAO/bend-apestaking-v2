@@ -63,7 +63,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) external view override returns (bytes4) {
-        require(_msgSender() == address(_nft), "StNft: nft not acceptable");
+        require(msg.sender == address(_nft), "StNft: nft not acceptable");
         return IERC721ReceiverUpgradeable.onERC721Received.selector;
     }
 
@@ -74,7 +74,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
     function mint(address to_, uint256[] calldata tokenIds_) external override onlyAuthorized nonReentrant {
         address staker_ = _msgSender();
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            _nft.safeTransferFrom(_msgSender(), address(this), tokenIds_[i]);
+            _nft.safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
         }
         nftVault.depositNft(address(_nft), tokenIds_, staker_);
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -89,7 +89,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            require(_msgSender() == ownerOf(tokenId_), "stNft: only owner can burn");
+            require(msg.sender == ownerOf(tokenId_), "stNft: only owner can burn");
             require(address(nftVault) == _nft.ownerOf(tokenId_), "stNft: invalid tokenId_");
 
             _removeTokenFromStakerEnumeration(stakerOf(tokenId_), tokenId_);
@@ -100,9 +100,9 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
 
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
-            _nft.safeTransferFrom(address(this), _msgSender(), tokenIds_[i]);
+            _nft.safeTransferFrom(address(this), msg.sender, tokenIds_[i]);
         }
-        emit Burned(_msgSender(), tokenIds_);
+        emit Burned(msg.sender, tokenIds_);
     }
 
     function stakerOf(uint256 tokenId_) public view override returns (address) {
@@ -166,7 +166,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
 
     function setDelegateCash(address delegate_, uint256[] calldata tokenIds_, bool value_) external override {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            require(_msgSender() == ownerOf(tokenIds_[i]), "stNft: only owner can delegate");
+            require(msg.sender == ownerOf(tokenIds_[i]), "stNft: only owner can delegate");
         }
         nftVault.setDelegateCash(delegate_, address(_nft), tokenIds_, value_);
     }
