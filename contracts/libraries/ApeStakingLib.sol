@@ -25,18 +25,18 @@ library ApeStakingLib {
             IApeCoinStaking.PoolUI memory bakcPoolUI
         ) = apeCoinStaking_.getPoolsUI();
 
-        if (poolId == APE_COIN_POOL_ID && poolId == apeCoinPoolUI.poolId) {
+        if (poolId == apeCoinPoolUI.poolId) {
             return apeCoinPoolUI.currentTimeRange;
         }
 
-        if (poolId == BAYC_POOL_ID && poolId == baycPoolUI.poolId) {
+        if (poolId == baycPoolUI.poolId) {
             return baycPoolUI.currentTimeRange;
         }
 
-        if (poolId == MAYC_POOL_ID && poolId == maycPoolUI.poolId) {
+        if (poolId == maycPoolUI.poolId) {
             return maycPoolUI.currentTimeRange;
         }
-        if (poolId == BAKC_POOL_ID && poolId == bakcPoolUI.poolId) {
+        if (poolId == bakcPoolUI.poolId) {
             return bakcPoolUI.currentTimeRange;
         }
 
