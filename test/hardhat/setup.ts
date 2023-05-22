@@ -189,6 +189,15 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.bnftRegistry.setBNFTContract(contracts.stBayc.address, contracts.bnftStBayc.address);
   await contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);
   await contracts.bnftRegistry.setBNFTContract(contracts.stBakc.address, contracts.bnftStBakc.address);
+
+  await contracts.stBayc.authorise(contracts.bendStakeManager.address, true);
+  await contracts.stMayc.authorise(contracts.bendStakeManager.address, true);
+  await contracts.stBakc.authorise(contracts.bendStakeManager.address, true);
+
+  await contracts.nftVault.authorise(contracts.stBayc.address, true);
+  await contracts.nftVault.authorise(contracts.stMayc.address, true);
+  await contracts.nftVault.authorise(contracts.stBakc.address, true);
+  await contracts.nftVault.authorise(contracts.bendStakeManager.address, true);
 }
 
 export async function setupContracts(): Promise<Contracts> {

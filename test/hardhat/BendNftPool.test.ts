@@ -208,6 +208,37 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     await expectClaim(contracts.bakc.address, shuffledSubarray(bakcTokenIds));
   });
 
+  it("claim: all", async () => {
+    const claimable = await contracts.bendNftPool.claimable(
+      [contracts.bayc.address, contracts.mayc.address, contracts.bakc.address],
+      [baycTokenIds, maycTokenIds, bakcTokenIds]
+    );
+    const pendingApeCoin = (await contracts.bendNftPool.getPoolStateUI(contracts.bayc.address)).pendingApeCoin
+      .add((await contracts.bendNftPool.getPoolStateUI(contracts.mayc.address)).pendingApeCoin)
+      .add((await contracts.bendNftPool.getPoolStateUI(contracts.bakc.address)).pendingApeCoin);
+
+    const bacApeChanged = await contracts.bendCoinPool.convertToShares(pendingApeCoin.sub(claimable));
+    const tx = contracts.bendNftPool
+      .connect(owner)
+      .claim(
+        [
+          contracts.bayc.address,
+          contracts.mayc.address,
+          contracts.bakc.address,
+          contracts.bayc.address,
+          contracts.mayc.address,
+        ],
+        [baycTokenIds, maycTokenIds, bakcTokenIds, baycTokenIds, maycTokenIds]
+      );
+    await expect(tx)
+      .changeTokenBalances(
+        contracts.apeCoin,
+        [owner.address, contracts.bendNftPool.address],
+        [claimable, constants.Zero.sub(pendingApeCoin)]
+      )
+      .changeTokenBalance(contracts.bendCoinPool, contracts.bendNftPool.address, bacApeChanged);
+  });
+
   it("withdraw: revert when paused", async () => {
     await contracts.bendNftPool.setPause(true);
     await expect(contracts.bendNftPool.connect(owner).withdraw([contracts.bayc.address], [baycTokenIds])).revertedWith(

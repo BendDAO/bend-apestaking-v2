@@ -25,7 +25,7 @@ library VaultLogic {
         address nft_,
         uint256 tokenId_
     ) internal view returns (address) {
-        return _vaultStorage._nfts[nft_][tokenId_].staker;
+        return _vaultStorage.nfts[nft_][tokenId_].staker;
     }
 
     function _ownerOf(
@@ -33,7 +33,7 @@ library VaultLogic {
         address nft_,
         uint256 tokenId_
     ) internal view returns (address) {
-        return _vaultStorage._nfts[nft_][tokenId_].owner;
+        return _vaultStorage.nfts[nft_][tokenId_].owner;
     }
 
     function _increasePosition(
@@ -42,7 +42,7 @@ library VaultLogic {
         address staker_,
         uint256 stakedAmount_
     ) internal {
-        INftVault.Position storage position_ = _vaultStorage._positions[nft_][staker_];
+        INftVault.Position storage position_ = _vaultStorage.positions[nft_][staker_];
         position_.stakedAmount += stakedAmount_;
         position_.rewardsDebt += int256(
             stakedAmount_ * _vaultStorage.apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare
@@ -55,7 +55,7 @@ library VaultLogic {
         address staker_,
         uint256 stakedAmount_
     ) internal {
-        INftVault.Position storage position_ = _vaultStorage._positions[nft_][staker_];
+        INftVault.Position storage position_ = _vaultStorage.positions[nft_][staker_];
         position_.stakedAmount -= stakedAmount_;
         position_.rewardsDebt -= int256(
             stakedAmount_ * _vaultStorage.apeCoinStaking.getNftPool(nft_).accumulatedRewardsPerShare
@@ -68,7 +68,7 @@ library VaultLogic {
         address staker_,
         uint256 claimedRewardsAmount_
     ) internal {
-        INftVault.Position storage position_ = _vaultStorage._positions[nft_][staker_];
+        INftVault.Position storage position_ = _vaultStorage.positions[nft_][staker_];
         position_.rewardsDebt += int256(claimedRewardsAmount_ * ApeStakingLib.APE_COIN_PRECISION);
     }
 
@@ -155,7 +155,7 @@ library VaultLogic {
                         amount: uint224(vars.stakedAmount)
                     });
                     vars.singleNftIndex += 1;
-                    _vaultStorage._stakingTokenIds[nft_][vars.staker].remove(vars.tokenId);
+                    _vaultStorage.stakingTokenIds[nft_][vars.staker].remove(vars.tokenId);
                 }
             }
             if (nft_ == _vaultStorage.bayc) {
@@ -168,7 +168,7 @@ library VaultLogic {
                 vars.cachedBalance -
                 vars.totalPrincipal;
             // refund ape coin for single nft
-            refund = _vaultStorage._refunds[nft_][vars.staker];
+            refund = _vaultStorage.refunds[nft_][vars.staker];
             refund.principal += vars.totalPrincipal;
             refund.reward += vars.totalReward;
 
@@ -208,7 +208,7 @@ library VaultLogic {
                         isUncommit: true
                     });
                     vars.pairingNftIndex += 1;
-                    _vaultStorage._stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.bakcTokenId);
+                    _vaultStorage.stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.bakcTokenId);
                 }
             }
             vars.cachedBalance = _vaultStorage.apeCoin.balanceOf(address(this));
@@ -226,7 +226,7 @@ library VaultLogic {
                 vars.totalPairingPrincipal;
 
             // refund ape coin for paring nft
-            refund = _vaultStorage._refunds[_vaultStorage.bakc][vars.staker];
+            refund = _vaultStorage.refunds[_vaultStorage.bakc][vars.staker];
             refund.principal += vars.totalPairingPrincipal;
             refund.reward += vars.totalPairingReward;
 
@@ -331,7 +331,7 @@ library VaultLogic {
                             isUncommit: true
                         });
                         vars.baycIndex += 1;
-                        _vaultStorage._stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.tokenId);
+                        _vaultStorage.stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.tokenId);
                     } else {
                         pairingStatus = _vaultStorage.apeCoinStaking.bakcToMain(
                             vars.tokenId,
@@ -349,7 +349,7 @@ library VaultLogic {
                                 isUncommit: true
                             });
                             vars.maycIndex += 1;
-                            _vaultStorage._stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.tokenId);
+                            _vaultStorage.stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.tokenId);
                         }
                     }
                 }
@@ -361,7 +361,7 @@ library VaultLogic {
                 vars.cachedBalance -
                 vars.totalPrincipal;
             // refund ape coin for bakc
-            INftVault.Refund storage _refund = _vaultStorage._refunds[_vaultStorage.bakc][vars.staker];
+            INftVault.Refund storage _refund = _vaultStorage.refunds[_vaultStorage.bakc][vars.staker];
             _refund.principal += vars.totalPrincipal;
             _refund.reward += vars.totalReward;
 

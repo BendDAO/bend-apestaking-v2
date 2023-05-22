@@ -45,6 +45,49 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     }
   });
 
+  it("onlyAuthorized: reverts", async () => {
+    await expect(
+      contracts.nftVault.connect(owner).depositNft(contracts.bayc.address, baycTokenIds, staker.address)
+    ).revertedWith("StNft: caller is not authorized");
+    await expect(contracts.nftVault.connect(owner).withdrawNft(contracts.bayc.address, baycTokenIds)).revertedWith(
+      "StNft: caller is not authorized"
+    );
+    await expect(contracts.nftVault.connect(owner).withdrawRefunds(contracts.bayc.address)).revertedWith(
+      "StNft: caller is not authorized"
+    );
+    await expect(contracts.nftVault.connect(staker).stakeBaycPool([])).revertedWith("StNft: caller is not authorized");
+    await expect(contracts.nftVault.connect(staker).stakeMaycPool([])).revertedWith("StNft: caller is not authorized");
+    await expect(contracts.nftVault.connect(staker).stakeBakcPool([], [])).revertedWith(
+      "StNft: caller is not authorized"
+    );
+
+    await expect(contracts.nftVault.connect(staker).unstakeBaycPool([], constants.AddressZero)).revertedWith(
+      "StNft: caller is not authorized"
+    );
+    await expect(contracts.nftVault.connect(staker).unstakeMaycPool([], constants.AddressZero)).revertedWith(
+      "StNft: caller is not authorized"
+    );
+    await expect(contracts.nftVault.connect(staker).unstakeBakcPool([], [], constants.AddressZero)).revertedWith(
+      "StNft: caller is not authorized"
+    );
+
+    await expect(contracts.nftVault.connect(staker).claimBaycPool([], constants.AddressZero)).revertedWith(
+      "StNft: caller is not authorized"
+    );
+    await expect(contracts.nftVault.connect(staker).claimMaycPool([], constants.AddressZero)).revertedWith(
+      "StNft: caller is not authorized"
+    );
+    await expect(contracts.nftVault.connect(staker).claimBakcPool([], [], constants.AddressZero)).revertedWith(
+      "StNft: caller is not authorized"
+    );
+
+    await contracts.nftVault.connect(env.admin).authorise(owner.address, true);
+    await contracts.nftVault.connect(env.admin).authorise(staker.address, true);
+
+    lastRevert = "init";
+    await snapshots.capture(lastRevert);
+  });
+
   it("onlyApe: reverts", async () => {
     await expect(contracts.nftVault.depositNft(constants.AddressZero, [], constants.AddressZero)).revertedWith(
       "NftVault: not ape"
@@ -90,6 +133,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     let poolPosition = await contracts.nftVault.positionOf(contracts.bayc.address, staker.address);
     expect(poolPosition.stakedAmount).eq(constants.Zero);
     expect(poolPosition.rewardsDebt).eq(constants.Zero);
+
     await expect(contracts.nftVault.connect(staker).stakeBaycPool(nfts)).changeTokenBalances(
       contracts.apeCoin,
       [staker.address, contracts.nftVault.address, contracts.apeStaking.address],

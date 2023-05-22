@@ -40,19 +40,20 @@ interface INftVault is IERC721ReceiverUpgradeable {
 
     struct VaultStorage {
         // nft address =>  nft tokenId => nftStatus
-        mapping(address => mapping(uint256 => NftStatus)) _nfts;
+        mapping(address => mapping(uint256 => NftStatus)) nfts;
         // nft address => staker address => refund
-        mapping(address => mapping(address => Refund)) _refunds;
+        mapping(address => mapping(address => Refund)) refunds;
         // nft address => staker address => position
-        mapping(address => mapping(address => Position)) _positions;
+        mapping(address => mapping(address => Position)) positions;
         // nft address => staker address => staking nft tokenId array
-        mapping(address => mapping(address => EnumerableSetUpgradeable.UintSet)) _stakingTokenIds;
+        mapping(address => mapping(address => EnumerableSetUpgradeable.UintSet)) stakingTokenIds;
         IApeCoinStaking apeCoinStaking;
         IERC20Upgradeable apeCoin;
         address bayc;
         address mayc;
         address bakc;
         IDelegationRegistry delegationRegistry;
+        mapping(address => bool) authorized;
     }
 
     struct Refund {
@@ -63,6 +64,8 @@ interface INftVault is IERC721ReceiverUpgradeable {
         uint256 stakedAmount;
         int256 rewardsDebt;
     }
+
+    function authorise(address addr_, bool authorized_) external;
 
     function stakerOf(address nft_, uint256 tokenId_) external view returns (address);
 
