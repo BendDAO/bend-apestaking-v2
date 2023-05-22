@@ -198,7 +198,9 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
         apeCoin.safeTransferFrom(_msgSender(), address(this), rewardsAmount_);
         poolStates[nft_].pendingApeCoin += rewardsAmount_;
-        emit NftRewardDistributed(nft_, rewardsAmount_);
+        if (rewardsAmount_ > 0) {
+            emit NftRewardDistributed(nft_, rewardsAmount_);
+        }
     }
 
     function _compoundApeCoin(PoolState storage pool_) internal {
