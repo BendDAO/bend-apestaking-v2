@@ -30,7 +30,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
     mapping(address => bool) private _authorized;
 
     modifier onlyAuthorized() {
-        require(_authorized[_msgSender()], "StNft: caller is not authorized");
+        require(_authorized[msg.sender], "StNft: caller is not authorized");
         _;
     }
 
@@ -72,7 +72,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
     }
 
     function mint(address to_, uint256[] calldata tokenIds_) external override onlyAuthorized nonReentrant {
-        address staker_ = _msgSender();
+        address staker_ = msg.sender;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             _nft.safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
         }

@@ -37,7 +37,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     modifier onlyAuthorized() {
-        require(_vaultStorage.authorized[_msgSender()], "StNft: caller is not authorized");
+        require(_vaultStorage.authorized[msg.sender], "StNft: caller is not authorized");
         _;
     }
 
