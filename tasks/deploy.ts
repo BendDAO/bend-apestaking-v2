@@ -104,9 +104,9 @@ task("deploy:full:strategy", "Deploy all contracts for strategy").setAction(asyn
   await run("set-DRE");
   await run("compile");
 
-  await run("deploy:BaycStrategy");
-  await run("deploy:MaycStrategy");
-  await run("deploy:BakcStrategy");
+  await run("deploy:BaycRewardsStrategy");
+  await run("deploy:MaycRewardsStrategy");
+  await run("deploy:BakcRewardsStrategy");
   await run("deploy:config:RewardsStrategy");
 
   await run("deploy:DefaultWithdrawStrategy");
@@ -134,25 +134,25 @@ task("deploy:BendStakeManager", "Deploy StakeManager").setAction(async (_, { run
   await deployProxyContractWithoutInit("BendStakeManager", [], true);
 });
 
-task("deploy:BaycStrategy", "Deploy BaycStrategy").setAction(async (_, { run }) => {
+task("deploy:BaycRewardsStrategy", "Deploy BaycStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("DefaultRewardsStrategy", [2400], true);
+  await deployContract("DefaultRewardsStrategy", [2400], true, "BaycRewardsStrategy");
 });
 
-task("deploy:MaycStrategy", "Deploy MaycStrategy").setAction(async (_, { run }) => {
+task("deploy:MaycRewardsStrategy", "Deploy MaycStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("DefaultRewardsStrategy", [2700], true);
+  await deployContract("DefaultRewardsStrategy", [2700], true, "MaycRewardsStrategy");
 });
 
-task("deploy:BakcStrategy", "Deploy BakcStrategy").setAction(async (_, { run }) => {
+task("deploy:BakcRewardsStrategy", "Deploy BakcStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("DefaultRewardsStrategy", [2700], true);
+  await deployContract("DefaultRewardsStrategy", [2700], true, "BakcRewardsStrategy");
 });
 
 task("deploy:DefaultWithdrawStrategy", "Deploy DefaultWithdrawStrategy").setAction(async (_, { network, run }) => {
@@ -260,9 +260,9 @@ task("deploy:config:RewardsStrategy", "Coinfig RewardsStrategy").setAction(async
   const mayc = getParams(MAYC, network.name);
   const bakc = getParams(BAKC, network.name);
 
-  const baycStrategy = await getContractAddressFromDB("BaycStrategy");
-  const maycStrategy = await getContractAddressFromDB("MaycStrategy");
-  const bakcStrategy = await getContractAddressFromDB("BakcStrategy");
+  const baycStrategy = await getContractAddressFromDB("BaycRewardsStrategy");
+  const maycStrategy = await getContractAddressFromDB("MaycRewardsStrategy");
+  const bakcStrategy = await getContractAddressFromDB("BakcRewardsStrategy");
 
   await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(bayc, baycStrategy));
   await waitForTx(await stakeManager.connect(deployer).updateRewardsStrategy(mayc, maycStrategy));
