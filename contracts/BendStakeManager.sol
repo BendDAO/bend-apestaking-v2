@@ -586,7 +586,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
             "BendStakeManager: reward strategy can't be zero address"
         );
         uint256 nftShare = _stakerStorage.rewardsStrategies[nft_].getNftRewardsShare();
-        require(nftShare < PERCENTAGE_FACTOR, "BaseRewardsStrategy: nft share is too high");
+        require(nftShare < PERCENTAGE_FACTOR, "BendStakeManager: nft share is too high");
         uint256 nftPoolRewards = rewardsAmount_.mulDiv(nftShare, PERCENTAGE_FACTOR, MathUpgradeable.Rounding.Down);
 
         uint256 apeCoinPoolRewards = rewardsAmount_ - nftPoolRewards;
