@@ -143,7 +143,6 @@ abstract contract SetupHelper is Test {
         nftPool = new BendNftPool();
         stakeManager = new BendStakeManager();
 
-        coinPool.initialize(IApeCoinStaking(address(mockApeStaking)), stakeManager);
         nftPool.initialize(
             mockBNFTRegistry,
             IApeCoinStaking(address(mockApeStaking)),
@@ -162,6 +161,13 @@ abstract contract SetupHelper is Test {
             stMAYC,
             stBAKC
         );
+
+        uint256 initDeposit = 100 * 1e18;
+        vm.startPrank(poolOwner);
+        mockApeCoin.mint(initDeposit);
+        mockApeCoin.approve(address(coinPool), initDeposit);
+        vm.stopPrank();
+        coinPool.initialize(IApeCoinStaking(address(mockApeStaking)), stakeManager, poolOwner, initDeposit);
 
         // set the strategy contracts
         baycStrategy = new DefaultRewardsStrategy(2400);

@@ -33,15 +33,26 @@ contract BendCoinPool is
         _;
     }
 
-    function initialize(IApeCoinStaking apeStaking_, IStakeManager staker_) external initializer {
+    function initialize(
+        IApeCoinStaking apeStaking_,
+        IStakeManager staker_,
+        address treasury_,
+        uint256 initialDepistAmount_
+    ) external initializer {
         apeCoin = IERC20Upgradeable(apeStaking_.apeCoin());
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
         __ERC20_init("Bend Auto-compound ApeCoin", "bacAPE");
         __ERC4626_init(apeCoin);
+
         apeCoinStaking = apeStaking_;
         staker = staker_;
+
+        // initial share to treasury as Last share holder
+        apeCoin.safeTransferFrom(treasury_, address(this), initialDepistAmount_);
+        // should initialize `BendStakeManager` first
+        deposit(initialDepistAmount_, treasury_);
     }
 
     function totalAssets() public view override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
@@ -67,34 +78,6 @@ contract BendCoinPool is
         return redeem(shares, msg.sender, msg.sender);
     }
 
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) public override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
-        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
-        _withdrawApeCoin(assets);
-        uint256 shares = previewWithdraw(assets);
-        _withdraw(msg.sender, receiver, owner, assets, shares);
-        return shares;
-    }
-
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) public override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
-        require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
-        uint256 assets;
-        do {
-            assets = previewRedeem(shares);
-            _withdrawApeCoin(assets);
-            // loop calculate & withdraw assets, because the share price may change when `_withdrawApeCoin`
-        } while (assets != previewRedeem(shares));
-        _withdraw(msg.sender, receiver, owner, assets, shares);
-        return assets;
-    }
-
     function _withdraw(
         address caller,
         address receiver,
@@ -102,6 +85,9 @@ contract BendCoinPool is
         uint256 assets,
         uint256 shares
     ) internal override(ERC4626Upgradeable) nonReentrant whenNotPaused {
+        // CAUYION: It is possible to change the share price here, but we have calculated the assets and shares using
+        // the previous price, No recalculation even if price changed
+        _withdrawApeCoin(assets);
         // transfer ape coin to receiver
         super._withdraw(caller, receiver, owner, assets, shares);
         // decrease pending amount
