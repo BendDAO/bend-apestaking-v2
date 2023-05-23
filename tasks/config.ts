@@ -91,3 +91,13 @@ export const BEND_ADDRESS_PROVIDER: Params<string> = {
   [Network.goerli]: "0x1cba0A3e18be7f210713c9AC9FE17955359cC99B",
   [Network.mainnet]: "0x24451f47caf13b24f4b5034e1df6c0e401ec0e46",
 };
+
+export const TREASURY: Params<string> = {
+  [Network.goerli]: "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1",
+  [Network.mainnet]: "0x472FcC65Fab565f75B1e0E861864A86FE5bcEd7B",
+};
+
+export const TREASURY_INIT_DEPOSIT: Params<string> = {
+  [Network.goerli]: "100", // unit of 1e18
+  [Network.mainnet]: "100", // unit of 1e18
+};

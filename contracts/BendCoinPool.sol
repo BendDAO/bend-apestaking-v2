@@ -40,6 +40,7 @@ contract BendCoinPool is
         __ReentrancyGuard_init();
         __ERC20_init("Bend Auto-compound ApeCoin", "bacAPE");
         __ERC4626_init(apeCoin);
+
         apeCoinStaking = apeStaking_;
         staker = staker_;
     }
@@ -67,34 +68,6 @@ contract BendCoinPool is
         return redeem(shares, msg.sender, msg.sender);
     }
 
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) public override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
-        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
-        _withdrawApeCoin(assets);
-        uint256 shares = previewWithdraw(assets);
-        _withdraw(msg.sender, receiver, owner, assets, shares);
-        return shares;
-    }
-
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) public override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
-        require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
-        uint256 assets;
-        do {
-            assets = previewRedeem(shares);
-            _withdrawApeCoin(assets);
-            // loop calculate & withdraw assets, because the share price may change when `_withdrawApeCoin`
-        } while (assets != previewRedeem(shares));
-        _withdraw(msg.sender, receiver, owner, assets, shares);
-        return assets;
-    }
-
     function _withdraw(
         address caller,
         address receiver,
@@ -102,6 +75,9 @@ contract BendCoinPool is
         uint256 assets,
         uint256 shares
     ) internal override(ERC4626Upgradeable) nonReentrant whenNotPaused {
+        // CAUYION: It is possible to change the share price here, but we have calculated the assets and shares using
+        // the previous price, No recalculation even if price changed
+        _withdrawApeCoin(assets);
         // transfer ape coin to receiver
         super._withdraw(caller, receiver, owner, assets, shares);
         // decrease pending amount
@@ -114,6 +90,11 @@ contract BendCoinPool is
         uint256 assets,
         uint256 shares
     ) internal override(ERC4626Upgradeable) nonReentrant whenNotPaused {
+        require(
+            (totalSupply() > 0) || (msg.sender == staker.feeRecipient()),
+            "BendCoinPool: only feeRecipient can deposit first"
+        );
+
         // transfer ape coin from caller
         super._deposit(caller, receiver, assets, shares);
         // increase pending amount

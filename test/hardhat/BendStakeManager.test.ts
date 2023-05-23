@@ -20,7 +20,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
 
   before(async () => {
     owner = env.accounts[1];
-    feeRecipient = env.accounts[2];
+    feeRecipient = env.feeRecipient;
     bot = env.accounts[3];
     fee = 500;
     baycTokenIds = [0, 1, 2, 3, 4, 5];
@@ -41,6 +41,9 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
         [contracts.bayc.address, contracts.mayc.address, contracts.bakc.address],
         [baycTokenIds, maycTokenIds, bakcTokenIds]
       );
+
+    await contracts.apeCoin.connect(feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.bendCoinPool.connect(feeRecipient).deposit(makeBN18(APE_COIN_AMOUNT), owner.address);
 
     await contracts.apeCoin.connect(owner).approve(contracts.bendCoinPool.address, constants.MaxUint256);
     await contracts.bendCoinPool.connect(owner).deposit(makeBN18(APE_COIN_AMOUNT), owner.address);
@@ -119,7 +122,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
   };
 
   it("updateFee", async () => {
-    expect(await contracts.bendStakeManager.fee()).eq(0);
+    // expect(await contracts.bendStakeManager.fee()).eq(0);
     await expect(contracts.bendStakeManager.updateFee(1001)).revertedWith("BendStakeManager: invalid fee");
     await contracts.bendStakeManager.updateFee(fee);
     expect(await contracts.bendStakeManager.fee()).eq(fee);
@@ -128,7 +131,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
   });
 
   it("updateFeeRecipient", async () => {
-    expect(await contracts.bendStakeManager.feeRecipient()).eq(constants.AddressZero);
+    // expect(await contracts.bendStakeManager.feeRecipient()).eq(constants.AddressZero);
     await expect(contracts.bendStakeManager.updateFeeRecipient(constants.AddressZero)).revertedWith(
       "BendStakeManager: invalid fee recipient"
     );

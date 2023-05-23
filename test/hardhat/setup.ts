@@ -25,7 +25,7 @@ import {
   BendCoinPool,
   BendNftPool,
 } from "../../typechain-types";
-import { Contract, BigNumber } from "ethers";
+import { Contract, BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 import { deployContract } from "./utils";
 
@@ -34,6 +34,7 @@ export interface Env {
   fee: number;
   accounts: SignerWithAddress[];
   admin: SignerWithAddress;
+  feeRecipient: SignerWithAddress;
   chainId: number;
 }
 
@@ -81,6 +82,7 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   env.fee = 100;
   env.accounts = (await ethers.getSigners()).slice(0, 6);
   env.admin = env.accounts[0];
+  env.feeRecipient = env.accounts[2];
   env.chainId = (await ethers.provider.getNetwork()).chainId;
 
   for (const user of env.accounts) {
@@ -89,6 +91,7 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   }
   await contracts.apeCoin.connect(env.admin).mint(parseEther("100000000"));
   await contracts.apeCoin.connect(env.admin).transfer(contracts.apeStaking.address, parseEther("100000000"));
+
   // ApeCoin pool
   await contracts.apeStaking.addTimeRange(0, BigNumber.from("10500000000000000000000000"), 1669748400, 1677610800, 0);
   await contracts.apeStaking.addTimeRange(0, BigNumber.from("9000000000000000000000000"), 1677610800, 1685559600, 0);
@@ -181,10 +184,55 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
     1701284400,
     BigNumber.from("856000000000000000000")
   );
+  // bend staking
+  await contracts.mockAaveLendPoolAddressesProvider.setLendingPool(contracts.mockAaveLendPool.address);
+
+  await contracts.mockBendLendPoolAddressesProvider.setLendPool(contracts.mockBendLendPool.address);
+  await contracts.mockBendLendPoolAddressesProvider.setLendPoolLoan(contracts.mockBendLendPoolLoan.address);
+  await contracts.mockBendLendPool.setAddressesProvider(contracts.mockBendLendPoolAddressesProvider.address);
+
+  await (contracts.bendStakeManager as Contract).initialize(
+    contracts.apeStaking.address,
+    contracts.bendCoinPool.address,
+    contracts.bendNftPool.address,
+    contracts.nftVault.address,
+    contracts.stBayc.address,
+    contracts.stMayc.address,
+    contracts.stBakc.address
+  );
+
+  await (contracts.bendNftPool as Contract).initialize(
+    contracts.bnftRegistry.address,
+    contracts.apeStaking.address,
+    contracts.bendCoinPool.address,
+    contracts.bendStakeManager.address,
+    contracts.stBayc.address,
+    contracts.stMayc.address,
+    contracts.stBakc.address
+  );
+
+  await contracts.apeCoin.connect(env.admin).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+  await (contracts.bendCoinPool as Contract).initialize(
+    contracts.apeStaking.address,
+    contracts.bendStakeManager.address
+  );
+
+  await contracts.lendingMigrator.initialize(
+    contracts.mockAaveLendPoolAddressesProvider.address,
+    contracts.mockBendLendPoolAddressesProvider.address,
+    contracts.bendNftPool.address,
+    contracts.stBayc.address,
+    contracts.stMayc.address,
+    contracts.stBakc.address
+  );
+
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.bayc.address, contracts.baycStrategy.address);
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.maycStrategy.address);
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakcStrategy.address);
   await contracts.bendStakeManager.updateWithdrawStrategy(contracts.withdrawStrategy.address);
+
+  await contracts.bendStakeManager.updateFee(400);
+  await contracts.bendStakeManager.updateFeeRecipient(env.feeRecipient.address);
 
   await contracts.bnftRegistry.setBNFTContract(contracts.stBayc.address, contracts.bnftStBayc.address);
   await contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);
@@ -238,26 +286,6 @@ export async function setupContracts(): Promise<Contracts> {
   const bendCoinPool = await deployContract<BendCoinPool>("BendCoinPool", []);
   const bendNftPool = await deployContract<BendNftPool>("BendNftPool", []);
 
-  await (bendStakeManager as Contract).initialize(
-    apeStaking.address,
-    bendCoinPool.address,
-    bendNftPool.address,
-    nftVault.address,
-    stBayc.address,
-    stMayc.address,
-    stBakc.address
-  );
-  await (bendCoinPool as Contract).initialize(apeStaking.address, bendStakeManager.address);
-  await (bendNftPool as Contract).initialize(
-    bnftRegistry.address,
-    apeStaking.address,
-    bendCoinPool.address,
-    bendStakeManager.address,
-    stBayc.address,
-    stMayc.address,
-    stBakc.address
-  );
-
   const baycStrategy = await deployContract<IRewardsStrategy>("DefaultRewardsStrategy", [2400]);
   const maycStrategy = await deployContract<IRewardsStrategy>("DefaultRewardsStrategy", [2700]);
   const bakcStrategy = await deployContract<IRewardsStrategy>("DefaultRewardsStrategy", [2700]);
@@ -285,21 +313,6 @@ export async function setupContracts(): Promise<Contracts> {
   const mockBendLendPool = await deployContract<MockBendLendPool>("MockBendLendPool", []);
   const mockBendLendPoolLoan = await deployContract<MockBendLendPoolLoan>("MockBendLendPoolLoan", []);
   const lendingMigrator = await deployContract<LendingMigrator>("LendingMigrator", []);
-
-  await mockAaveLendPoolAddressesProvider.setLendingPool(mockAaveLendPool.address);
-
-  await mockBendLendPoolAddressesProvider.setLendPool(mockBendLendPool.address);
-  await mockBendLendPoolAddressesProvider.setLendPoolLoan(mockBendLendPoolLoan.address);
-  await mockBendLendPool.setAddressesProvider(mockBendLendPoolAddressesProvider.address);
-
-  await lendingMigrator.initialize(
-    mockAaveLendPoolAddressesProvider.address,
-    mockBendLendPoolAddressesProvider.address,
-    bendNftPool.address,
-    stBayc.address,
-    stMayc.address,
-    stBakc.address
-  );
 
   return {
     initialized: true,
