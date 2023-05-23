@@ -3,6 +3,7 @@ import { Contracts, Env, makeSuite, Snapshots } from "./setup";
 import { BigNumber, constants } from "ethers";
 import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { makeBN18 } from "./utils";
 
 makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots) => {
   let bot: SignerWithAddress;
@@ -37,6 +38,15 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
         .eq(delta)
     );
   };
+
+  it("deposit: preparing the first deposit", async () => {
+    await contracts.apeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.bendCoinPool.connect(env.feeRecipient).depositSelf(makeBN18(1));
+    expect(await contracts.bendCoinPool.totalSupply()).gt(0);
+
+    lastRevert = "init";
+    await snapshots.capture(lastRevert);
+  });
 
   it("deposit: revert when paused", async () => {
     let depositAmount = makeBN18(10000);

@@ -51,6 +51,15 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     }
   });
 
+  it("deposit: preparing the first deposit", async () => {
+    await contracts.apeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.bendCoinPool.connect(env.feeRecipient).depositSelf(makeBN18(1));
+    expect(await contracts.bendCoinPool.totalSupply()).gt(0);
+
+    lastRevert = "init";
+    await snapshots.capture(lastRevert);
+  });
+
   it("receiveApeCoin: no nft", async () => {
     await contracts.bendNftPool.connect(stakeManagerSigner).receiveApeCoin(contracts.bayc.address, makeBN18(100));
     expect((await contracts.bendNftPool.getPoolStateUI(contracts.bayc.address)).accumulatedRewardsPerNft).eq(0);

@@ -27,13 +27,14 @@ import {
 } from "../../typechain-types";
 import { Contract, BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
-import { deployContract, makeBN18 } from "./utils";
+import { deployContract } from "./utils";
 
 export interface Env {
   initialized: boolean;
   fee: number;
   accounts: SignerWithAddress[];
   admin: SignerWithAddress;
+  feeRecipient: SignerWithAddress;
   chainId: number;
 }
 
@@ -81,6 +82,7 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   env.fee = 100;
   env.accounts = (await ethers.getSigners()).slice(0, 6);
   env.admin = env.accounts[0];
+  env.feeRecipient = env.accounts[2];
   env.chainId = (await ethers.provider.getNetwork()).chainId;
 
   for (const user of env.accounts) {
@@ -212,9 +214,7 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.apeCoin.connect(env.admin).approve(contracts.bendCoinPool.address, constants.MaxUint256);
   await (contracts.bendCoinPool as Contract).initialize(
     contracts.apeStaking.address,
-    contracts.bendStakeManager.address,
-    env.admin.address,
-    makeBN18(100)
+    contracts.bendStakeManager.address
   );
 
   await contracts.lendingMigrator.initialize(
@@ -230,6 +230,9 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.maycStrategy.address);
   await contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakcStrategy.address);
   await contracts.bendStakeManager.updateWithdrawStrategy(contracts.withdrawStrategy.address);
+
+  await contracts.bendStakeManager.updateFee(400);
+  await contracts.bendStakeManager.updateFeeRecipient(env.feeRecipient.address);
 
   await contracts.bnftRegistry.setBNFTContract(contracts.stBayc.address, contracts.bnftStBayc.address);
   await contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);

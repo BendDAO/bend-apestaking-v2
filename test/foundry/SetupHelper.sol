@@ -46,6 +46,7 @@ abstract contract SetupHelper is Test {
     address payable[] internal adminOwners;
     address payable poolOwner;
     address payable botAdmin;
+    address payable feeRecipient;
 
     // mocked contracts
     MintableERC20 internal mockWETH;
@@ -83,6 +84,7 @@ abstract contract SetupHelper is Test {
         adminOwners = utilsHelper.createUsers(5);
         poolOwner = adminOwners[0];
         botAdmin = adminOwners[1];
+        feeRecipient = adminOwners[2];
 
         mockDelegationRegistry = new DelegationRegistry();
 
@@ -162,12 +164,7 @@ abstract contract SetupHelper is Test {
             stBAKC
         );
 
-        uint256 initDeposit = 100 * 1e18;
-        vm.startPrank(poolOwner);
-        mockApeCoin.mint(initDeposit);
-        mockApeCoin.approve(address(coinPool), initDeposit);
-        vm.stopPrank();
-        coinPool.initialize(IApeCoinStaking(address(mockApeStaking)), stakeManager, poolOwner, initDeposit);
+        coinPool.initialize(IApeCoinStaking(address(mockApeStaking)), stakeManager);
 
         // set the strategy contracts
         baycStrategy = new DefaultRewardsStrategy(2400);
@@ -208,6 +205,15 @@ abstract contract SetupHelper is Test {
 
         vm.startPrank(poolOwner);
         stakeManager.updateBotAdmin(botAdmin);
+        stakeManager.updateFee(400);
+        stakeManager.updateFeeRecipient(feeRecipient);
+        vm.stopPrank();
+
+        uint256 initDeposit = 100 * 1e18;
+        vm.startPrank(feeRecipient);
+        mockApeCoin.mint(initDeposit);
+        mockApeCoin.approve(address(coinPool), initDeposit);
+        coinPool.deposit(initDeposit, feeRecipient);
         vm.stopPrank();
 
         // update the block info

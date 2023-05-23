@@ -466,16 +466,6 @@
         "internalType": "contract IStakeManager",
         "name": "staker_",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "treasury_",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "initialDepistAmount_",
-        "type": "uint256"
       }
     ],
     "name": "initialize",

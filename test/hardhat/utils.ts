@@ -17,6 +17,8 @@ export function makeBNWithDecimals(num: any, decimals: any): BigNumber {
   return ethers.utils.parseUnits(num.toString(), decimals);
 }
 
+export const getSignerByAddress = async (address: string): Promise<SignerWithAddress> => ethers.getSigner(address);
+
 export const getContract = async <ContractType extends Contract>(
   contractName: string,
   address: string

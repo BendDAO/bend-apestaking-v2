@@ -33,12 +33,7 @@ contract BendCoinPool is
         _;
     }
 
-    function initialize(
-        IApeCoinStaking apeStaking_,
-        IStakeManager staker_,
-        address treasury_,
-        uint256 initialDepistAmount_
-    ) external initializer {
+    function initialize(IApeCoinStaking apeStaking_, IStakeManager staker_) external initializer {
         apeCoin = IERC20Upgradeable(apeStaking_.apeCoin());
         __Ownable_init();
         __Pausable_init();
@@ -48,11 +43,6 @@ contract BendCoinPool is
 
         apeCoinStaking = apeStaking_;
         staker = staker_;
-
-        // initial share to treasury as Last share holder
-        apeCoin.safeTransferFrom(treasury_, address(this), initialDepistAmount_);
-        // should initialize `BendStakeManager` first
-        deposit(initialDepistAmount_, treasury_);
     }
 
     function totalAssets() public view override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
@@ -100,6 +90,11 @@ contract BendCoinPool is
         uint256 assets,
         uint256 shares
     ) internal override(ERC4626Upgradeable) nonReentrant whenNotPaused {
+        require(
+            (totalSupply() > 0) || (msg.sender == staker.feeRecipient()),
+            "BendCoinPool: only feeRecipient can deposit first"
+        );
+
         // transfer ape coin from caller
         super._deposit(caller, receiver, assets, shares);
         // increase pending amount
