@@ -2,8 +2,8 @@
 pragma solidity 0.8.18;
 
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeCastUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 import {IApeCoinStaking} from "../interfaces/IApeCoinStaking.sol";
 import {INftVault} from "../interfaces/INftVault.sol";
@@ -16,6 +16,8 @@ import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
 contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeable {
     using ApeStakingLib for IApeCoinStaking;
+    using SafeCastUpgradeable for uint256;
+    using SafeCastUpgradeable for uint248;
 
     IApeCoinStaking public apeCoinStaking;
     IERC20 public apeCoin;
@@ -231,15 +233,15 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
                         pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.BAYC_POOL_ID);
                         if (pairingStatus.isPaired) {
                             baycPairs[baycPairIndex] = IApeCoinStaking.PairNft({
-                                mainTokenId: uint128(pairingStatus.tokenId),
-                                bakcTokenId: uint128(bakcTokenId)
+                                mainTokenId: pairingStatus.tokenId.toUint128(),
+                                bakcTokenId: bakcTokenId.toUint128()
                             });
                             baycPairIndex += 1;
                         } else {
                             pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.MAYC_POOL_ID);
                             maycPairs[maycPairIndex] = IApeCoinStaking.PairNft({
-                                mainTokenId: uint128(pairingStatus.tokenId),
-                                bakcTokenId: uint128(bakcTokenId)
+                                mainTokenId: pairingStatus.tokenId.toUint128(),
+                                bakcTokenId: bakcTokenId.toUint128()
                             });
                             maycPairIndex += 1;
                         }

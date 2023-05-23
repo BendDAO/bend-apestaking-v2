@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {SafeCastUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 import {IApeCoinStaking} from "../interfaces/IApeCoinStaking.sol";
 import {INftVault} from "../interfaces/INftVault.sol";
@@ -16,7 +17,8 @@ library VaultLogic {
         IApeCoinStaking.PairNftWithdrawWithAmount[] baycPairs,
         IApeCoinStaking.PairNftWithdrawWithAmount[] maycPairs
     );
-
+    using SafeCastUpgradeable for uint256;
+    using SafeCastUpgradeable for uint248;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
     using ApeStakingLib for IApeCoinStaking;
 
@@ -151,8 +153,8 @@ library VaultLogic {
                 if (vars.stakedAmount > 0) {
                     vars.totalPrincipal += vars.stakedAmount;
                     singleNfts_[vars.singleNftIndex] = IApeCoinStaking.SingleNft({
-                        tokenId: uint32(vars.tokenId),
-                        amount: uint224(vars.stakedAmount)
+                        tokenId: vars.tokenId.toUint32(),
+                        amount: vars.stakedAmount.toUint224()
                     });
                     vars.singleNftIndex += 1;
                     _vaultStorage.stakingTokenIds[nft_][vars.staker].remove(vars.tokenId);
@@ -202,9 +204,9 @@ library VaultLogic {
                 ) {
                     vars.totalPairingPrincipal += vars.stakedAmount;
                     pairingNfts[vars.pairingNftIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                        mainTokenId: uint32(vars.tokenId),
-                        bakcTokenId: uint32(vars.bakcTokenId),
-                        amount: uint184(vars.stakedAmount),
+                        mainTokenId: vars.tokenId.toUint32(),
+                        bakcTokenId: vars.bakcTokenId.toUint32(),
+                        amount: vars.stakedAmount.toUint184(),
                         isUncommit: true
                     });
                     vars.pairingNftIndex += 1;
@@ -325,9 +327,9 @@ library VaultLogic {
                         IERC721Upgradeable(_vaultStorage.bayc).ownerOf(pairingStatus.tokenId) == address(this)
                     ) {
                         baycNfts_[vars.baycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                            mainTokenId: uint32(pairingStatus.tokenId),
-                            bakcTokenId: uint32(vars.tokenId),
-                            amount: uint184(vars.stakedAmount),
+                            mainTokenId: pairingStatus.tokenId.toUint32(),
+                            bakcTokenId: vars.tokenId.toUint32(),
+                            amount: vars.stakedAmount.toUint184(),
                             isUncommit: true
                         });
                         vars.baycIndex += 1;
@@ -343,9 +345,9 @@ library VaultLogic {
                             IERC721Upgradeable(_vaultStorage.mayc).ownerOf(pairingStatus.tokenId) == address(this)
                         ) {
                             maycNfts_[vars.maycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                                mainTokenId: uint32(pairingStatus.tokenId),
-                                bakcTokenId: uint32(vars.tokenId),
-                                amount: uint184(vars.stakedAmount),
+                                mainTokenId: pairingStatus.tokenId.toUint32(),
+                                bakcTokenId: vars.tokenId.toUint32(),
+                                amount: vars.stakedAmount.toUint184(),
                                 isUncommit: true
                             });
                             vars.maycIndex += 1;

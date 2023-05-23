@@ -6,6 +6,7 @@ import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC7
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {SafeCastUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 import {IStakeManager, IApeCoinStaking} from "./interfaces/IStakeManager.sol";
 import {INftVault} from "./interfaces/INftVault.sol";
@@ -21,6 +22,9 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     using ApeStakingLib for IApeCoinStaking;
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using MathUpgradeable for uint256;
+    using SafeCastUpgradeable for uint256;
+    using SafeCastUpgradeable for uint248;
+    using SafeCastUpgradeable for uint128;
 
     uint256 public constant PERCENTAGE_FACTOR = 1e4;
     uint256 public constant MAX_FEE = 1000;
@@ -334,7 +338,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
-            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: uint32(tokenId_), amount: uint224(maxCap)});
+            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: tokenId_.toUint32(), amount: maxCap.toUint224()});
             apeCoinAmount += maxCap;
         }
         _prepareApeCoin(apeCoinAmount);
@@ -353,8 +357,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
             nfts_[i] = IApeCoinStaking.SingleNft({
-                tokenId: uint32(tokenId_),
-                amount: uint224(_stakerStorage.apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount)
+                tokenId: tokenId_.toUint32(),
+                amount: (_stakerStorage.apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount).toUint224()
             });
         }
         uint256 receivedAmount = _stakerStorage.apeCoin.balanceOf(address(this));
@@ -394,7 +398,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
-            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: uint32(tokenId_), amount: uint224(maxCap)});
+            nfts_[i] = IApeCoinStaking.SingleNft({tokenId: tokenId_.toUint32(), amount: maxCap.toUint224()});
             apeCoinAmount += maxCap;
         }
         _prepareApeCoin(apeCoinAmount);
@@ -413,8 +417,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         for (uint256 i = 0; i < nfts_.length; i++) {
             tokenId_ = tokenIds_[i];
             nfts_[i] = IApeCoinStaking.SingleNft({
-                tokenId: uint32(tokenId_),
-                amount: uint224(_stakerStorage.apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount)
+                tokenId: tokenId_.toUint32(),
+                amount: (_stakerStorage.apeCoinStaking.getNftPosition(nft_, tokenId_).stakedAmount).toUint224()
             });
         }
         uint256 receivedAmount = _stakerStorage.apeCoin.balanceOf(address(this));
@@ -465,8 +469,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         for (uint256 i = 0; i < baycPairsWithAmount_.length; i++) {
             pair_ = baycPairs_[i];
             baycPairsWithAmount_[i] = IApeCoinStaking.PairNftDepositWithAmount({
-                mainTokenId: uint32(pair_.mainTokenId),
-                bakcTokenId: uint32(pair_.bakcTokenId),
+                mainTokenId: pair_.mainTokenId.toUint32(),
+                bakcTokenId: pair_.bakcTokenId.toUint32(),
                 amount: uint184(maxCap)
             });
             apeCoinAmount += maxCap;
@@ -474,8 +478,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         for (uint256 i = 0; i < maycPairsWithAmount_.length; i++) {
             pair_ = maycPairs_[i];
             maycPairsWithAmount_[i] = IApeCoinStaking.PairNftDepositWithAmount({
-                mainTokenId: uint32(pair_.mainTokenId),
-                bakcTokenId: uint32(pair_.bakcTokenId),
+                mainTokenId: pair_.mainTokenId.toUint32(),
+                bakcTokenId: pair_.bakcTokenId.toUint32(),
                 amount: uint184(maxCap)
             });
             apeCoinAmount += maxCap;
@@ -508,8 +512,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         for (uint256 i = 0; i < baycPairsWithAmount_.length; i++) {
             pair_ = baycPairs_[i];
             baycPairsWithAmount_[i] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                mainTokenId: uint32(pair_.mainTokenId),
-                bakcTokenId: uint32(pair_.bakcTokenId),
+                mainTokenId: pair_.mainTokenId.toUint32(),
+                bakcTokenId: pair_.bakcTokenId.toUint32(),
                 amount: 0,
                 isUncommit: true
             });
@@ -517,8 +521,8 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         for (uint256 i = 0; i < maycPairsWithAmount_.length; i++) {
             pair_ = maycPairs_[i];
             maycPairsWithAmount_[i] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                mainTokenId: uint32(pair_.mainTokenId),
-                bakcTokenId: uint32(pair_.bakcTokenId),
+                mainTokenId: pair_.mainTokenId.toUint32(),
+                bakcTokenId: pair_.bakcTokenId.toUint32(),
                 amount: 0,
                 isUncommit: true
             });
