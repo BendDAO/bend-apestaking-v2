@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
 
-import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
@@ -19,6 +19,7 @@ import {ApeStakingLib} from "./libraries/ApeStakingLib.sol";
 
 contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using ApeStakingLib for IApeCoinStaking;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     using MathUpgradeable for uint256;
 
     uint256 public constant PERCENTAGE_FACTOR = 1e4;
@@ -722,7 +723,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
 
         // transfer fee to recipient
         if (_stakerStorage.pendingFeeAmount > MAX_PENDING_FEE && _stakerStorage.feeRecipient != address(0)) {
-            _stakerStorage.apeCoin.transfer(_stakerStorage.feeRecipient, _stakerStorage.pendingFeeAmount);
+            _stakerStorage.apeCoin.safeTransfer(_stakerStorage.feeRecipient, _stakerStorage.pendingFeeAmount);
             // solhint-disable-next-line
             _stakerStorage.pendingFeeAmount = 0;
         }
