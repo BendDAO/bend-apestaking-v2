@@ -138,21 +138,21 @@ task("deploy:BaycStrategy", "Deploy BaycStrategy").setAction(async (_, { run }) 
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("BaycStrategy", [2400], true);
+  await deployContract("DefaultRewardsStrategy", [2400], true);
 });
 
 task("deploy:MaycStrategy", "Deploy MaycStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("MaycStrategy", [2700], true);
+  await deployContract("DefaultRewardsStrategy", [2700], true);
 });
 
 task("deploy:BakcStrategy", "Deploy BakcStrategy").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("BakcStrategy", [2700], true);
+  await deployContract("DefaultRewardsStrategy", [2700], true);
 });
 
 task("deploy:DefaultWithdrawStrategy", "Deploy DefaultWithdrawStrategy").setAction(async (_, { network, run }) => {

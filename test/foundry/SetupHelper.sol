@@ -32,9 +32,7 @@ import "../../contracts/BendCoinPool.sol";
 import "../../contracts/BendNftPool.sol";
 import "../../contracts/BendStakeManager.sol";
 
-import "../../contracts/strategy/BaycStrategy.sol";
-import "../../contracts/strategy/MaycStrategy.sol";
-import "../../contracts/strategy/BakcStrategy.sol";
+import "../../contracts/strategy/DefaultRewardsStrategy.sol";
 import "../../contracts/strategy/DefaultWithdrawStrategy.sol";
 
 import "./UtilitiesHelper.sol";
@@ -70,9 +68,9 @@ abstract contract SetupHelper is Test {
     BendCoinPool internal coinPool;
     BendNftPool internal nftPool;
     BendStakeManager internal stakeManager;
-    BaycStrategy internal baycStrategy;
-    MaycStrategy internal maycStrategy;
-    BakcStrategy internal bakcStrategy;
+    DefaultRewardsStrategy internal baycStrategy;
+    DefaultRewardsStrategy internal maycStrategy;
+    DefaultRewardsStrategy internal bakcStrategy;
     DefaultWithdrawStrategy internal withdrawStrategy;
 
     function setUp() public virtual {
@@ -166,9 +164,9 @@ abstract contract SetupHelper is Test {
         );
 
         // set the strategy contracts
-        baycStrategy = new BaycStrategy(2400);
-        maycStrategy = new MaycStrategy(2700);
-        bakcStrategy = new BakcStrategy(2700);
+        baycStrategy = new DefaultRewardsStrategy(2400);
+        maycStrategy = new DefaultRewardsStrategy(2700);
+        bakcStrategy = new DefaultRewardsStrategy(2700);
         withdrawStrategy = new DefaultWithdrawStrategy(
             IApeCoinStaking(address(mockApeStaking)),
             nftVault,

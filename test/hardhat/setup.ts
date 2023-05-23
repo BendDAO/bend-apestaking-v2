@@ -258,9 +258,9 @@ export async function setupContracts(): Promise<Contracts> {
     stBakc.address
   );
 
-  const baycStrategy = await deployContract<IRewardsStrategy>("BaycStrategy", [2400]);
-  const maycStrategy = await deployContract<IRewardsStrategy>("MaycStrategy", [2700]);
-  const bakcStrategy = await deployContract<IRewardsStrategy>("BakcStrategy", [2700]);
+  const baycStrategy = await deployContract<IRewardsStrategy>("DefaultRewardsStrategy", [2400]);
+  const maycStrategy = await deployContract<IRewardsStrategy>("DefaultRewardsStrategy", [2700]);
+  const bakcStrategy = await deployContract<IRewardsStrategy>("DefaultRewardsStrategy", [2700]);
 
   const withdrawStrategy = await deployContract<IWithdrawStrategy>("DefaultWithdrawStrategy", [
     apeStaking.address,
