@@ -116,3 +116,13 @@ export const BAKC_REWARDS_SHARE_RATIO: Params<string> = {
   [Network.goerli]: "5000",
   [Network.mainnet]: "5000",
 };
+
+export const STAKER_MANAGER_V1: Params<string> = {
+  [Network.goerli]: "0x3d90c2Eb0f7919c843C2a26Af32B1b0f3033d54b",
+  [Network.mainnet]: "0xDAFCe4AcC2703A24F29d1321AdAADF5768F54642",
+};
+
+export const COIN_POOL_V1: Params<string> = {
+  [Network.goerli]: "0x780592BEBaC01FAe7e1040E14C41F921C0A5c789",
+  [Network.mainnet]: "0xEB3837c611fb2C5550F816f227D85262f0d04A52",
+};

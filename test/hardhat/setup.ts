@@ -24,6 +24,9 @@ import {
   IWithdrawStrategy,
   BendCoinPool,
   BendNftPool,
+  MockBendApeCoinV1,
+  MockStakeManagerV1,
+  CompoudV1Migrator,
 } from "../../typechain-types";
 import { Contract, BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -76,6 +79,10 @@ export interface Contracts {
   mockBendLendPool: MockBendLendPool;
   mockBendLendPoolLoan: MockBendLendPoolLoan;
   lendingMigrator: LendingMigrator;
+  // v1 staking
+  mockCoinPoolV1: MockBendApeCoinV1;
+  mockStakeManagerV1: MockStakeManagerV1;
+  compoudV1Migrator: CompoudV1Migrator;
 }
 
 export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
@@ -246,6 +253,13 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.nftVault.authorise(contracts.stMayc.address, true);
   await contracts.nftVault.authorise(contracts.stBakc.address, true);
   await contracts.nftVault.authorise(contracts.bendStakeManager.address, true);
+
+  await contracts.compoudV1Migrator.initialize(
+    contracts.apeCoin.address,
+    contracts.mockStakeManagerV1.address,
+    contracts.mockCoinPoolV1.address,
+    contracts.bendCoinPool.address
+  );
 }
 
 export async function setupContracts(): Promise<Contracts> {
@@ -314,6 +328,11 @@ export async function setupContracts(): Promise<Contracts> {
   const mockBendLendPoolLoan = await deployContract<MockBendLendPoolLoan>("MockBendLendPoolLoan", []);
   const lendingMigrator = await deployContract<LendingMigrator>("LendingMigrator", []);
 
+  // v1 staking
+  const mockCoinPoolV1 = await deployContract<MockBendApeCoinV1>("MockBendApeCoinV1", [apeCoin.address]);
+  const mockStakeManagerV1 = await deployContract<MockStakeManagerV1>("MockStakeManagerV1", [apeCoin.address]);
+  const compoudV1Migrator = await deployContract<CompoudV1Migrator>("CompoudV1Migrator", []);
+
   return {
     initialized: true,
     delegateCash,
@@ -345,6 +364,9 @@ export async function setupContracts(): Promise<Contracts> {
     mockBendLendPool,
     mockBendLendPoolLoan,
     lendingMigrator,
+    mockCoinPoolV1,
+    mockStakeManagerV1,
+    compoudV1Migrator,
   } as Contracts;
 }
 
