@@ -12,7 +12,9 @@ import {
   AAVE_ADDRESS_PROVIDER,
   APE_STAKING,
   BAKC,
+  BAKC_REWARDS_SHARE_RATIO,
   BAYC,
+  BAYC_REWARDS_SHARE_RATIO,
   BEND_ADDRESS_PROVIDER,
   BNFT_REGISTRY,
   DELEAGATE_CASH,
@@ -20,6 +22,7 @@ import {
   FEE_RECIPIENT,
   getParams,
   MAYC,
+  MAYC_REWARDS_SHARE_RATIO,
 } from "./config";
 import {
   deployContract,
@@ -134,25 +137,31 @@ task("deploy:BendStakeManager", "Deploy StakeManager").setAction(async (_, { run
   await deployProxyContractWithoutInit("BendStakeManager", [], true);
 });
 
-task("deploy:BaycRewardsStrategy", "Deploy BaycStrategy").setAction(async (_, { run }) => {
+task("deploy:BaycRewardsStrategy", "Deploy BaycStrategy").setAction(async (_, { network, run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("DefaultRewardsStrategy", [2400], true, "BaycRewardsStrategy");
+  const shareRatio = getParams(BAYC_REWARDS_SHARE_RATIO, network.name);
+
+  await deployContract("DefaultRewardsStrategy", [shareRatio], true, "BaycRewardsStrategy");
 });
 
-task("deploy:MaycRewardsStrategy", "Deploy MaycStrategy").setAction(async (_, { run }) => {
+task("deploy:MaycRewardsStrategy", "Deploy MaycStrategy").setAction(async (_, { network, run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("DefaultRewardsStrategy", [2700], true, "MaycRewardsStrategy");
+  const shareRatio = getParams(MAYC_REWARDS_SHARE_RATIO, network.name);
+
+  await deployContract("DefaultRewardsStrategy", [shareRatio], true, "MaycRewardsStrategy");
 });
 
-task("deploy:BakcRewardsStrategy", "Deploy BakcStrategy").setAction(async (_, { run }) => {
+task("deploy:BakcRewardsStrategy", "Deploy BakcStrategy").setAction(async (_, { network, run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployContract("DefaultRewardsStrategy", [2700], true, "BakcRewardsStrategy");
+  const shareRatio = getParams(BAKC_REWARDS_SHARE_RATIO, network.name);
+
+  await deployContract("DefaultRewardsStrategy", [shareRatio], true, "BakcRewardsStrategy");
 });
 
 task("deploy:DefaultWithdrawStrategy", "Deploy DefaultWithdrawStrategy").setAction(async (_, { network, run }) => {

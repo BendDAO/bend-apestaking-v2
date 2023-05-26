@@ -49,7 +49,7 @@ export const APE_COIN: Params<string> = {
 
 export const APE_COIN_HOLDER: Params<string> = {
   [Network.goerli]: "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6",
-  [Network.mainnet]: "",
+  [Network.mainnet]: "0x868964fa49a6fd6e116FE82c8f4165904406f479",
 };
 
 export const APE_STAKING: Params<string> = {
@@ -100,4 +100,19 @@ export const TREASURY: Params<string> = {
 export const TREASURY_INIT_DEPOSIT: Params<string> = {
   [Network.goerli]: "100", // unit of 1e18
   [Network.mainnet]: "100", // unit of 1e18
+};
+
+export const BAYC_REWARDS_SHARE_RATIO: Params<string> = {
+  [Network.goerli]: "5000",
+  [Network.mainnet]: "5000",
+};
+
+export const MAYC_REWARDS_SHARE_RATIO: Params<string> = {
+  [Network.goerli]: "5000",
+  [Network.mainnet]: "5000",
+};
+
+export const BAKC_REWARDS_SHARE_RATIO: Params<string> = {
+  [Network.goerli]: "5000",
+  [Network.mainnet]: "5000",
 };
