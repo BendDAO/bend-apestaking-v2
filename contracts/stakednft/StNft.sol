@@ -34,12 +34,6 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
         _;
     }
 
-    function __StNft_init() internal onlyInitializing {
-        __Ownable_init_unchained();
-        __ReentrancyGuard_init_unchained();
-        __ERC721Enumerable_init_unchained();
-    }
-
     function __StNft_init(
         IERC721MetadataUpgradeable nft_,
         INftVault nftVault_,
