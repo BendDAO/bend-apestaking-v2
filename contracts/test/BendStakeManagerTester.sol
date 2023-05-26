@@ -33,6 +33,12 @@ contract BendStakeManagerTester is BendStakeManager {
         amount = principal + reward;
     }
 
+    function refundOfExcludeFee(address nft_) external view onlyApe(nft_) returns (uint256 amount) {
+        (uint256 principal, uint256 reward) = _refundOf(nft_);
+        reward -= _calculateFee(reward);
+        amount = principal + reward;
+    }
+
     function refundOfDetails(
         address nft_
     ) external view onlyApe(nft_) returns (uint256 principal, uint256 reward, uint256 fee) {
@@ -43,6 +49,12 @@ contract BendStakeManagerTester is BendStakeManager {
 
     function totalRefundIncludeFee() external view returns (uint256 amount) {
         (uint256 principal, uint256 reward) = _totalRefund();
+        amount = principal + reward;
+    }
+
+    function totalRefundExcludeFee() external view returns (uint256 amount) {
+        (uint256 principal, uint256 reward) = _totalRefund();
+        reward -= _calculateFee(reward);
         amount = principal + reward;
     }
 

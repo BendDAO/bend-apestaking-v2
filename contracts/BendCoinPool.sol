@@ -47,8 +47,9 @@ contract BendCoinPool is
 
     function totalAssets() public view override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
         uint256 amount = pendingApeCoin;
+        (uint256 principal, ) = staker.totalRefund();
         amount += staker.totalStakedApeCoin();
-        amount += staker.totalRefund();
+        amount += principal;
         return amount;
     }
 

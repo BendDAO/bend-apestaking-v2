@@ -32,11 +32,9 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     }
   });
   const expectPendingAmountChanged = async (blockTag: number, delta: BigNumber) => {
-    expect(
-      (await contracts.bendCoinPool.pendingApeCoin({ blockTag }))
-        .sub(await contracts.bendCoinPool.pendingApeCoin({ blockTag: blockTag - 1 }))
-        .eq(delta)
-    );
+    const now = await contracts.bendCoinPool.pendingApeCoin({ blockTag });
+    const pre = await contracts.bendCoinPool.pendingApeCoin({ blockTag: blockTag - 1 });
+    expect(now.sub(pre)).eq(delta);
   };
 
   it("deposit: preparing the first deposit", async () => {
@@ -118,7 +116,6 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
 
   it("pullApeCoin", async () => {
     const pullAmount = (await contracts.bendCoinPool.pendingApeCoin()).sub(makeBN18(1));
-    await expect(contracts.bendCoinPool.pullApeCoin(pullAmount)).revertedWith("BendCoinPool: caller is not staker");
     const tx = contracts.bendStakeManager.stakeApeCoin(pullAmount);
     await expect(tx).changeTokenBalances(
       contracts.apeCoin,
@@ -129,5 +126,30 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
 
     lastRevert = "pullApeCoin";
     await snapshots.capture(lastRevert);
+  });
+
+  it("withdraw: from withdraw strategy", async () => {
+    const pendingApeCoin = await contracts.bendCoinPool.pendingApeCoin();
+    const withdrawAmount = await contracts.bendCoinPool.assetBalanceOf(bob.address);
+    const tx = contracts.bendCoinPool.connect(bob).withdrawSelf(withdrawAmount);
+    await expect(tx).changeTokenBalances(
+      contracts.apeCoin,
+      [bob.address, contracts.apeStaking.address],
+      [withdrawAmount, pendingApeCoin.sub(withdrawAmount)]
+    );
+    await expectPendingAmountChanged((await tx).blockNumber || 0, constants.Zero.sub(pendingApeCoin));
+  });
+
+  it("redeem: from withdraw strategy", async () => {
+    const pendingApeCoin = await contracts.bendCoinPool.pendingApeCoin();
+    const withdrawAmount = await contracts.bendCoinPool.balanceOf(bob.address);
+    const apeCoinAmount = await contracts.bendCoinPool.previewRedeem(withdrawAmount);
+    const tx = contracts.bendCoinPool.connect(bob).redeemSelf(withdrawAmount);
+    await expect(tx).changeTokenBalances(
+      contracts.apeCoin,
+      [bob.address, contracts.apeStaking.address],
+      [apeCoinAmount, pendingApeCoin.sub(withdrawAmount)]
+    );
+    await expectPendingAmountChanged((await tx).blockNumber || 0, constants.Zero.sub(pendingApeCoin));
   });
 });

@@ -383,7 +383,12 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "principal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "reward",
         "type": "uint256"
       }
     ],
@@ -548,7 +553,12 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "principal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "reward",
         "type": "uint256"
       }
     ],
