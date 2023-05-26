@@ -68,7 +68,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
     function mint(address to_, uint256[] calldata tokenIds_) external override onlyAuthorized nonReentrant {
         address staker_ = msg.sender;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            _nft.safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
+            _nft.safeTransferFrom(staker_, address(this), tokenIds_[i]);
         }
         nftVault.depositNft(address(_nft), tokenIds_, staker_);
         for (uint256 i = 0; i < tokenIds_.length; i++) {
