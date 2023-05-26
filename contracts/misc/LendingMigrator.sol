@@ -23,6 +23,8 @@ contract LendingMigrator is
     OwnableUpgradeable,
     PausableUpgradeable
 {
+    uint256 public constant PERCENTAGE_FACTOR = 1e4;
+
     IAaveLendPoolAddressesProvider public aaveAddressesProvider;
     IAaveLendPool public aaveLendPool;
     ILendPoolAddressesProvider public bendAddressesProvider;
@@ -172,7 +174,7 @@ contract LendingMigrator is
 
         IStakedNft stNftAsset = getStakedNFTAsset(vars.nftAsset);
 
-        vars.flashLoanPremium = (vars.debtTotalAmountWithBidFine * vars.flashLoanFeeRatio) / 10000;
+        vars.flashLoanPremium = (vars.debtTotalAmountWithBidFine * vars.flashLoanFeeRatio) / PERCENTAGE_FACTOR;
         vars.debtBorrowAmountWithFee = vars.debtTotalAmountWithBidFine + vars.flashLoanPremium;
         bendLendPool.borrow(
             vars.debtReserve,
