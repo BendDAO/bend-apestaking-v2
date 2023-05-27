@@ -49,8 +49,8 @@ contract PoolViewer is IPoolViewer {
         uint256 reward;
         for (uint256 i; i < tokenIds_.length; i++) {
             reward = apeCoinStaking.pendingRewards(poolId, address(0), tokenIds_[i]);
-            reward -= staker.calculateFee(reward);
             rewards += reward;
         }
+        rewards -= staker.calculateFee(rewards);
     }
 }
