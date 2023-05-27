@@ -65,7 +65,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     await expect(
       contracts.bendStakeManager.updateRewardsStrategy(constants.AddressZero, constants.AddressZero)
     ).revertedWith("BendStakeManager: nft must be ape");
-    await expect(contracts.bendStakeManager.refundOf(constants.AddressZero)).revertedWith(
+    await expect(contracts.bendStakeManager.refundOfExcludeFee(constants.AddressZero)).revertedWith(
       "BendStakeManager: nft must be ape"
     );
   });
@@ -802,9 +802,9 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const baycFee = realBaycPoolRewards.sub(baycPoolRewards);
     const bakcFee = realBakcPoolRewards.sub(bakcPoolRewards);
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address))
-      .eq(await contracts.bendStakeManager.refundOf(contracts.bakc.address))
-      .eq(await contracts.bendStakeManager.totalRefund())
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bayc.address))
+      .eq(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address))
+      .eq(await contracts.bendStakeManager.totalRefundExcludeFee())
       .eq(0);
     const preBaycStakedAmount = await contracts.bendStakeManager.stakedApeCoin(1);
     const preBaycPendingRewards = await contracts.bendStakeManager.pendingRewards(1);
@@ -815,15 +815,15 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     await contracts.stBayc.connect(owner).burn(baycTokenIds);
 
     expect(
-      (await contracts.bendStakeManager.refundOf(contracts.bayc.address)).add(
-        await contracts.bendStakeManager.refundOf(contracts.bakc.address)
+      (await contracts.bendStakeManager.refundOfExcludeFee(contracts.bayc.address)).add(
+        await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address)
       )
-    ).eq(await contracts.bendStakeManager.totalRefund());
+    ).eq(await contracts.bendStakeManager.totalRefundExcludeFee());
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address)).eq(
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bayc.address)).eq(
       baycPooStakedAmount.add(baycPoolRewards)
     );
-    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address)).eq(
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address)).eq(
       bakcPooStakedAmount.add(bakcPoolRewards)
     );
 
@@ -884,8 +884,8 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
         );
       }
     }
-    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address))
-      .eq(await contracts.bendStakeManager.totalRefund())
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bayc.address))
+      .eq(await contracts.bendStakeManager.totalRefundExcludeFee())
       .eq(0);
     const baycPoolRewards = excludeFee(realBaycPoolRewards);
     const fee = realBaycPoolRewards.sub(baycPoolRewards);
@@ -898,11 +898,11 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
 
     await contracts.stBayc.connect(owner).burn(burnBaycTokenIds);
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address)).eq(
-      await contracts.bendStakeManager.totalRefund()
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bayc.address)).eq(
+      await contracts.bendStakeManager.totalRefundExcludeFee()
     );
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.bayc.address)).eq(
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bayc.address)).eq(
       baycPooStakedAmount.add(baycPoolRewards)
     );
 
@@ -956,9 +956,9 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const bakcPoolRewards = excludeFee(realBakcPoolRewards);
     const bakcFee = realBakcPoolRewards.sub(bakcPoolRewards);
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address))
-      .eq(await contracts.bendStakeManager.refundOf(contracts.bakc.address))
-      .eq(await contracts.bendStakeManager.totalRefund())
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.mayc.address))
+      .eq(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address))
+      .eq(await contracts.bendStakeManager.totalRefundExcludeFee())
       .eq(0);
     const preMaycStakedAmount = await contracts.bendStakeManager.stakedApeCoin(2);
     const preMaycPendingRewards = await contracts.bendStakeManager.pendingRewards(2);
@@ -969,15 +969,15 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     await contracts.stMayc.connect(owner).burn(maycTokenIds);
 
     expect(
-      (await contracts.bendStakeManager.refundOf(contracts.mayc.address)).add(
-        await contracts.bendStakeManager.refundOf(contracts.bakc.address)
+      (await contracts.bendStakeManager.refundOfExcludeFee(contracts.mayc.address)).add(
+        await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address)
       )
-    ).eq(await contracts.bendStakeManager.totalRefund());
+    ).eq(await contracts.bendStakeManager.totalRefundExcludeFee());
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address)).eq(
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.mayc.address)).eq(
       maycPooStakedAmount.add(maycPoolRewards)
     );
-    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address)).eq(
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address)).eq(
       bakcPooStakedAmount.add(bakcPoolRewards)
     );
 
@@ -1041,8 +1041,8 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const maycPoolRewards = excludeFee(realMaycPoolRewards);
     const fee = realMaycPoolRewards.sub(maycPoolRewards);
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address))
-      .eq(await contracts.bendStakeManager.totalRefund())
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.mayc.address))
+      .eq(await contracts.bendStakeManager.totalRefundExcludeFee())
       .eq(0);
 
     const preMaycStakedAmount = await contracts.bendStakeManager.stakedApeCoin(2);
@@ -1053,11 +1053,11 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
 
     await contracts.stMayc.connect(owner).burn(burnMaycTokenIds);
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address)).eq(
-      await contracts.bendStakeManager.totalRefund()
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.mayc.address)).eq(
+      await contracts.bendStakeManager.totalRefundExcludeFee()
     );
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.mayc.address)).eq(
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.mayc.address)).eq(
       maycPooStakedAmount.add(maycPoolRewards)
     );
 
@@ -1097,8 +1097,8 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     const poolRewards = excludeFee(realPoolRewards);
     const fee = realPoolRewards.sub(poolRewards);
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address))
-      .eq(await contracts.bendStakeManager.totalRefund())
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address))
+      .eq(await contracts.bendStakeManager.totalRefundExcludeFee())
       .eq(0);
 
     const preStakedAmount = await contracts.bendStakeManager.stakedApeCoin(3);
@@ -1106,11 +1106,13 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
 
     await contracts.stBakc.connect(owner).burn(tokenIds);
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address)).eq(
-      await contracts.bendStakeManager.totalRefund()
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address)).eq(
+      await contracts.bendStakeManager.totalRefundExcludeFee()
     );
 
-    expect(await contracts.bendStakeManager.refundOf(contracts.bakc.address)).eq(pooStakedAmount.add(poolRewards));
+    expect(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address)).eq(
+      pooStakedAmount.add(poolRewards)
+    );
 
     expect(await contracts.bendStakeManager.stakedApeCoin(3)).eq(preStakedAmount.sub(pooStakedAmount));
     expect(await contracts.bendStakeManager.pendingRewards(3)).eq(prePendingRewards.sub(poolRewards));
@@ -1138,11 +1140,11 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     await contracts.stBayc.connect(owner).burn(shuffledSubarray(baycTokenIds));
     await contracts.stMayc.connect(owner).burn(shuffledSubarray(maycTokenIds));
     await contracts.stBakc.connect(owner).burn(shuffledSubarray(bakcTokenIds));
-    const totalRefund = await contracts.bendStakeManager.totalRefund();
-    expect(totalRefund).closeTo(
-      (await contracts.bendStakeManager.refundOf(contracts.bayc.address))
-        .add(await contracts.bendStakeManager.refundOf(contracts.mayc.address))
-        .add(await contracts.bendStakeManager.refundOf(contracts.bakc.address)),
+    const totalRefundExcludeFee = await contracts.bendStakeManager.totalRefundExcludeFee();
+    expect(totalRefundExcludeFee).closeTo(
+      (await contracts.bendStakeManager.refundOfExcludeFee(contracts.bayc.address))
+        .add(await contracts.bendStakeManager.refundOfExcludeFee(contracts.mayc.address))
+        .add(await contracts.bendStakeManager.refundOfExcludeFee(contracts.bakc.address)),
       5
     );
     const preNftPoolBalance = await contracts.apeCoin.balanceOf(contracts.bendNftPool.address);
@@ -1161,7 +1163,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     let nftVaultBalance = await contracts.apeCoin.balanceOf(contracts.nftVault.address);
     let fee = stakeManagerBalance.sub(preStakeManagerBalance);
 
-    expect(preNftVaultBalance.sub(nftVaultBalance).sub(fee)).closeTo(totalRefund, 5);
+    expect(preNftVaultBalance.sub(nftVaultBalance).sub(fee)).closeTo(totalRefundExcludeFee, 5);
 
     expect(preNftVaultBalance.sub(nftVaultBalance)).closeTo(
       coinPoolBalance.sub(preCoinPoolBalance).add(nftPoolBalance.sub(preNftPoolBalance)).add(fee),
@@ -1176,7 +1178,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     nftVaultBalance = await contracts.apeCoin.balanceOf(contracts.nftVault.address);
     fee = stakeManagerBalance.sub(preStakeManagerBalance);
 
-    expect(preNftVaultBalance.sub(nftVaultBalance).sub(fee)).closeTo(totalRefund, 5);
+    expect(preNftVaultBalance.sub(nftVaultBalance).sub(fee)).closeTo(totalRefundExcludeFee, 5);
 
     expect(preNftVaultBalance.sub(nftVaultBalance)).closeTo(
       coinPoolBalance.sub(preCoinPoolBalance).add(nftPoolBalance.sub(preNftPoolBalance)).add(fee),
@@ -1235,7 +1237,7 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
     await snapshots.capture(lastRevert);
     const withdrawAmount = (await contracts.bendStakeManager.totalStakedApeCoin())
       .add(await contracts.bendStakeManager.totalPendingRewards())
-      .add(await contracts.bendStakeManager.totalRefund());
+      .add(await contracts.bendStakeManager.totalRefundExcludeFee());
 
     const coinPoolSigner = await ethers.getSigner(contracts.bendCoinPool.address);
     const preBalance = await contracts.apeCoin.balanceOf(contracts.bendCoinPool.address);

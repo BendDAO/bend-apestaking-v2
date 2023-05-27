@@ -18,9 +18,9 @@ interface IStakeManager {
 
     function totalPendingRewards() external view returns (uint256);
 
-    function totalRefund() external view returns (uint256);
+    function totalRefund() external view returns (uint256 principal, uint256 reward);
 
-    function refundOf(address nft_) external view returns (uint256);
+    function refundOf(address nft_) external view returns (uint256 principal, uint256 reward);
 
     function stakedApeCoin(uint256 poolId_) external view returns (uint256);
 

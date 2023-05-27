@@ -62,8 +62,8 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
         vars.initBalance = apeCoin.balanceOf(address(coinPool));
 
         // 1. withdraw refund
-        uint256 refundAmout = staker.totalRefund();
-        if (refundAmout > 0) {
+        (uint256 refundPrincipal, uint256 refundReward) = staker.totalRefund();
+        if (refundPrincipal > 0 || refundReward > 0) {
             staker.withdrawTotalRefund();
         }
         vars.changedBalance = _changedBalance(apeCoin, address(coinPool), vars.initBalance);
