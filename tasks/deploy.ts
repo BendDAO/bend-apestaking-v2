@@ -10,6 +10,7 @@ import {
 } from "../typechain-types";
 import {
   AAVE_ADDRESS_PROVIDER,
+  APE_COIN,
   APE_STAKING,
   BAKC,
   BAKC_REWARDS_SHARE_RATIO,
@@ -17,12 +18,14 @@ import {
   BAYC_REWARDS_SHARE_RATIO,
   BEND_ADDRESS_PROVIDER,
   BNFT_REGISTRY,
+  COIN_POOL_V1,
   DELEAGATE_CASH,
   FEE,
   FEE_RECIPIENT,
   getParams,
   MAYC,
   MAYC_REWARDS_SHARE_RATIO,
+  STAKER_MANAGER_V1,
 } from "./config";
 import {
   deployContract,
@@ -181,6 +184,18 @@ task("deploy:LendingMigrator", "Deploy LendingMigrator").setAction(async (_, { r
   await run("compile");
 
   await deployProxyContractWithoutInit("LendingMigrator", [], true);
+});
+
+task("deploy:CompoudV1Migrator", "Deploy CompoudV1Migrator").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  const apeCoin = getParams(APE_COIN, network.name);
+  const stakeManagerV1 = getParams(STAKER_MANAGER_V1, network.name);
+  const coinPoolV1 = getParams(COIN_POOL_V1, network.name);
+  const coinPoolV2 = await getContractAddressFromDB("BendCoinPool");
+
+  await deployProxyContract("CompoudV1Migrator", [apeCoin, stakeManagerV1, coinPoolV1, coinPoolV2], true);
 });
 
 task("deploy:PoolViewer", "Deploy PoolViewer").setAction(async (_, { network, run }) => {
