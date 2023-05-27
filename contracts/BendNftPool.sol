@@ -85,6 +85,10 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         address nft_;
         uint256 tokenId_;
         PoolState storage pool_;
+
+        _checkDuplicateNfts(nfts_);
+        _checkDuplicateTokenIds(tokenIds_);
+
         for (uint256 i = 0; i < nfts_.length; i++) {
             nft_ = nfts_[i];
             pool_ = poolStates[nft_];
@@ -104,6 +108,9 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         address[] calldata nfts_,
         uint256[][] calldata tokenIds_
     ) external override onlyApes(nfts_) nonReentrant whenNotPaused {
+        _checkDuplicateNfts(nfts_);
+        _checkDuplicateTokenIds(tokenIds_);
+
         _claim(msg.sender, msg.sender, nfts_, tokenIds_);
 
         PoolState storage pool_;
@@ -192,6 +199,9 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         address[] calldata nfts_,
         uint256[][] calldata tokenIds_
     ) external override onlyApes(nfts_) nonReentrant whenNotPaused {
+        _checkDuplicateNfts(nfts_);
+        _checkDuplicateTokenIds(tokenIds_);
+
         _claim(msg.sender, msg.sender, nfts_, tokenIds_);
     }
 
@@ -239,6 +249,10 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         PoolState storage pool_;
         address nft_;
         uint256 accumulatedRewardsPerNft_;
+
+        _checkDuplicateNfts(nfts_);
+        _checkDuplicateTokenIds(tokenIds_);
+
         for (uint256 i = 0; i < nfts_.length; i++) {
             nft_ = nfts_[i];
             pool_ = poolStates[nft_];
@@ -272,6 +286,24 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         uint256 nftSupply
     ) internal pure returns (uint256 rewards) {
         return accumulatedRewardsPerNft + ((accumulatedShare * APE_COIN_PRECISION) / nftSupply);
+    }
+
+    function _checkDuplicateNfts(address[] calldata nfts_) internal pure {
+        for (uint256 i = 0; i < nfts_.length; i++) {
+            for (uint256 j = i + 1; j < nfts_.length; j++) {
+                require(nfts_[i] != nfts_[j], "BendNftPool: duplicate nfts");
+            }
+        }
+    }
+
+    function _checkDuplicateTokenIds(uint256[][] calldata tokenIds_) internal pure {
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            for (uint256 j = 0; j < tokenIds_[i].length; j++) {
+                for (uint256 k = j + 1; k < tokenIds_[i].length; k++) {
+                    require(tokenIds_[i][j] != tokenIds_[i][k], "BendNftPool: duplicate tokenIds");
+                }
+            }
+        }
     }
 
     function getPoolStateUI(address nft_) external view returns (PoolUI memory poolUI) {

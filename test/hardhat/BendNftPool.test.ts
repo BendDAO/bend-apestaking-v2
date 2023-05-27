@@ -79,6 +79,19 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     await contracts.bendNftPool.setPause(false);
   });
 
+  it("deposit: revert when duplicate", async () => {
+    await expect(
+      contracts.bendNftPool.deposit(
+        [contracts.bayc.address, contracts.mayc.address, contracts.bayc.address],
+        [baycTokenIds, maycTokenIds, baycTokenIds]
+      )
+    ).revertedWith("BendNftPool: duplicate nfts");
+
+    await expect(
+      contracts.bendNftPool.deposit([contracts.bayc.address], [[baycTokenIds[0], baycTokenIds[1], baycTokenIds[0]]])
+    ).revertedWith("BendNftPool: duplicate tokenIds");
+  });
+
   it("deposit: deposit bayc", async () => {
     for (const id of baycTokenIds) {
       await expect(contracts.stBayc.ownerOf(id)).revertedWith("ERC721: invalid token ID");
@@ -217,6 +230,30 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     await expectClaim(contracts.bakc.address, shuffledSubarray(bakcTokenIds));
   });
 
+  it("claim: revert when duplicate", async () => {
+    await expect(
+      contracts.bendNftPool.claimable(
+        [contracts.bayc.address, contracts.bayc.address, contracts.bakc.address],
+        [baycTokenIds, baycTokenIds, bakcTokenIds]
+      )
+    ).revertedWith("BendNftPool: duplicate nfts");
+
+    await expect(
+      contracts.bendNftPool.claimable([contracts.bayc.address], [[baycTokenIds[0], baycTokenIds[0]]])
+    ).revertedWith("BendNftPool: duplicate tokenIds");
+
+    await expect(
+      contracts.bendNftPool.claim(
+        [contracts.bayc.address, contracts.mayc.address, contracts.bayc.address],
+        [baycTokenIds, maycTokenIds, baycTokenIds]
+      )
+    ).revertedWith("BendNftPool: duplicate nfts");
+
+    await expect(
+      contracts.bendNftPool.claim([contracts.bayc.address], [[baycTokenIds[0], baycTokenIds[1], baycTokenIds[0]]])
+    ).revertedWith("BendNftPool: duplicate tokenIds");
+  });
+
   it("claim: all", async () => {
     const claimable = await contracts.bendNftPool.claimable(
       [contracts.bayc.address, contracts.mayc.address, contracts.bakc.address],
@@ -230,14 +267,8 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     const tx = contracts.bendNftPool
       .connect(owner)
       .claim(
-        [
-          contracts.bayc.address,
-          contracts.mayc.address,
-          contracts.bakc.address,
-          contracts.bayc.address,
-          contracts.mayc.address,
-        ],
-        [baycTokenIds, maycTokenIds, bakcTokenIds, baycTokenIds, maycTokenIds]
+        [contracts.bayc.address, contracts.mayc.address, contracts.bakc.address],
+        [baycTokenIds, maycTokenIds, bakcTokenIds]
       );
     await expect(tx)
       .changeTokenBalances(
@@ -254,6 +285,19 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
       "Pausable: paused"
     );
     await contracts.bendNftPool.setPause(false);
+  });
+
+  it("withdraw: revert when duplicate", async () => {
+    await expect(
+      contracts.bendNftPool.withdraw(
+        [contracts.bayc.address, contracts.mayc.address, contracts.bayc.address],
+        [baycTokenIds, maycTokenIds, baycTokenIds]
+      )
+    ).revertedWith("BendNftPool: duplicate nfts");
+
+    await expect(
+      contracts.bendNftPool.withdraw([contracts.bayc.address], [[baycTokenIds[0], baycTokenIds[1], baycTokenIds[0]]])
+    ).revertedWith("BendNftPool: duplicate tokenIds");
   });
 
   const expectWithdraw = async (stNft: IStakedNft, tokenIds: number[]) => {
