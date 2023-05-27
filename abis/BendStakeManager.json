@@ -4,6 +4,19 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "newAdmin",
+        "type": "address"
+      }
+    ],
+    "name": "BotAdminChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "bool",
         "name": "isClaimCoinPool",
         "type": "bool"
@@ -16,6 +29,32 @@
       }
     ],
     "name": "Compounded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newRatio",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeeRatioChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newRecipient",
+        "type": "address"
+      }
+    ],
+    "name": "FeeRecipientChanged",
     "type": "event"
   },
   {
@@ -48,6 +87,38 @@
       }
     ],
     "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "nft",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newStrategy",
+        "type": "address"
+      }
+    ],
+    "name": "RewardsStrategyChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newStrategy",
+        "type": "address"
+      }
+    ],
+    "name": "WithdrawStrategyChanged",
     "type": "event"
   },
   {

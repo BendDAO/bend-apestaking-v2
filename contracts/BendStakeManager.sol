@@ -141,11 +141,13 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     function updateFee(uint256 fee_) external onlyOwner {
         require(fee_ <= MAX_FEE, "BendStakeManager: invalid fee");
         _stakerStorage.fee = fee_;
+        emit FeeRatioChanged(fee_);
     }
 
     function updateFeeRecipient(address recipient_) external onlyOwner {
         require(recipient_ != address(0), "BendStakeManager: invalid fee recipient");
         _stakerStorage.feeRecipient = recipient_;
+        emit FeeRecipientChanged(recipient_);
     }
 
     function botAdmin() external view returns (address) {
@@ -155,6 +157,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     function updateBotAdmin(address botAdmin_) external override onlyOwner {
         require(botAdmin_ != address(0), "BendStakeManager: invalid bot admin");
         _stakerStorage.botAdmin = botAdmin_;
+        emit BotAdminChanged(botAdmin_);
     }
 
     function updateRewardsStrategy(
@@ -163,6 +166,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     ) external override onlyOwner onlyApe(nft_) {
         require(address(rewardsStrategy_) != address(0), "BendStakeManager: invalid reward strategy");
         _stakerStorage.rewardsStrategies[nft_] = rewardsStrategy_;
+        emit RewardsStrategyChanged(nft_, address(rewardsStrategy_));
     }
 
     function rewardsStrategies(address nft_) external view returns (IRewardsStrategy) {
@@ -180,6 +184,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
     function updateWithdrawStrategy(IWithdrawStrategy withdrawStrategy_) external override onlyOwner {
         require(address(withdrawStrategy_) != address(0), "BendStakeManager: invalid withdraw strategy");
         _stakerStorage.withdrawStrategy = withdrawStrategy_;
+        emit WithdrawStrategyChanged(address(withdrawStrategy_));
     }
 
     function _calculateFee(uint256 rewardsAmount_) internal view returns (uint256 feeAmount) {

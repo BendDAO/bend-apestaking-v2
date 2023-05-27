@@ -6,6 +6,11 @@ import {IWithdrawStrategy} from "./IWithdrawStrategy.sol";
 import {IStakedNft} from "./IStakedNft.sol";
 
 interface IStakeManager {
+    event FeeRatioChanged(uint256 newRatio);
+    event FeeRecipientChanged(address newRecipient);
+    event BotAdminChanged(address newAdmin);
+    event RewardsStrategyChanged(address nft, address newStrategy);
+    event WithdrawStrategyChanged(address newStrategy);
     event Compounded(bool isClaimCoinPool, uint256 claimedNfts);
 
     function stBayc() external view returns (IStakedNft);
