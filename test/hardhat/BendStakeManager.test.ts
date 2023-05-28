@@ -163,9 +163,9 @@ makeSuite("BendStakeManager", (contracts: Contracts, env: Env, snapshots: Snapsh
       contracts.bakcStrategy.address
     );
 
-    contracts.bendStakeManager.updateRewardsStrategy(contracts.bayc.address, contracts.bayc.address);
-    contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.mayc.address);
-    contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakc.address);
+    await contracts.bendStakeManager.updateRewardsStrategy(contracts.bayc.address, contracts.bayc.address);
+    await contracts.bendStakeManager.updateRewardsStrategy(contracts.mayc.address, contracts.mayc.address);
+    await contracts.bendStakeManager.updateRewardsStrategy(contracts.bakc.address, contracts.bakc.address);
 
     expect(await (contracts.bendStakeManager as Contract).rewardsStrategies(contracts.bayc.address)).eq(
       contracts.bayc.address
