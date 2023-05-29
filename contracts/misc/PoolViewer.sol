@@ -59,7 +59,7 @@ contract PoolViewer is IPoolViewer {
         uint256[] calldata maycTokenIds_
     ) external view returns (bool[] memory baycPairs, bool[] memory maycPairs) {
         baycPairs = new bool[](baycTokenIds_.length);
-        maycPairs = new bool[](baycTokenIds_.length);
+        maycPairs = new bool[](maycTokenIds_.length);
         uint256 tokenId_;
         for (uint256 i = 0; i < baycTokenIds_.length; i++) {
             tokenId_ = baycTokenIds_[i];
