@@ -101,6 +101,35 @@
   {
     "inputs": [
       {
+        "internalType": "uint256[]",
+        "name": "baycTokenIds_",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "maycTokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "viewBakcPairingStatus",
+    "outputs": [
+      {
+        "internalType": "bool[]",
+        "name": "baycPairs",
+        "type": "bool[]"
+      },
+      {
+        "internalType": "bool[]",
+        "name": "maycPairs",
+        "type": "bool[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "nft_",
         "type": "address"

@@ -53,4 +53,21 @@ contract PoolViewer is IPoolViewer {
         }
         rewards -= staker.calculateFee(rewards);
     }
+
+    function viewBakcPairingStatus(
+        uint256[] calldata baycTokenIds_,
+        uint256[] calldata maycTokenIds_
+    ) external view returns (bool[] memory baycPairs, bool[] memory maycPairs) {
+        baycPairs = new bool[](baycTokenIds_.length);
+        maycPairs = new bool[](baycTokenIds_.length);
+        uint256 tokenId_;
+        for (uint256 i = 0; i < baycTokenIds_.length; i++) {
+            tokenId_ = baycTokenIds_[i];
+            baycPairs[i] = apeCoinStaking.mainToBakc(ApeStakingLib.BAYC_POOL_ID, tokenId_).isPaired;
+        }
+        for (uint256 i = 0; i < maycTokenIds_.length; i++) {
+            tokenId_ = maycTokenIds_[i];
+            maycPairs[i] = apeCoinStaking.mainToBakc(ApeStakingLib.MAYC_POOL_ID, tokenId_).isPaired;
+        }
+    }
 }
