@@ -205,8 +205,9 @@ task("deploy:PoolViewer", "Deploy PoolViewer").setAction(async (_, { network, ru
   const apeStaking = getParams(APE_STAKING, network.name);
   const coinPool = await getContractAddressFromDB("BendCoinPool");
   const stakeManager = await getContractAddressFromDB("BendStakeManager");
+  const bnftRegistry = getParams(BNFT_REGISTRY, network.name);
 
-  await deployContract("PoolViewer", [apeStaking, coinPool, stakeManager], true);
+  await deployContract("PoolViewer", [apeStaking, coinPool, stakeManager, bnftRegistry], true);
 });
 
 task("deploy:config:BendCoinPool", "Coinfig BendCoinPool").setAction(async (_, { network, run }) => {
