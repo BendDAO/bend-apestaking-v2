@@ -319,13 +319,13 @@ library VaultLogic {
                     .nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.tokenId)
                     .stakedAmount;
                 if (vars.stakedAmount > 0) {
-                    vars.totalPrincipal += vars.stakedAmount;
                     pairingStatus = _vaultStorage.apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.BAYC_POOL_ID);
                     // make sure the bayc locked in valult
                     if (
                         pairingStatus.isPaired &&
                         IERC721Upgradeable(_vaultStorage.bayc).ownerOf(pairingStatus.tokenId) == address(this)
                     ) {
+                        vars.totalPrincipal += vars.stakedAmount;
                         baycNfts_[vars.baycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
                             mainTokenId: pairingStatus.tokenId.toUint32(),
                             bakcTokenId: vars.tokenId.toUint32(),
@@ -344,6 +344,7 @@ library VaultLogic {
                             pairingStatus.isPaired &&
                             IERC721Upgradeable(_vaultStorage.mayc).ownerOf(pairingStatus.tokenId) == address(this)
                         ) {
+                            vars.totalPrincipal += vars.stakedAmount;
                             maycNfts_[vars.maycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
                                 mainTokenId: pairingStatus.tokenId.toUint32(),
                                 bakcTokenId: vars.tokenId.toUint32(),
