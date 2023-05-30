@@ -77,6 +77,12 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     await snapshots.capture(lastRevert);
   });
 
+  it("getVotes", async () => {
+    const assetsAmount = await contracts.bendCoinPool.assetBalanceOf(bob.address);
+    const votesAmount = await contracts.stakedVoting.getVotes(bob.address);
+    expect(assetsAmount).eq(votesAmount);
+  });
+
   it("withdraw: revert when paused", async () => {
     const withdrawAmount = await contracts.bendCoinPool.assetBalanceOf(bob.address);
     await contracts.bendCoinPool.setPause(true);

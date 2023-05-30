@@ -153,6 +153,12 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     await expectClaimable(contracts.bayc.address, tokenIds);
   });
 
+  it("getVotes: bayc", async () => {
+    const rewardsAmount = await contracts.bendNftPool.claimable([contracts.bayc.address], [baycTokenIds]);
+    const votesAmount = await contracts.stakedVoting.getVotesInOneNftPool(contracts.stBayc.address, owner.address);
+    expect(rewardsAmount).eq(votesAmount);
+  });
+
   it("deposit: deposit mayc", async () => {
     for (const id of maycTokenIds) {
       await expect(contracts.stMayc.ownerOf(id)).revertedWith("ERC721: invalid token ID");
@@ -181,6 +187,12 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     await expectClaimable(contracts.mayc.address, tokenIds);
   });
 
+  it("getVotes: mayc", async () => {
+    const rewardsAmount = await contracts.bendNftPool.claimable([contracts.mayc.address], [maycTokenIds]);
+    const votesAmount = await contracts.stakedVoting.getVotesInOneNftPool(contracts.stMayc.address, owner.address);
+    expect(rewardsAmount).eq(votesAmount);
+  });
+
   it("deposit: deposit bakc", async () => {
     for (const id of bakcTokenIds) {
       await expect(contracts.stBakc.ownerOf(id)).revertedWith("ERC721: invalid token ID");
@@ -207,6 +219,12 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
   it("claimable: bakc", async () => {
     const tokenIds = shuffledSubarray(bakcTokenIds);
     await expectClaimable(contracts.bakc.address, tokenIds);
+  });
+
+  it("getVotes: bakc", async () => {
+    const rewardsAmount = await contracts.bendNftPool.claimable([contracts.bakc.address], [bakcTokenIds]);
+    const votesAmount = await contracts.stakedVoting.getVotesInOneNftPool(contracts.stBakc.address, owner.address);
+    expect(rewardsAmount).eq(votesAmount);
   });
 
   const expectClaim = async (nft: string, tokenIds: number[]) => {
