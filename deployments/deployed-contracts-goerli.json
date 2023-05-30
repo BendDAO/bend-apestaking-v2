@@ -54,5 +54,9 @@
   "CompoudV1Migrator": {
     "address": "0xFE38Ff744a60FeaAD05095708264345bDfe207B7",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "BendApeCoinStakedVoting": {
+    "address": "0xf8D0b70C36096c039F5f0c3CF9c1285C586b2556",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   }
 }
