@@ -47,11 +47,6 @@ export const APE_COIN: Params<string> = {
   [Network.mainnet]: "0x4d224452801ACEd8B2F0aebE155379bb5D594381",
 };
 
-export const APE_COIN_HOLDER: Params<string> = {
-  [Network.goerli]: "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6",
-  [Network.mainnet]: "0x868964fa49a6fd6e116FE82c8f4165904406f479",
-};
-
 export const APE_STAKING: Params<string> = {
   [Network.goerli]: "0xa1d0e0Ac6D1300F47caC9083b23D07F62bB1F833",
   [Network.mainnet]: "0x5954aB967Bc958940b7EB73ee84797Dc8a2AFbb9",
@@ -90,16 +85,6 @@ export const AAVE_ADDRESS_PROVIDER: Params<string> = {
 export const BEND_ADDRESS_PROVIDER: Params<string> = {
   [Network.goerli]: "0x1cba0A3e18be7f210713c9AC9FE17955359cC99B",
   [Network.mainnet]: "0x24451f47caf13b24f4b5034e1df6c0e401ec0e46",
-};
-
-export const TREASURY: Params<string> = {
-  [Network.goerli]: "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1",
-  [Network.mainnet]: "0x472FcC65Fab565f75B1e0E861864A86FE5bcEd7B",
-};
-
-export const TREASURY_INIT_DEPOSIT: Params<string> = {
-  [Network.goerli]: "100", // unit of 1e18
-  [Network.mainnet]: "100", // unit of 1e18
 };
 
 export const BAYC_REWARDS_SHARE_RATIO: Params<string> = {
