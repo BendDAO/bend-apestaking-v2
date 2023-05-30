@@ -1,6 +1,6 @@
 {
   "VaultLogic": {
-    "address": "0xd224Ee0b20C0EbfAe59Af23ecCB74672b6247c88",
+    "address": "0x0e80D0B1852991DCC676c1811C33D7B35a7f5863",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "NftVault": {
@@ -32,19 +32,19 @@
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BaycRewardsStrategy": {
-    "address": "0x7329Bb7854aE21187977Ac2e9BBEd4B4A6D91a3f",
+    "address": "0x0BdC9206feE49de821caa0CC59A50AFaC9f6246D",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "MaycRewardsStrategy": {
-    "address": "0xbe066D2316E7Ad2cBbAAAadC14bcC5bb9D1Dd57c",
+    "address": "0x48A47e0a836Eb65a6A80bc2bc01754eD3F12597C",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "BakcRewardsStrategy": {
-    "address": "0x66Cf5421941429C6794637e0e62a71a70686c39e",
+    "address": "0xcF31aaFc8B9b74f55Ef9ED4f963C94d6baDD875f",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "DefaultWithdrawStrategy": {
-    "address": "0xc9Dd618Bd9819d9d3D62bfded6fCfBa1e2f2dDEd",
+    "address": "0x422DbCa38A2033448912F1EC9F82C2875ea046c4",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "PoolViewer": {

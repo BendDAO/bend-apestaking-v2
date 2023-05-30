@@ -1,0 +1,58 @@
+{
+  "VaultLogic": {
+    "address": "0x35f6BDF086aCd0774b783d67191BCEeE321b13e4",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "NftVault": {
+    "address": "0xaAa2DA255DF9Ee74C7075bCB6D81f97940908A5D",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "StBAYC": {
+    "address": "0x08f5F0126aF89B4fD5499E942891D904A027624B",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "StMAYC": {
+    "address": "0xc1ED28E4b4d8e284A41E7474CA5522b010f3A64F",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "StBAKC": {
+    "address": "0xf6d3B8098967dd349d0477F01C16E8864a832ac2",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "BendCoinPool": {
+    "address": "0x86862445f58F50382c421a7bceCBcd971cc25367",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "BendNftPool": {
+    "address": "0x9Da9571389BA2316ad98f695210aD5fB0363cDEd",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "BendStakeManager": {
+    "address": "0x9d1833becb105405a8305F775F0aF3157d12B33c",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "BaycRewardsStrategy": {
+    "address": "0x5aF99196d23Ce8f8C89d8912F7F098EdE6587f8f",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "MaycRewardsStrategy": {
+    "address": "0xb1D0A16841dcd99aE8c97f280aF638FA3F7FA811",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "BakcRewardsStrategy": {
+    "address": "0x0C99D9f3860358472bB9797507D6ee8388b1e9C1",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "DefaultWithdrawStrategy": {
+    "address": "0xF20612a99AA8E694Ee93404d08BCC9Ab0e3baa3a",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "PoolViewer": {
+    "address": "0x8Fb5d2797Eaea7c390Bba6dBfdF50620d44ca4DA",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  },
+  "CompoudV1Migrator": {
+    "address": "0x8A25930D704B860aDf2458AA66eaC5290Ea74f51",
+    "deployer": "0x868964fa49a6fd6e116FE82c8f4165904406f479"
+  }
+}
