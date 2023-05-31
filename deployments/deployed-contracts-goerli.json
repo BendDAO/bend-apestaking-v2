@@ -48,7 +48,7 @@
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "PoolViewer": {
-    "address": "0x1FF6B12f65788E7c458Df393264EDfE815Bef7dC",
+    "address": "0xcF76A163d465aD835345aa32bE320A1A5393b2CB",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   },
   "CompoudV1Migrator": {

@@ -105,29 +105,41 @@ contract PoolViewer {
     }
 
     function viewUserPendingRewards(address userAddr_) external view returns (PendingRewards memory rewards) {
-        rewards.coinPoolRewards = staker.pendingRewards(ApeStakingLib.APE_COIN_POOL_ID).mulDiv(
-            coinPool.balanceOf(userAddr_),
-            coinPool.totalSupply(),
-            Math.Rounding.Down
-        );
+        uint256 totalSupply = coinPool.totalSupply();
+        if (totalSupply > 0) {
+            rewards.coinPoolRewards = staker.pendingRewards(ApeStakingLib.APE_COIN_POOL_ID).mulDiv(
+                coinPool.balanceOf(userAddr_),
+                totalSupply,
+                Math.Rounding.Down
+            );
+        }
 
-        rewards.baycPoolRewards = staker.pendingRewards(ApeStakingLib.BAYC_POOL_ID).mulDiv(
-            getStakedNftCount(staker.stBayc(), userAddr_),
-            staker.stBayc().totalStaked(address(staker)),
-            Math.Rounding.Down
-        );
+        uint256 totalStakedNft = staker.stBayc().totalStaked(address(staker));
+        if (totalStakedNft > 0) {
+            rewards.baycPoolRewards = staker.pendingRewards(ApeStakingLib.BAYC_POOL_ID).mulDiv(
+                getStakedNftCount(staker.stBayc(), userAddr_),
+                totalStakedNft,
+                Math.Rounding.Down
+            );
+        }
 
-        rewards.maycPoolRewards = staker.pendingRewards(ApeStakingLib.MAYC_POOL_ID).mulDiv(
-            getStakedNftCount(staker.stMayc(), userAddr_),
-            staker.stMayc().totalStaked(address(staker)),
-            Math.Rounding.Down
-        );
+        totalStakedNft = staker.stMayc().totalStaked(address(staker));
+        if (totalStakedNft > 0) {
+            rewards.maycPoolRewards = staker.pendingRewards(ApeStakingLib.MAYC_POOL_ID).mulDiv(
+                getStakedNftCount(staker.stMayc(), userAddr_),
+                totalStakedNft,
+                Math.Rounding.Down
+            );
+        }
 
-        rewards.bakcPoolRewards = staker.pendingRewards(ApeStakingLib.BAKC_POOL_ID).mulDiv(
-            getStakedNftCount(staker.stBakc(), userAddr_),
-            staker.stBakc().totalStaked(address(staker)),
-            Math.Rounding.Down
-        );
+        totalStakedNft = staker.stBakc().totalStaked(address(staker));
+        if (totalStakedNft > 0) {
+            rewards.bakcPoolRewards = staker.pendingRewards(ApeStakingLib.BAKC_POOL_ID).mulDiv(
+                getStakedNftCount(staker.stBakc(), userAddr_),
+                totalStakedNft,
+                Math.Rounding.Down
+            );
+        }
     }
 
     function getStakedNftCount(IStakedNft nft_, address userAddr_) public view returns (uint256 count) {
