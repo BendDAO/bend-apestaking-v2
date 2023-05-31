@@ -256,11 +256,14 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         for (uint256 i = 0; i < nfts_.length; i++) {
             nft_ = nfts_[i];
             pool_ = poolStates[nft_];
-            accumulatedRewardsPerNft_ = _calculatePoolIndex(
-                pool_.accumulatedRewardsPerNft,
-                coinPool.previewDeposit(pool_.pendingApeCoin),
-                pool_.stakedNft.totalStaked(address(staker))
-            );
+            accumulatedRewardsPerNft_ = pool_.accumulatedRewardsPerNft;
+            if (pool_.stakedNft.totalStaked(address(staker)) > 0) {
+                accumulatedRewardsPerNft_ = _calculatePoolIndex(
+                    accumulatedRewardsPerNft_,
+                    coinPool.previewDeposit(pool_.pendingApeCoin),
+                    pool_.stakedNft.totalStaked(address(staker))
+                );
+            }
 
             for (uint256 j = 0; j < tokenIds_[i].length; j++) {
                 amount += _calculateRewards(accumulatedRewardsPerNft_, pool_.rewardsDebt[tokenIds_[i][j]]);
