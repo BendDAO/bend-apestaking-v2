@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Contracts, Env, makeSuite, Snapshots } from "../setup";
-import { advanceHours, makeBN18, mintNft, randomUint, shuffledSubarray } from "../utils";
+import { advanceHours, makeBN18, mintNft, randomUint } from "../utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, constants } from "ethers";
 import { ApeCoinStaking, MintableERC721 } from "../../../typechain-types";
