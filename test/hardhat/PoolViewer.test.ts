@@ -1,16 +1,12 @@
 import { expect } from "chai";
 import { Contracts, Env, makeSuite, Snapshots } from "./setup";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { makeBNWithDecimals } from "./utils";
 import { constants } from "ethers";
 
 makeSuite("PoolViewer", (contracts: Contracts, env: Env, snapshots: Snapshots) => {
-  let owner: SignerWithAddress;
   let lastRevert: string;
 
   before(async () => {
-    owner = env.accounts[1];
-
     const apeAmountForStakingV1 = makeBNWithDecimals(100000, 18);
     await contracts.apeCoin.connect(env.admin).mint(apeAmountForStakingV1);
     await contracts.apeCoin.connect(env.admin).transfer(contracts.mockStakeManagerV1.address, apeAmountForStakingV1);
