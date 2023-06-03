@@ -359,10 +359,22 @@ task("deploy:NewImpl", "Deploy new implmentation")
     await run("set-DRE");
     await run("compile");
 
-    await deployImplementation(implid, false);
+    await deployImplementation(implid, true);
 
     console.log("ok");
   });
+
+task("deploy:NewImpl:NftVault", "Deploy new implmentation").setAction(async (_, { run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  await deployContract("VaultLogic", [], true);
+  const vaultLogic = await getContractAddressFromDB("VaultLogic");
+
+  const vaultImpl = await deployImplementation("NftVault", true, { VaultLogic: vaultLogic });
+
+  console.log("Implmentation at:", vaultImpl.address);
+});
 
 task("prepareUpgrade", "Deploy new implmentation for upgrade")
   .addParam("proxyid", "The proxy contract id")
