@@ -1,13 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { task } from "hardhat/config";
-import {
-  BendCoinPool,
-  BendNftPool,
-  BendStakeManager,
-  INftVault,
-  IStakedNft,
-  LendingMigrator,
-} from "../typechain-types";
+import { BendCoinPool, BendNftPool, BendStakeManager, INftVault, IStakedNft } from "../typechain-types";
 import {
   AAVE_ADDRESS_PROVIDER,
   APE_COIN,
@@ -179,11 +172,19 @@ task("deploy:DefaultWithdrawStrategy", "Deploy DefaultWithdrawStrategy").setActi
   await deployContract("DefaultWithdrawStrategy", [apeStaking, nftVault, coinPool, stakeManager], true);
 });
 
-task("deploy:LendingMigrator", "Deploy LendingMigrator").setAction(async (_, { run }) => {
+task("deploy:LendingMigrator", "Deploy LendingMigrator").setAction(async (_, { network, run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployProxyContractWithoutInit("LendingMigrator", [], true);
+  const aaveProvider = getParams(AAVE_ADDRESS_PROVIDER, network.name);
+  const bendProvider = getParams(BEND_ADDRESS_PROVIDER, network.name);
+
+  const nftPool = await getContractAddressFromDB("BendNftPool");
+  const stBayc = await getContractAddressFromDB("StBAYC");
+  const stMayc = await getContractAddressFromDB("StMAYC");
+  const stBakc = await getContractAddressFromDB("StBAKC");
+
+  await deployProxyContract("LendingMigrator", [aaveProvider, bendProvider, nftPool, stBayc, stMayc, stBakc], true);
 });
 
 task("deploy:CompoudV1Migrator", "Deploy CompoudV1Migrator").setAction(async (_, { network, run }) => {
@@ -305,27 +306,6 @@ task("deploy:config:WithdrawStrategy", "Coinfig WithdrawStrategy").setAction(asy
   const withdrawStrategy = await getContractAddressFromDB("DefaultWithdrawStrategy");
 
   await waitForTx(await stakeManager.connect(deployer).updateWithdrawStrategy(withdrawStrategy));
-
-  console.log("ok");
-});
-
-task("deploy:config:LendingMigrator", "Coinfig LendingMigrator").setAction(async (_, { network, run }) => {
-  await run("set-DRE");
-  await run("compile");
-  const deployer = await getDeploySigner();
-  const migrator = await getContractFromDB<LendingMigrator>("LendingMigrator");
-
-  const aaveProvider = getParams(AAVE_ADDRESS_PROVIDER, network.name);
-  const bendProvider = getParams(BEND_ADDRESS_PROVIDER, network.name);
-
-  const nftPool = await getContractAddressFromDB("BendNftPool");
-  const stBayc = await getContractAddressFromDB("StBAYC");
-  const stMayc = await getContractAddressFromDB("StMAYC");
-  const stBakc = await getContractAddressFromDB("StBAKC");
-
-  await waitForTx(
-    await migrator.connect(deployer).initialize(aaveProvider, bendProvider, nftPool, stBayc, stMayc, stBakc)
-  );
 
   console.log("ok");
 });

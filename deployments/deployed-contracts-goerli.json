@@ -54,5 +54,9 @@
   "CompoudV1Migrator": {
     "address": "0xFE38Ff744a60FeaAD05095708264345bDfe207B7",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "LendingMigrator": {
+    "address": "0x9a922352fF520Ec08B41281B2d1a1a3cfCdA9110",
+    "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
   }
 }
