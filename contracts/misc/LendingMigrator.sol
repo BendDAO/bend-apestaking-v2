@@ -185,6 +185,8 @@ contract LendingMigrator is
         uint256 debtBorrowAmountWithFee;
         uint256 balanceBeforeBorrow;
         uint256 balanceAfterBorrow;
+        uint256 loanIdForStNft;
+        address borrowerForStNft;
     }
 
     function _repayAndBorrowPerNft(
@@ -254,7 +256,14 @@ contract LendingMigrator is
         );
 
         vars.balanceAfterBorrow = IERC20Upgradeable(vars.debtReserve).balanceOf(address(this));
-        require(vars.balanceAfterBorrow == (vars.balanceBeforeBorrow + vars.newDebtAmount));
+        require(
+            vars.balanceAfterBorrow == (vars.balanceBeforeBorrow + vars.newDebtAmount),
+            "Migrator: balance wrong after borrow"
+        );
+
+        vars.loanIdForStNft = bendLendLoan.getCollateralLoanId(address(stNftAsset), vars.nftTokenId);
+        vars.borrowerForStNft = bendLendLoan.borrowerOf(vars.loanIdForStNft);
+        require(vars.borrowerForStNft == vars.borrower, "Migrator: stnft borrower not same");
 
         emit NftMigrated(vars.borrower, vars.nftAsset, vars.nftTokenId, vars.debtTotalAmount);
     }
