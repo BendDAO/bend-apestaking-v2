@@ -28,12 +28,6 @@ contract LendingMigratorTest is SetupHelper {
         uint256[] nftTokenIds;
         uint256[] borrowAmounts;
         uint256[] bidFines;
-        uint256[] newDebtAmounts;
-        // aave flash loan vars
-        address[] assets;
-        uint256[] amounts;
-        uint256[] modes;
-        bytes params;
         // results
         uint256 nftLoanId;
         address nftOwner;
@@ -87,11 +81,6 @@ contract LendingMigratorTest is SetupHelper {
         vars.nftTokenIds = new uint256[](vars.nftCount);
         vars.borrowAmounts = new uint256[](vars.nftCount);
         vars.bidFines = new uint256[](vars.nftCount);
-        vars.newDebtAmounts = new uint256[](vars.nftCount);
-
-        vars.assets = new address[](1);
-        vars.amounts = new uint256[](1);
-        vars.modes = new uint256[](1);
     }
 
     function testMultipleNftWithoutAuction() public {
@@ -122,28 +111,10 @@ contract LendingMigratorTest is SetupHelper {
                 testUser,
                 0
             );
-
-            vars.newDebtAmounts[vars.i] = (vars.borrowAmounts[vars.i] * 1001) / 1000;
         }
 
-        // flash loan
-        vars.assets[0] = address(mockWETH);
-        vars.modes[0] = 0;
-        for (vars.i = 0; vars.i < vars.nftCount; vars.i++) {
-            vars.amounts[0] = vars.amounts[0] + vars.newDebtAmounts[vars.i];
-        }
-
-        vars.params = abi.encode(vars.nftAssets, vars.nftTokenIds, vars.newDebtAmounts);
-
-        mockAaveLendPool.flashLoan(
-            address(lendingMigrator),
-            vars.assets,
-            vars.amounts,
-            vars.modes,
-            testUser,
-            vars.params,
-            0
-        );
+        // migrate
+        lendingMigrator.migrate(vars.nftAssets, vars.nftTokenIds);
 
         // check results
         for (vars.i = 0; vars.i < vars.nftCount; vars.i++) {
@@ -190,8 +161,6 @@ contract LendingMigratorTest is SetupHelper {
                 testUser,
                 0
             );
-
-            vars.newDebtAmounts[vars.i] = (vars.borrowAmounts[vars.i] * 1001) / 1000;
         }
 
         // set auction
@@ -199,28 +168,10 @@ contract LendingMigratorTest is SetupHelper {
             vars.nftLoanId = mockBendLendPoolLoan.getCollateralLoanId(vars.nftAssets[vars.i], vars.nftTokenIds[vars.i]);
             vars.bidFines[vars.i] = (vars.borrowAmounts[vars.i] * 5) / 100;
             mockBendLendPoolLoan.setBidFine(vars.nftLoanId, vars.bidFines[vars.i]);
-
-            vars.newDebtAmounts[vars.i] += (vars.bidFines[vars.i] * 1001) / 1000;
         }
 
-        // flash loan
-        vars.assets[0] = address(mockWETH);
-        vars.modes[0] = 0;
-        for (vars.i = 0; vars.i < vars.nftCount; vars.i++) {
-            vars.amounts[0] = vars.amounts[0] + vars.newDebtAmounts[vars.i];
-        }
-
-        vars.params = abi.encode(vars.nftAssets, vars.nftTokenIds, vars.newDebtAmounts);
-
-        mockAaveLendPool.flashLoan(
-            address(lendingMigrator),
-            vars.assets,
-            vars.amounts,
-            vars.modes,
-            testUser,
-            vars.params,
-            0
-        );
+        // migrate
+        lendingMigrator.migrate(vars.nftAssets, vars.nftTokenIds);
 
         // check results
         for (vars.i = 0; vars.i < vars.nftCount; vars.i++) {

@@ -80,18 +80,84 @@ contract LendingMigrator is
         IERC721Upgradeable(address(stBakc)).setApprovalForAll(address(bendLendPool), true);
     }
 
+    struct MigrateLocaVars {
+        uint256 aaveFlashLoanFeeRatio;
+        uint256 aaveFlashLoanPremium;
+        uint256 loanId;
+        address borrower;
+        address debtReserve;
+        uint256 oldDebtAmount;
+        uint256 bidFine;
+        address paramsBorrower;
+        uint256[] paramsNewDebtAmounts;
+        address[] aaveAssets;
+        uint256[] aaveAmounts;
+        uint256[] aaveModes;
+        bytes aaveParms;
+    }
+
+    function migrate(address[] calldata nftAssets, uint256[] calldata nftTokenIds) public {
+        MigrateLocaVars memory vars;
+
+        require(nftTokenIds.length > 0, "Migrator: empty token ids");
+        require(nftAssets.length == nftTokenIds.length, "Migrator: inconsistent assets and token ids");
+
+        vars.aaveFlashLoanFeeRatio = aaveLendPool.FLASHLOAN_PREMIUM_TOTAL();
+
+        vars.aaveAssets = new address[](1);
+        vars.aaveAmounts = new uint256[](1);
+        vars.aaveModes = new uint256[](1);
+
+        vars.paramsNewDebtAmounts = new uint256[](nftTokenIds.length);
+
+        for (uint256 i = 0; i < nftTokenIds.length; i++) {
+            (, , , , vars.bidFine) = bendLendPool.getNftAuctionData(nftAssets[i], nftTokenIds[i]);
+            (vars.loanId, vars.debtReserve, , vars.oldDebtAmount, , ) = bendLendPool.getNftDebtData(
+                nftAssets[i],
+                nftTokenIds[i]
+            );
+            vars.borrower = bendLendLoan.borrowerOf(vars.loanId);
+            if (i == 0) {
+                // check borrower must be caller
+                require(vars.borrower == msg.sender, "Migrator: caller not borrower");
+                vars.aaveAssets[0] = vars.debtReserve;
+                vars.paramsBorrower = vars.borrower;
+            } else {
+                // check borrower and asset must be same
+                require(vars.aaveAssets[0] == vars.debtReserve, "LendingMigrator: debt reserve not same");
+                require(vars.paramsBorrower == vars.borrower, "Migrator: borrower not same");
+            }
+
+            // new debt should cover old debt + bid fine + flash loan premium
+            vars.aaveFlashLoanPremium =
+                ((vars.oldDebtAmount + vars.bidFine) * vars.aaveFlashLoanFeeRatio) /
+                PERCENTAGE_FACTOR;
+            vars.paramsNewDebtAmounts[i] = (vars.oldDebtAmount + vars.bidFine) + vars.aaveFlashLoanPremium;
+            vars.aaveAmounts[0] += (vars.oldDebtAmount + vars.bidFine);
+        }
+
+        vars.aaveParms = abi.encode(vars.paramsBorrower, nftAssets, nftTokenIds, vars.paramsNewDebtAmounts);
+
+        aaveLendPool.flashLoan(
+            address(this),
+            vars.aaveAssets,
+            vars.aaveAmounts,
+            vars.aaveModes,
+            address(0),
+            vars.aaveParms,
+            0
+        );
+    }
+
     struct ExecuteOperationLocaVars {
+        // fields for params
+        address borrower;
         address[] nftAssets;
         uint256[] nftTokenIds;
         uint256[] newDebtAmounts;
-        address borrower;
-        uint256 aaveFlashLoanFeeRatio;
-        uint256 totalNewDebtAmount;
-        uint256 balanceBeforeMigrate;
-        uint256 balanceDiffBeforeMigrate;
-        uint256 balanceAfterMigrate;
-        uint256 balanceDiffAfterMigrate;
-        uint256 balanceDiffToUser;
+        // fields for aave
+        address flashLoanAsset;
+        // fields for temp data
         uint256 repayToAave;
     }
 
@@ -99,68 +165,38 @@ contract LendingMigrator is
         address[] calldata assets,
         uint256[] calldata amounts,
         uint256[] calldata premiums,
-        address /*initiator*/,
+        address initiator,
         bytes calldata params
     ) external whenNotPaused nonReentrant returns (bool) {
         ExecuteOperationLocaVars memory execVars;
 
+        // only aave and this contract can call this function
         require(msg.sender == address(aaveLendPool), "Migrator: caller must be aave lending pool");
-        require(
-            assets.length == 1 && amounts.length == 1 && premiums.length == 1,
-            "Migrator: multiple assets not supported"
-        );
+        require(initiator == address(this), "Migrator: initiator must be this contract");
 
-        (execVars.nftAssets, execVars.nftTokenIds, execVars.newDebtAmounts) = abi.decode(
+        // on need to check following params, because this function only allowed to calling by ourself
+
+        execVars.flashLoanAsset = assets[0];
+        (execVars.borrower, execVars.nftAssets, execVars.nftTokenIds, execVars.newDebtAmounts) = abi.decode(
             params,
-            (address[], uint256[], uint256[])
+            (address, address[], uint256[], uint256[])
         );
-        require(execVars.nftTokenIds.length > 0, "Migrator: empty token ids");
-        require(
-            execVars.nftAssets.length == execVars.nftTokenIds.length,
-            "Migrator: inconsistent assets and token ids"
-        );
-        require(
-            execVars.nftAssets.length == execVars.newDebtAmounts.length,
-            "Migrator: inconsistent assets and debt amounts"
-        );
-
-        execVars.aaveFlashLoanFeeRatio = aaveLendPool.FLASHLOAN_PREMIUM_TOTAL();
 
         IERC20Upgradeable(assets[0]).approve(address(bendLendPool), type(uint256).max);
-
-        execVars.balanceBeforeMigrate = IERC20Upgradeable(assets[0]).balanceOf(address(this));
-        execVars.balanceDiffBeforeMigrate = execVars.balanceBeforeMigrate - amounts[0];
 
         for (uint256 i = 0; i < execVars.nftTokenIds.length; i++) {
             RepayAndBorrowLocaVars memory vars;
             vars.nftAsset = execVars.nftAssets[i];
             vars.nftTokenId = execVars.nftTokenIds[i];
             vars.newDebtAmount = execVars.newDebtAmounts[i];
-            vars.flashLoanAsset = assets[0];
-            vars.flashLoanFeeRatio = execVars.aaveFlashLoanFeeRatio;
-
-            execVars.totalNewDebtAmount += vars.newDebtAmount;
 
             _repayAndBorrowPerNft(execVars, vars);
         }
-
-        require(execVars.totalNewDebtAmount == amounts[0], "Migrator: inconsistent total debt amount");
 
         IERC20Upgradeable(assets[0]).approve(address(bendLendPool), 0);
 
         execVars.repayToAave = amounts[0] + premiums[0];
         IERC20Upgradeable(assets[0]).approve(msg.sender, execVars.repayToAave);
-
-        execVars.balanceAfterMigrate = IERC20Upgradeable(assets[0]).balanceOf(address(this));
-        require(execVars.balanceAfterMigrate >= execVars.repayToAave, "Migrator: insufficent to repay aave");
-
-        // we try to borrow a little more to make sure it has enough to repay flash loan
-        // but remain part need to be returned to user
-        execVars.balanceDiffAfterMigrate = execVars.balanceAfterMigrate - execVars.repayToAave;
-        if (execVars.balanceDiffAfterMigrate > execVars.balanceDiffBeforeMigrate) {
-            execVars.balanceDiffToUser = execVars.balanceDiffAfterMigrate - execVars.balanceDiffBeforeMigrate;
-            IERC20Upgradeable(assets[0]).transfer(execVars.borrower, execVars.balanceDiffToUser);
-        }
 
         return true;
     }
@@ -169,10 +205,7 @@ contract LendingMigrator is
         address nftAsset;
         uint256 nftTokenId;
         uint256 newDebtAmount;
-        address flashLoanAsset;
-        uint256 flashLoanFeeRatio;
         uint256 loanId;
-        address borrower;
         address debtReserve;
         uint256 debtTotalAmount;
         uint256 debtRemainAmount;
@@ -181,8 +214,6 @@ contract LendingMigrator is
         uint256 debtTotalAmountWithBidFine;
         uint256 balanceBeforeRepay;
         uint256[] nftTokenIds;
-        uint256 flashLoanPremium;
-        uint256 debtBorrowAmountWithFee;
         uint256 balanceBeforeBorrow;
         uint256 balanceAfterBorrow;
         uint256 loanIdForStNft;
@@ -197,25 +228,9 @@ contract LendingMigrator is
         (, vars.debtReserve, , vars.debtTotalAmount, , ) = bendLendPool.getNftDebtData(vars.nftAsset, vars.nftTokenId);
         vars.debtTotalAmountWithBidFine = vars.debtTotalAmount + vars.bidFine;
 
-        // check new debt can cover old debt and flash loan fee
-        vars.flashLoanPremium = (vars.newDebtAmount * vars.flashLoanFeeRatio) / PERCENTAGE_FACTOR;
-        vars.debtBorrowAmountWithFee = vars.debtTotalAmountWithBidFine + vars.flashLoanPremium;
-        require(
-            vars.debtBorrowAmountWithFee <= vars.newDebtAmount,
-            "Migrator: new debt can not cover old debt with fee"
-        );
-
-        // check borrower is same
-        vars.borrower = bendLendLoan.borrowerOf(vars.loanId);
-        if (execVars.borrower == address(0)) {
-            execVars.borrower = vars.borrower;
-        } else {
-            require(execVars.borrower == vars.borrower, "Migrator: borrower not same");
-        }
-
         vars.balanceBeforeRepay = IERC20Upgradeable(vars.debtReserve).balanceOf(address(this));
 
-        require(vars.debtReserve == vars.flashLoanAsset, "Migrator: invalid flash loan asset");
+        require(vars.debtReserve == execVars.flashLoanAsset, "Migrator: invalid flash loan asset");
         require(vars.debtTotalAmountWithBidFine <= vars.balanceBeforeRepay, "Migrator: insufficent to repay old debt");
 
         // redeem first if nft is in auction
@@ -232,7 +247,7 @@ contract LendingMigrator is
         bendLendPool.repay(vars.nftAsset, vars.nftTokenId, vars.debtRemainAmount);
 
         // stake original nft to the staking pool
-        IERC721Upgradeable(vars.nftAsset).safeTransferFrom(vars.borrower, address(address(this)), vars.nftTokenId);
+        IERC721Upgradeable(vars.nftAsset).safeTransferFrom(execVars.borrower, address(this), vars.nftTokenId);
         vars.nftTokenIds = new uint256[](1);
         vars.nftTokenIds[0] = vars.nftTokenId;
         address[] memory nfts = new address[](1);
@@ -251,7 +266,7 @@ contract LendingMigrator is
             vars.newDebtAmount,
             address(stNftAsset),
             vars.nftTokenId,
-            vars.borrower,
+            execVars.borrower,
             0
         );
 
@@ -263,9 +278,9 @@ contract LendingMigrator is
 
         vars.loanIdForStNft = bendLendLoan.getCollateralLoanId(address(stNftAsset), vars.nftTokenId);
         vars.borrowerForStNft = bendLendLoan.borrowerOf(vars.loanIdForStNft);
-        require(vars.borrowerForStNft == vars.borrower, "Migrator: stnft borrower not same");
+        require(vars.borrowerForStNft == execVars.borrower, "Migrator: stnft borrower not same");
 
-        emit NftMigrated(vars.borrower, vars.nftAsset, vars.nftTokenId, vars.debtTotalAmount);
+        emit NftMigrated(execVars.borrower, vars.nftAsset, vars.nftTokenId, vars.debtTotalAmount);
     }
 
     function getStakedNFTAsset(address nftAsset) internal view returns (IStakedNft) {

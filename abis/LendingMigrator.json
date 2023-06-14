@@ -224,7 +224,7 @@
       },
       {
         "internalType": "address",
-        "name": "",
+        "name": "initiator",
         "type": "address"
       },
       {
@@ -293,6 +293,24 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "nftAssets",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "nftTokenIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "migrate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
