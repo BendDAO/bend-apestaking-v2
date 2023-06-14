@@ -96,7 +96,7 @@ contract LendingMigrator is
         bytes aaveParms;
     }
 
-    function migrate(address[] calldata nftAssets, uint256[] calldata nftTokenIds) public {
+    function migrate(address[] calldata nftAssets, uint256[] calldata nftTokenIds) public whenNotPaused nonReentrant {
         MigrateLocaVars memory vars;
 
         require(nftTokenIds.length > 0, "Migrator: empty token ids");
@@ -167,7 +167,7 @@ contract LendingMigrator is
         uint256[] calldata premiums,
         address initiator,
         bytes calldata params
-    ) external whenNotPaused nonReentrant returns (bool) {
+    ) external returns (bool) {
         ExecuteOperationLocaVars memory execVars;
 
         // only aave and this contract can call this function
@@ -281,6 +281,14 @@ contract LendingMigrator is
         require(vars.borrowerForStNft == execVars.borrower, "Migrator: stnft borrower not same");
 
         emit NftMigrated(execVars.borrower, vars.nftAsset, vars.nftTokenId, vars.debtTotalAmount);
+    }
+
+    function setPause(bool flag) public onlyOwner {
+        if (flag) {
+            _pause();
+        } else {
+            _unpause();
+        }
     }
 
     function getStakedNFTAsset(address nftAsset) internal view returns (IStakedNft) {

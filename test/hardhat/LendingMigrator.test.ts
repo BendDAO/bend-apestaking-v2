@@ -81,6 +81,19 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
     ).rejectedWith("Migrator: caller not borrower");
   });
 
+  it("migrate: revert when paused", async () => {
+    await contracts.lendingMigrator.setPause(true);
+
+    await expect(
+      contracts.lendingMigrator.migrate(
+        [contracts.bayc.address, contracts.bayc.address, contracts.bayc.address],
+        baycTokenIds
+      )
+    ).revertedWith("Pausable: paused");
+
+    await contracts.lendingMigrator.setPause(false);
+  });
+
   it("testMultipleNftWithoutAuction", async () => {
     await contracts.weth.connect(owner).approve(contracts.mockBendLendPool.address, constants.MaxUint256);
     await contracts.bayc.connect(owner).setApprovalForAll(contracts.mockBendLendPool.address, true);
