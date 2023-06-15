@@ -3,7 +3,7 @@ import { Contracts, Env, makeSuite, Snapshots } from "./setup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { makeBNWithDecimals, mintNft } from "./utils";
 import { BigNumber, constants } from "ethers";
-import { defaultAbiCoder, parseEther } from "ethers/lib/utils";
+import { parseEther } from "ethers/lib/utils";
 
 makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Snapshots) => {
   let owner: SignerWithAddress;
@@ -30,6 +30,28 @@ makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Sn
     if (lastRevert) {
       await snapshots.revert(lastRevert);
     }
+  });
+
+  it("stakeAndBorrow: reverts when paused", async () => {
+    await contracts.stakeAndBorrowHelper.setPause(true);
+
+    await expect(
+      contracts.stakeAndBorrowHelper
+        .connect(owner)
+        .stakeAndBorrow([contracts.weth.address], [100000], [contracts.bayc.address], [100])
+    ).revertedWith("Pausable: paused");
+
+    await contracts.stakeAndBorrowHelper.setPause(false);
+  });
+
+  it("repayAndUnstake: reverts when paused", async () => {
+    await contracts.stakeAndBorrowHelper.setPause(true);
+
+    await expect(
+      contracts.stakeAndBorrowHelper.connect(owner).repayAndUnstake([contracts.bayc.address], [100])
+    ).revertedWith("Pausable: paused");
+
+    await contracts.stakeAndBorrowHelper.setPause(false);
   });
 
   it("stakeAndBorrow: bayc and weth", async () => {
