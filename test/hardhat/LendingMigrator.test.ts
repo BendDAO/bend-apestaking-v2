@@ -3,7 +3,7 @@ import { Contracts, Env, makeSuite, Snapshots } from "./setup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { makeBNWithDecimals, mintNft } from "./utils";
 import { BigNumber, constants } from "ethers";
-import { defaultAbiCoder, parseEther } from "ethers/lib/utils";
+import { parseEther } from "ethers/lib/utils";
 
 makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapshots) => {
   let owner: SignerWithAddress;
@@ -40,6 +40,60 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
     }
   });
 
+  it("executeOperation: reverts", async () => {
+    await expect(
+      contracts.lendingMigrator.executeOperation([contracts.weth.address], [100], [0], constants.AddressZero, [])
+    ).revertedWith("Migrator: caller must be aave lending pool");
+
+    await expect(
+      contracts.mockAaveLendPool.flashLoan(
+        contracts.lendingMigrator.address,
+        [contracts.weth.address],
+        [100],
+        [0],
+        owner.address,
+        [],
+        0
+      )
+    ).revertedWith("Migrator: initiator must be this contract");
+  });
+
+  it("migrate: reverts", async () => {
+    await contracts.weth.connect(owner).approve(contracts.mockBendLendPool.address, constants.MaxUint256);
+    await contracts.bayc.connect(owner).setApprovalForAll(contracts.mockBendLendPool.address, true);
+    await contracts.bayc.connect(owner).setApprovalForAll(contracts.lendingMigrator.address, true);
+
+    baycTokenIds = [101, 102, 103];
+    await mintNft(owner, contracts.bayc, baycTokenIds);
+
+    let borrowAmounts = [makeBNWithDecimals(1, 18), makeBNWithDecimals(2, 18), makeBNWithDecimals(3, 18)];
+
+    for (const [i, id] of baycTokenIds.entries()) {
+      await contracts.mockBendLendPool
+        .connect(owner)
+        .borrow(contracts.weth.address, borrowAmounts[i], contracts.bayc.address, id, owner.address, 0);
+    }
+
+    await expect(
+      contracts.lendingMigrator
+        .connect(env.accounts[0])
+        .migrate([contracts.bayc.address, contracts.bayc.address, contracts.bayc.address], baycTokenIds)
+    ).rejectedWith("Migrator: caller not borrower");
+  });
+
+  it("migrate: revert when paused", async () => {
+    await contracts.lendingMigrator.setPause(true);
+
+    await expect(
+      contracts.lendingMigrator.migrate(
+        [contracts.bayc.address, contracts.bayc.address, contracts.bayc.address],
+        baycTokenIds
+      )
+    ).revertedWith("Pausable: paused");
+
+    await contracts.lendingMigrator.setPause(false);
+  });
+
   it("testMultipleNftWithoutAuction", async () => {
     await contracts.weth.connect(owner).approve(contracts.mockBendLendPool.address, constants.MaxUint256);
     await contracts.bayc.connect(owner).setApprovalForAll(contracts.mockBendLendPool.address, true);
@@ -49,29 +103,18 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
     await mintNft(owner, contracts.bayc, baycTokenIds);
 
     let borrowAmounts = [makeBNWithDecimals(1, 18), makeBNWithDecimals(2, 18), makeBNWithDecimals(3, 18)];
-    let totalBorrowAmounts = BigNumber.from(0);
 
     for (const [i, id] of baycTokenIds.entries()) {
-      totalBorrowAmounts = totalBorrowAmounts.add(borrowAmounts[i]);
       await contracts.mockBendLendPool
         .connect(owner)
         .borrow(contracts.weth.address, borrowAmounts[i], contracts.bayc.address, id, owner.address, 0);
     }
 
-    const params = defaultAbiCoder.encode(
-      ["address[]", "uint256[]"],
-      [[contracts.bayc.address, contracts.bayc.address, contracts.bayc.address], baycTokenIds]
-    );
+    const balanceBeforeMigrate = await contracts.weth.balanceOf(owner.address);
 
-    await contracts.mockAaveLendPool.flashLoan(
-      contracts.lendingMigrator.address,
-      [contracts.weth.address],
-      [totalBorrowAmounts],
-      [0],
-      owner.address,
-      params,
-      0
-    );
+    await contracts.lendingMigrator
+      .connect(owner)
+      .migrate([contracts.bayc.address, contracts.bayc.address, contracts.bayc.address], baycTokenIds);
 
     for (const [, id] of baycTokenIds.entries()) {
       const nftLoanId = await contracts.mockBendLendPoolLoan.getCollateralLoanId(contracts.bayc.address, id);
@@ -80,6 +123,9 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
       expect(await contracts.stBayc.ownerOf(id)).eq(contracts.mockBendLendPool.address);
       expect(await contracts.mockBendLendPoolLoan.borrowerOf(nftLoanId)).eq(owner.address);
     }
+
+    expect(await contracts.weth.balanceOf(owner.address)).gte(balanceBeforeMigrate);
+    expect(await contracts.weth.balanceOf(contracts.lendingMigrator.address)).eq(0);
   });
 
   it("testMultipleNftHasAuction", async () => {
@@ -91,10 +137,8 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
     await mintNft(owner, contracts.bayc, baycTokenIds);
 
     let borrowAmounts = [makeBNWithDecimals(1, 18), makeBNWithDecimals(2, 18), makeBNWithDecimals(3, 18)];
-    let totalBorrowAmounts = BigNumber.from(0);
 
     for (const [i, id] of baycTokenIds.entries()) {
-      totalBorrowAmounts = totalBorrowAmounts.add(borrowAmounts[i]);
       await contracts.mockBendLendPool
         .connect(owner)
         .borrow(contracts.weth.address, borrowAmounts[i], contracts.bayc.address, id, owner.address, 0);
@@ -102,30 +146,18 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
 
     // set auction
     let bidFines = [BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)];
-    let totalBidFines = BigNumber.from(0);
     for (const [i, id] of baycTokenIds.entries()) {
       const nftLoanId = await contracts.mockBendLendPoolLoan.getCollateralLoanId(contracts.bayc.address, id);
+
       bidFines[i] = borrowAmounts[i].mul(5).div(100);
-      totalBidFines = totalBidFines.add(bidFines[i]);
       await contracts.mockBendLendPoolLoan.setBidFine(nftLoanId, bidFines[i]);
     }
 
-    const params = defaultAbiCoder.encode(
-      ["address[]", "uint256[]"],
-      [[contracts.bayc.address, contracts.bayc.address, contracts.bayc.address], baycTokenIds]
-    );
+    const balanceBeforeMigrate = await contracts.weth.balanceOf(owner.address);
 
-    const totalFlashLoanAmout = totalBorrowAmounts.add(totalBidFines);
-
-    await contracts.mockAaveLendPool.flashLoan(
-      contracts.lendingMigrator.address,
-      [contracts.weth.address],
-      [totalFlashLoanAmout],
-      [0],
-      owner.address,
-      params,
-      0
-    );
+    await contracts.lendingMigrator
+      .connect(owner)
+      .migrate([contracts.bayc.address, contracts.bayc.address, contracts.bayc.address], baycTokenIds);
 
     for (const [, id] of baycTokenIds.entries()) {
       const nftLoanId = await contracts.mockBendLendPoolLoan.getCollateralLoanId(contracts.bayc.address, id);
@@ -134,5 +166,8 @@ makeSuite("LendingMigrator", (contracts: Contracts, env: Env, snapshots: Snapsho
       expect(await contracts.stBayc.ownerOf(id)).eq(contracts.mockBendLendPool.address);
       expect(await contracts.mockBendLendPoolLoan.borrowerOf(nftLoanId)).eq(owner.address);
     }
+
+    expect(await contracts.weth.balanceOf(owner.address)).gte(balanceBeforeMigrate);
+    expect(await contracts.weth.balanceOf(contracts.lendingMigrator.address)).eq(0);
   });
 });
