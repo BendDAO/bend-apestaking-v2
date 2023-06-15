@@ -60,6 +60,10 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
         IERC721Upgradeable(mayc).setApprovalForAll(address(nftPool), true);
         IERC721Upgradeable(bakc).setApprovalForAll(address(nftPool), true);
 
+        IERC721Upgradeable(address(stBayc)).setApprovalForAll(address(nftPool), true);
+        IERC721Upgradeable(address(stMayc)).setApprovalForAll(address(nftPool), true);
+        IERC721Upgradeable(address(stBakc)).setApprovalForAll(address(nftPool), true);
+
         IERC721Upgradeable(address(stBayc)).setApprovalForAll(address(bendLendPool), true);
         IERC721Upgradeable(address(stMayc)).setApprovalForAll(address(bendLendPool), true);
         IERC721Upgradeable(address(stBakc)).setApprovalForAll(address(bendLendPool), true);
@@ -69,15 +73,15 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
         address[] nftsForStakingTop;
         uint256[][] nftTokenIdsForStakingTop;
         uint256[] nftTokenIdsForStakingSub;
+        uint256 loanIdForCheck;
+        address borrowerForCheck;
     }
 
     function stakeAndBorrow(
         address[] calldata assets,
         uint256[] calldata amounts,
         address[] calldata nftAssets,
-        uint256[] calldata nftTokenIds,
-        address onBehalfOf,
-        uint16 referralCode
+        uint256[] calldata nftTokenIds
     ) public whenNotPaused nonReentrant {
         StakeAndBorrowLocalVars memory vars;
 
@@ -96,7 +100,7 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
 
             // borrow with the staked nft
             IStakedNft stNftAsset = getStakedNFTAsset(nftAssets[i]);
-            bendLendPool.borrow(assets[i], amounts[i], address(stNftAsset), nftTokenIds[i], onBehalfOf, referralCode);
+            bendLendPool.borrow(assets[i], amounts[i], address(stNftAsset), nftTokenIds[i], msg.sender, 0);
 
             if (assets[i] == address(WETH)) {
                 WETH.withdraw(amounts[i]);
@@ -104,6 +108,11 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
             } else {
                 IERC20Upgradeable(assets[i]).transfer(msg.sender, amounts[i]);
             }
+
+            // make sure the stnft borrower is the msg.sender
+            vars.loanIdForCheck = bendLendLoan.getCollateralLoanId(address(stNftAsset), nftTokenIds[i]);
+            vars.borrowerForCheck = bendLendLoan.borrowerOf(vars.loanIdForCheck);
+            require(msg.sender == vars.borrowerForCheck, "StakeAndBorrowHelper: stnft borrower not match");
         }
     }
 
@@ -118,7 +127,7 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
     }
 
     function repayAndUnstake(
-        address[] calldata nftAssets,
+        address[] calldata stnftAssets,
         uint256[] calldata nftTokenIds
     ) public payable whenNotPaused nonReentrant {
         RepayAndUnstakeLocalVars memory vars;
@@ -128,9 +137,9 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
             WETH.transferFrom(address(this), msg.sender, msg.value);
         }
 
-        for (uint256 i = 0; i < nftAssets.length; i++) {
+        for (uint256 i = 0; i < stnftAssets.length; i++) {
             (vars.loanId, vars.debtReserve, , vars.debtTotalAmount, , ) = bendLendPool.getNftDebtData(
-                nftAssets[i],
+                stnftAssets[i],
                 nftTokenIds[i]
             );
 
@@ -139,23 +148,25 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
 
             // repay with the staked nft
             IERC20Upgradeable(vars.debtReserve).transferFrom(msg.sender, address(this), vars.debtTotalAmount);
-            (, bool isFullRepaid) = bendLendPool.repay(nftAssets[i], nftTokenIds[i], vars.debtTotalAmount);
+            IERC20Upgradeable(vars.debtReserve).approve(address(bendLendPool), vars.debtTotalAmount);
+            (, bool isFullRepaid) = bendLendPool.repay(stnftAssets[i], nftTokenIds[i], vars.debtTotalAmount);
             require(isFullRepaid, "Migrator: full repay failed");
 
-            IStakedNft stNftAsset = getStakedNFTAsset(nftAssets[i]);
-            IERC721Upgradeable(address(stNftAsset)).safeTransferFrom(vars.borrower, address(this), nftTokenIds[i]);
+            IERC721Upgradeable(stnftAssets[i]).safeTransferFrom(vars.borrower, address(this), nftTokenIds[i]);
+
+            IERC721Upgradeable ogNftAsset = getOriginalNFTAsset(stnftAssets[i]);
 
             // unstake from the staking pool
             vars.nftTokenIdsForStakingSub = new uint256[](1);
             vars.nftTokenIdsForStakingSub[0] = nftTokenIds[i];
 
             vars.nftsForStakingTop = new address[](1);
-            vars.nftsForStakingTop[0] = nftAssets[i];
+            vars.nftsForStakingTop[0] = address(ogNftAsset);
             vars.nftTokenIdsForStakingTop = new uint256[][](1);
             vars.nftTokenIdsForStakingTop[0] = vars.nftTokenIdsForStakingSub;
             nftPool.withdraw(vars.nftsForStakingTop, vars.nftTokenIdsForStakingTop);
 
-            IERC721Upgradeable(nftAssets[i]).safeTransferFrom(address(this), vars.borrower, nftTokenIds[i]);
+            IERC721Upgradeable(address(ogNftAsset)).safeTransferFrom(address(this), vars.borrower, nftTokenIds[i]);
         }
     }
 
@@ -179,6 +190,22 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
         }
     }
 
+    function getOriginalNFTAsset(address stnftAsset) internal view returns (IERC721Upgradeable) {
+        if (stnftAsset == address(stBayc)) {
+            return bayc;
+        } else if (stnftAsset == address(stMayc)) {
+            return mayc;
+        } else if (stnftAsset == address(stBakc)) {
+            return bakc;
+        } else {
+            revert("Migrator: invalid stnft asset");
+        }
+    }
+
+    function onERC721Received(address, address, uint256, bytes memory) public virtual returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
     function _safeTransferETH(address to, uint256 value) internal {
         (bool success, ) = to.call{value: value}(new bytes(0));
         require(success, "ETH_TRANSFER_FAILED");
@@ -189,5 +216,12 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
      */
     receive() external payable {
         require(msg.sender == address(WETH), "Receive not allowed");
+    }
+
+    /**
+     * @dev Revert fallback calls
+     */
+    fallback() external payable {
+        revert("Fallback not allowed");
     }
 }

@@ -58,6 +58,10 @@
     "type": "event"
   },
   {
+    "stateMutability": "payable",
+    "type": "fallback"
+  },
+  {
     "inputs": [],
     "name": "WETH",
     "outputs": [
@@ -200,6 +204,40 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "onERC721Received",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "owner",
     "outputs": [
@@ -236,7 +274,7 @@
     "inputs": [
       {
         "internalType": "address[]",
-        "name": "nftAssets",
+        "name": "stnftAssets",
         "type": "address[]"
       },
       {
@@ -323,16 +361,6 @@
         "internalType": "uint256[]",
         "name": "nftTokenIds",
         "type": "uint256[]"
-      },
-      {
-        "internalType": "address",
-        "name": "onBehalfOf",
-        "type": "address"
-      },
-      {
-        "internalType": "uint16",
-        "name": "referralCode",
-        "type": "uint16"
       }
     ],
     "name": "stakeAndBorrow",
