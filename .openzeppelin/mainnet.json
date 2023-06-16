@@ -49,6 +49,11 @@
       "address": "0x7fa06cBeb1c6bA13c638a8e7B74A35fe8D263A91",
       "txHash": "0xdcfb318e1f45eba36999bda265dfb646a3bd15dc6ec3e135854d70b4533744f4",
       "kind": "transparent"
+    },
+    {
+      "address": "0x968c9090a217786f414025ceF11540f801f38ee1",
+      "txHash": "0x76f040f92eeaff1232e59197e74894096ebe0e46099ac1ec3271376f5334f293",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -3516,6 +3521,242 @@
             "numberOfBytes": "20"
           },
           "t_contract(ILendPoolLoan)3713": {
+            "label": "contract ILendPoolLoan",
+            "numberOfBytes": "20"
+          },
+          "t_contract(INftPool)1907": {
+            "label": "contract INftPool",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IStakedNft)2297": {
+            "label": "contract IStakedNft",
+            "numberOfBytes": "20"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "4fdf26e36f3120d9cc2846b86f16792e2e30fcdd5dd0e7cf5cbc2b49296fd305": {
+      "address": "0xcdFc5902589dF05E272e0b2eeDA1c46C8DA61e19",
+      "txHash": "0x94fc9c9bb39031147bfdeb678d5882472d572d3bbd47368f8145882e0ce230ff",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "aaveAddressesProvider",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_contract(IAaveLendPoolAddressesProvider)3646",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:31"
+          },
+          {
+            "label": "aaveLendPool",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(IAaveLendPool)3637",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:32"
+          },
+          {
+            "label": "bendAddressesProvider",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_contract(ILendPoolAddressesProvider)3740",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:33"
+          },
+          {
+            "label": "bendLendPool",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_contract(ILendPool)3726",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:34"
+          },
+          {
+            "label": "bendLendLoan",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_contract(ILendPoolLoan)3759",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:35"
+          },
+          {
+            "label": "nftPool",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_contract(INftPool)1907",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:37"
+          },
+          {
+            "label": "stBayc",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_contract(IStakedNft)2297",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:38"
+          },
+          {
+            "label": "stMayc",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_contract(IStakedNft)2297",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:39"
+          },
+          {
+            "label": "stBakc",
+            "offset": 0,
+            "slot": "209",
+            "type": "t_contract(IStakedNft)2297",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:40"
+          },
+          {
+            "label": "bayc",
+            "offset": 0,
+            "slot": "210",
+            "type": "t_contract(IERC721Upgradeable)1038",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:42"
+          },
+          {
+            "label": "mayc",
+            "offset": 0,
+            "slot": "211",
+            "type": "t_contract(IERC721Upgradeable)1038",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:43"
+          },
+          {
+            "label": "bakc",
+            "offset": 0,
+            "slot": "212",
+            "type": "t_contract(IERC721Upgradeable)1038",
+            "contract": "LendingMigrator",
+            "src": "contracts/misc/LendingMigrator.sol:44"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IAaveLendPool)3637": {
+            "label": "contract IAaveLendPool",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IAaveLendPoolAddressesProvider)3646": {
+            "label": "contract IAaveLendPoolAddressesProvider",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721Upgradeable)1038": {
+            "label": "contract IERC721Upgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ILendPool)3726": {
+            "label": "contract ILendPool",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ILendPoolAddressesProvider)3740": {
+            "label": "contract ILendPoolAddressesProvider",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ILendPoolLoan)3759": {
             "label": "contract ILendPoolLoan",
             "numberOfBytes": "20"
           },
