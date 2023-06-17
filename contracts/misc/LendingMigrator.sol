@@ -83,6 +83,8 @@ contract LendingMigrator is
     struct MigrateLocaVars {
         uint256 aaveFlashLoanFeeRatio;
         uint256 aaveFlashLoanPremium;
+        uint256 aaveFlashLoanAllSumPremium;
+        uint256 aaveFlashLoanTotalPremium;
         uint256 loanId;
         address borrower;
         address debtReserve;
@@ -132,8 +134,14 @@ contract LendingMigrator is
             vars.aaveFlashLoanPremium =
                 ((vars.oldDebtAmount + vars.bidFine) * vars.aaveFlashLoanFeeRatio) /
                 PERCENTAGE_FACTOR;
+            vars.aaveFlashLoanAllSumPremium += vars.aaveFlashLoanPremium;
             vars.paramsNewDebtAmounts[i] = (vars.oldDebtAmount + vars.bidFine) + vars.aaveFlashLoanPremium;
             vars.aaveAmounts[0] += (vars.oldDebtAmount + vars.bidFine);
+        }
+        // because of the math rounding, we need to add delta (1) wei to the first debt amount
+        vars.aaveFlashLoanTotalPremium = (vars.aaveAmounts[0] * vars.aaveFlashLoanFeeRatio) / PERCENTAGE_FACTOR;
+        if (vars.aaveFlashLoanTotalPremium > vars.aaveFlashLoanAllSumPremium) {
+            vars.paramsNewDebtAmounts[0] += (vars.aaveFlashLoanTotalPremium - vars.aaveFlashLoanAllSumPremium);
         }
 
         vars.aaveParms = abi.encode(vars.paramsBorrower, nftAssets, nftTokenIds, vars.paramsNewDebtAmounts);
