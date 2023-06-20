@@ -28,10 +28,12 @@ import {
   MockStakeManagerV1,
   CompoudV1Migrator,
   PoolViewer,
+  MockWETH,
 } from "../../typechain-types";
 import { Contract, BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 import { deployContract } from "./utils";
+import { StakeAndBorrowHelper } from "../../typechain-types/contracts/misc/StakeAndBorrowHelper";
 
 export interface Env {
   initialized: boolean;
@@ -72,7 +74,7 @@ export interface Contracts {
   bakcStrategy: IRewardsStrategy;
   withdrawStrategy: DefaultWithdrawStrategy;
   // lending pool
-  weth: MintableERC20;
+  weth: MockWETH;
   usdt: MintableERC20;
   mockAaveLendPoolAddressesProvider: MockAaveLendPoolAddressesProvider;
   mockAaveLendPool: MockAaveLendPool;
@@ -85,6 +87,7 @@ export interface Contracts {
   mockStakeManagerV1: MockStakeManagerV1;
   compoudV1Migrator: CompoudV1Migrator;
   poolViewer: PoolViewer;
+  stakeAndBorrowHelper: StakeAndBorrowHelper;
 }
 
 export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
@@ -262,6 +265,15 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
     contracts.mockCoinPoolV1.address,
     contracts.bendCoinPool.address
   );
+
+  await contracts.stakeAndBorrowHelper.initialize(
+    contracts.mockBendLendPoolAddressesProvider.address,
+    contracts.weth.address,
+    contracts.bendNftPool.address,
+    contracts.stBayc.address,
+    contracts.stMayc.address,
+    contracts.stBakc.address
+  );
 }
 
 export async function setupContracts(): Promise<Contracts> {
@@ -314,7 +326,7 @@ export async function setupContracts(): Promise<Contracts> {
   ]);
 
   // lending pool
-  const weth = await deployContract<MintableERC20>("MintableERC20", ["WETH", "WETH", 18]);
+  const weth = await deployContract<MockWETH>("MockWETH", []);
   const usdt = await deployContract<MintableERC20>("MintableERC20", ["USDT", "USDT", 6]);
 
   const mockAaveLendPoolAddressesProvider = await deployContract<MockAaveLendPoolAddressesProvider>(
@@ -341,6 +353,8 @@ export async function setupContracts(): Promise<Contracts> {
     bendStakeManager.address,
     bnftRegistry.address,
   ]);
+
+  const stakeAndBorrowHelper = await deployContract<StakeAndBorrowHelper>("StakeAndBorrowHelper", []);
 
   return {
     initialized: true,
@@ -377,6 +391,7 @@ export async function setupContracts(): Promise<Contracts> {
     mockStakeManagerV1,
     compoudV1Migrator,
     poolViewer,
+    stakeAndBorrowHelper,
   } as Contracts;
 }
 
