@@ -333,6 +333,22 @@ task("deploy:config:Authorise", "Authorise stBAYC,stMAYC,stBAKC,NftVault").setAc
   console.log("ok");
 });
 
+task("deploy:config:setBnftRegistry", "setBnftRegistry stBAYC,stMAYC,stBAKC").setAction(async (_, { run, network }) => {
+  await run("set-DRE");
+  await run("compile");
+  const deployer = await getDeploySigner();
+  const stBayc = await getContractFromDB<IStakedNft>("StBAYC");
+  const stMayc = await getContractFromDB<IStakedNft>("StMAYC");
+  const stBakc = await getContractFromDB<IStakedNft>("StBAKC");
+  const bnftRegistry = getParams(BNFT_REGISTRY, network.name);
+
+  await waitForTx(await stBayc.connect(deployer).setBnftRegistry(bnftRegistry));
+  await waitForTx(await stMayc.connect(deployer).setBnftRegistry(bnftRegistry));
+  await waitForTx(await stBakc.connect(deployer).setBnftRegistry(bnftRegistry));
+
+  console.log("ok");
+});
+
 task("deploy:NewImpl", "Deploy new implmentation")
   .addParam("implid", "The new impl contract id")
   .setAction(async ({ implid }, { run }) => {
@@ -402,6 +418,8 @@ task("upgrade:NftVault", "upgrade contract").setAction(async (_, { ethers, upgra
   const vaultLogic = await getContractAddressFromDB("VaultLogic");
 
   const proxyAddress = await getContractAddressFromDB("NftVault");
+  console.log("Proxy at: ", proxyAddress);
+
   const upgradeable = await ethers.getContractFactory("NftVault", { libraries: { VaultLogic: vaultLogic } });
 
   // @ts-ignore
@@ -427,6 +445,21 @@ task("forceImport", "force import implmentation to proxy")
     // @ts-ignore
     await upgrades.forceImport(proxy, upgradeable);
   });
+
+task("forceImport:NftVault", "force import implmentation to proxy").setAction(async (_, { ethers, upgrades, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  const vaultLogic = await getContractAddressFromDB("VaultLogic");
+
+  const proxy = await getContractAddressFromDB("NftVault");
+  const implid = "NftVault";
+
+  const upgradeable = await ethers.getContractFactory(implid, { libraries: { VaultLogic: vaultLogic } });
+  console.log(`Import proxy: ${proxy} with ${implid}`);
+  // @ts-ignore
+  await upgrades.forceImport(proxy, upgradeable);
+});
 
 task("verify:Implementation", "verify implmentation")
   .addParam("impl", "The contract implementation address")

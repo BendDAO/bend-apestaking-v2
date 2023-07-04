@@ -137,6 +137,24 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         }
     }
 
+    function hasDelegateCash(
+        address nft_,
+        address delegate_,
+        uint256[] calldata tokenIds_
+    ) external view onlyApe(nft_) returns (bool[] memory delegations) {
+        delegations = new bool[](tokenIds_.length);
+        uint256 tokenId_;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            delegations[i] = _vaultStorage.delegationRegistry.checkDelegateForToken(
+                delegate_,
+                address(this),
+                nft_,
+                tokenId_
+            );
+        }
+    }
+
     function depositNft(
         address nft_,
         uint256[] calldata tokenIds_,
