@@ -526,6 +526,35 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "delegate_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "hasDelegateCash",
+    "outputs": [
+      {
+        "internalType": "bool[]",
+        "name": "delegations",
+        "type": "bool[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "contract IApeCoinStaking",
         "name": "apeCoinStaking_",
         "type": "address"

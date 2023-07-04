@@ -333,6 +333,22 @@ task("deploy:config:Authorise", "Authorise stBAYC,stMAYC,stBAKC,NftVault").setAc
   console.log("ok");
 });
 
+task("deploy:config:setBnftRegistry", "setBnftRegistry stBAYC,stMAYC,stBAKC").setAction(async (_, { run, network }) => {
+  await run("set-DRE");
+  await run("compile");
+  const deployer = await getDeploySigner();
+  const stBayc = await getContractFromDB<IStakedNft>("StBAYC");
+  const stMayc = await getContractFromDB<IStakedNft>("StMAYC");
+  const stBakc = await getContractFromDB<IStakedNft>("StBAKC");
+  const bnftRegistry = getParams(BNFT_REGISTRY, network.name);
+
+  await waitForTx(await stBayc.connect(deployer).setBnftRegistry(bnftRegistry));
+  await waitForTx(await stMayc.connect(deployer).setBnftRegistry(bnftRegistry));
+  await waitForTx(await stBakc.connect(deployer).setBnftRegistry(bnftRegistry));
+
+  console.log("ok");
+});
+
 task("deploy:NewImpl", "Deploy new implmentation")
   .addParam("implid", "The new impl contract id")
   .setAction(async ({ implid }, { run }) => {
