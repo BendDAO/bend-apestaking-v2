@@ -390,6 +390,25 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      }
+    ],
+    "name": "getNftRewardsShare",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "nftShare",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "contract IStakedNft",
         "name": "stNft_",
         "type": "address"
@@ -461,6 +480,25 @@
         "internalType": "uint256",
         "name": "reward",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft_",
+        "type": "address"
+      }
+    ],
+    "name": "rewardsStrategies",
+    "outputs": [
+      {
+        "internalType": "contract IRewardsStrategy",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
