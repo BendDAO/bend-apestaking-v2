@@ -1,13 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { task } from "hardhat/config";
-import {
-  BendCoinPool,
-  BendNftPool,
-  BendStakeManager,
-  INftVault,
-  IStakedNft,
-  LendingMigrator,
-} from "../typechain-types";
+import { BendCoinPool, BendNftPool, BendStakeManager, INftVault, IStakedNft } from "../typechain-types";
 import {
   AAVE_ADDRESS_PROVIDER,
   APE_COIN,
@@ -179,11 +172,19 @@ task("deploy:DefaultWithdrawStrategy", "Deploy DefaultWithdrawStrategy").setActi
   await deployContract("DefaultWithdrawStrategy", [apeStaking, nftVault, coinPool, stakeManager], true);
 });
 
-task("deploy:LendingMigrator", "Deploy LendingMigrator").setAction(async (_, { run }) => {
+task("deploy:LendingMigrator", "Deploy LendingMigrator").setAction(async (_, { network, run }) => {
   await run("set-DRE");
   await run("compile");
 
-  await deployProxyContractWithoutInit("LendingMigrator", [], true);
+  const aaveProvider = getParams(AAVE_ADDRESS_PROVIDER, network.name);
+  const bendProvider = getParams(BEND_ADDRESS_PROVIDER, network.name);
+
+  const nftPool = await getContractAddressFromDB("BendNftPool");
+  const stBayc = await getContractAddressFromDB("StBAYC");
+  const stMayc = await getContractAddressFromDB("StMAYC");
+  const stBakc = await getContractAddressFromDB("StBAKC");
+
+  await deployProxyContract("LendingMigrator", [aaveProvider, bendProvider, nftPool, stBayc, stMayc, stBakc], true);
 });
 
 task("deploy:CompoudV1Migrator", "Deploy CompoudV1Migrator").setAction(async (_, { network, run }) => {
@@ -309,27 +310,6 @@ task("deploy:config:WithdrawStrategy", "Coinfig WithdrawStrategy").setAction(asy
   console.log("ok");
 });
 
-task("deploy:config:LendingMigrator", "Coinfig LendingMigrator").setAction(async (_, { network, run }) => {
-  await run("set-DRE");
-  await run("compile");
-  const deployer = await getDeploySigner();
-  const migrator = await getContractFromDB<LendingMigrator>("LendingMigrator");
-
-  const aaveProvider = getParams(AAVE_ADDRESS_PROVIDER, network.name);
-  const bendProvider = getParams(BEND_ADDRESS_PROVIDER, network.name);
-
-  const nftPool = await getContractAddressFromDB("BendNftPool");
-  const stBayc = await getContractAddressFromDB("StBAYC");
-  const stMayc = await getContractAddressFromDB("StMAYC");
-  const stBakc = await getContractAddressFromDB("StBAKC");
-
-  await waitForTx(
-    await migrator.connect(deployer).initialize(aaveProvider, bendProvider, nftPool, stBayc, stMayc, stBakc)
-  );
-
-  console.log("ok");
-});
-
 task("deploy:config:Authorise", "Authorise stBAYC,stMAYC,stBAKC,NftVault").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
@@ -349,6 +329,22 @@ task("deploy:config:Authorise", "Authorise stBAYC,stMAYC,stBAKC,NftVault").setAc
   await waitForTx(await nftVault.connect(deployer).authorise(stMayc.address, true));
   await waitForTx(await nftVault.connect(deployer).authorise(stBakc.address, true));
   await waitForTx(await nftVault.connect(deployer).authorise(staker, true));
+
+  console.log("ok");
+});
+
+task("deploy:config:setBnftRegistry", "setBnftRegistry stBAYC,stMAYC,stBAKC").setAction(async (_, { run, network }) => {
+  await run("set-DRE");
+  await run("compile");
+  const deployer = await getDeploySigner();
+  const stBayc = await getContractFromDB<IStakedNft>("StBAYC");
+  const stMayc = await getContractFromDB<IStakedNft>("StMAYC");
+  const stBakc = await getContractFromDB<IStakedNft>("StBAKC");
+  const bnftRegistry = getParams(BNFT_REGISTRY, network.name);
+
+  await waitForTx(await stBayc.connect(deployer).setBnftRegistry(bnftRegistry));
+  await waitForTx(await stMayc.connect(deployer).setBnftRegistry(bnftRegistry));
+  await waitForTx(await stBakc.connect(deployer).setBnftRegistry(bnftRegistry));
 
   console.log("ok");
 });
@@ -422,6 +418,8 @@ task("upgrade:NftVault", "upgrade contract").setAction(async (_, { ethers, upgra
   const vaultLogic = await getContractAddressFromDB("VaultLogic");
 
   const proxyAddress = await getContractAddressFromDB("NftVault");
+  console.log("Proxy at: ", proxyAddress);
+
   const upgradeable = await ethers.getContractFactory("NftVault", { libraries: { VaultLogic: vaultLogic } });
 
   // @ts-ignore
@@ -447,6 +445,21 @@ task("forceImport", "force import implmentation to proxy")
     // @ts-ignore
     await upgrades.forceImport(proxy, upgradeable);
   });
+
+task("forceImport:NftVault", "force import implmentation to proxy").setAction(async (_, { ethers, upgrades, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  const vaultLogic = await getContractAddressFromDB("VaultLogic");
+
+  const proxy = await getContractAddressFromDB("NftVault");
+  const implid = "NftVault";
+
+  const upgradeable = await ethers.getContractFactory(implid, { libraries: { VaultLogic: vaultLogic } });
+  console.log(`Import proxy: ${proxy} with ${implid}`);
+  // @ts-ignore
+  await upgrades.forceImport(proxy, upgradeable);
+});
 
 task("verify:Implementation", "verify implmentation")
   .addParam("impl", "The contract implementation address")

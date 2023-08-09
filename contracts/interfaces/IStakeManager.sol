@@ -47,6 +47,10 @@ interface IStakeManager {
     // strategy
     function updateRewardsStrategy(address nft_, IRewardsStrategy rewardsStrategy_) external;
 
+    function rewardsStrategies(address nft_) external view returns (IRewardsStrategy);
+
+    function getNftRewardsShare(address nft_) external view returns (uint256 nftShare);
+
     function updateWithdrawStrategy(IWithdrawStrategy withdrawStrategy_) external;
 
     function withdrawApeCoin(uint256 required) external returns (uint256);

@@ -34,5 +34,9 @@ interface IStakedNft is IERC721MetadataUpgradeable, IERC721ReceiverUpgradeable, 
 
     function underlyingAsset() external view returns (address);
 
+    function setBnftRegistry(address bnftRegistry_) external;
+
     function setDelegateCash(address delegate, uint256[] calldata tokenIds, bool value) external;
+
+    function hasDelegateCash(address delegate, uint256[] calldata tokenIds) external view returns (bool[] memory);
 }
