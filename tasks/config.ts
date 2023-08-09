@@ -77,6 +77,11 @@ export const BNFT_REGISTRY: Params<string> = {
   [Network.mainnet]: "0x79d922DD382E42A156bC0A354861cDBC4F09110d",
 };
 
+export const WETH: Params<string> = {
+  [Network.goerli]: "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
+  [Network.mainnet]: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+};
+
 export const AAVE_ADDRESS_PROVIDER: Params<string> = {
   [Network.goerli]: "0x94a675Fa2eFe076E99C126be1Bc80aedf4684190",
   [Network.mainnet]: "0xb53c1a33016b2dc2ff3653530bff1848a515c8c5",

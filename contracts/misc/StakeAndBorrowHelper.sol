@@ -112,7 +112,7 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
             // make sure the stnft borrower is the msg.sender
             vars.loanIdForCheck = bendLendLoan.getCollateralLoanId(address(stNftAsset), nftTokenIds[i]);
             vars.borrowerForCheck = bendLendLoan.borrowerOf(vars.loanIdForCheck);
-            require(msg.sender == vars.borrowerForCheck, "StakeAndBorrowHelper: stnft borrower not match");
+            require(msg.sender == vars.borrowerForCheck, "SBH: stnft borrower not match");
         }
     }
 
@@ -144,13 +144,13 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
             );
 
             vars.borrower = bendLendLoan.borrowerOf(vars.loanId);
-            require(vars.borrower == msg.sender, "Migrator: caller not borrower");
+            require(vars.borrower == msg.sender, "SBH: caller not borrower");
 
             // repay with the staked nft
             IERC20Upgradeable(vars.debtReserve).transferFrom(msg.sender, address(this), vars.debtTotalAmount);
             IERC20Upgradeable(vars.debtReserve).approve(address(bendLendPool), vars.debtTotalAmount);
             (, bool isFullRepaid) = bendLendPool.repay(stnftAssets[i], nftTokenIds[i], vars.debtTotalAmount);
-            require(isFullRepaid, "Migrator: full repay failed");
+            require(isFullRepaid, "SBH: full repay failed");
 
             IERC721Upgradeable(stnftAssets[i]).safeTransferFrom(vars.borrower, address(this), nftTokenIds[i]);
 
@@ -186,7 +186,7 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
         } else if (nftAsset == address(bakc)) {
             return stBakc;
         } else {
-            revert("Migrator: invalid nft asset");
+            revert("SBH: invalid nft asset");
         }
     }
 
@@ -198,7 +198,7 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
         } else if (stnftAsset == address(stBakc)) {
             return bakc;
         } else {
-            revert("Migrator: invalid stnft asset");
+            revert("SBH: invalid stnft asset");
         }
     }
 
