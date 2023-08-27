@@ -141,7 +141,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address nft_,
         address delegate_,
         uint256[] calldata tokenIds_
-    ) external view onlyApe(nft_) returns (bool[] memory delegations) {
+    ) external view override onlyApe(nft_) returns (bool[] memory delegations) {
         delegations = new bool[](tokenIds_.length);
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -152,6 +152,18 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 nft_,
                 tokenId_
             );
+        }
+    }
+
+    function getDelegateCashForToken(
+        address nft_,
+        uint256[] calldata tokenIds_
+    ) external view override returns (address[][] memory delegates) {
+        delegates = new address[][](tokenIds_.length);
+        uint256 tokenId_;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            delegates[i] = _vaultStorage.delegationRegistry.getDelegatesForToken(address(this), nft_, tokenId_);
         }
     }
 

@@ -247,13 +247,32 @@
   {
     "inputs": [
       {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "getDelegateCashForToken",
+    "outputs": [
+      {
+        "internalType": "address[][]",
+        "name": "delegates",
+        "type": "address[][]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "delegate",
         "type": "address"
       },
       {
         "internalType": "uint256[]",
-        "name": "tokenIds",
+        "name": "tokenIds_",
         "type": "uint256[]"
       }
     ],
