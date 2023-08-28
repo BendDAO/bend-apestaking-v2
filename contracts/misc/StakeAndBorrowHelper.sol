@@ -6,6 +6,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
 import {ILendPoolAddressesProvider} from "./interfaces/ILendPoolAddressesProvider.sol";
 import {ILendPool} from "./interfaces/ILendPool.sol";
@@ -18,6 +19,8 @@ import {INftPool} from "../interfaces/INftPool.sol";
 import {BendNftPool} from "../BendNftPool.sol";
 
 contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable, PausableUpgradeable {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
     ILendPoolAddressesProvider public bendAddressesProvider;
     ILendPool public bendLendPool;
     ILendPoolLoan public bendLendLoan;
@@ -222,6 +225,20 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
 
     function onERC721Received(address, address, uint256, bytes memory) public virtual returns (bytes4) {
         return this.onERC721Received.selector;
+    }
+
+    function rescueNativeETH(address to, uint256 amount) public onlyOwner {
+        _safeTransferETH(to, amount);
+    }
+
+    function rescueERC20Token(address token, address to, uint256 amount) public onlyOwner {
+        IERC20Upgradeable(token).safeTransfer(to, amount);
+    }
+
+    function rescueERC721Token(address token, address to, uint256[] calldata tokenIds) public onlyOwner {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            IERC721Upgradeable(token).safeTransferFrom(address(this), to, tokenIds[i]);
+        }
     }
 
     function _safeTransferETH(address to, uint256 value) internal {

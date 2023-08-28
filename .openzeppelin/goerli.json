@@ -22112,7 +22112,7 @@
             "label": "bendAddressesProvider",
             "offset": 0,
             "slot": "201",
-            "type": "t_contract(ILendPoolAddressesProvider)15587",
+            "type": "t_contract(ILendPoolAddressesProvider)6441",
             "contract": "StakeAndBorrowHelper",
             "src": "contracts/misc/StakeAndBorrowHelper.sol:21"
           },
@@ -22120,7 +22120,7 @@
             "label": "bendLendPool",
             "offset": 0,
             "slot": "202",
-            "type": "t_contract(ILendPool)15573",
+            "type": "t_contract(ILendPool)6427",
             "contract": "StakeAndBorrowHelper",
             "src": "contracts/misc/StakeAndBorrowHelper.sol:22"
           },
@@ -22128,7 +22128,7 @@
             "label": "bendLendLoan",
             "offset": 0,
             "slot": "203",
-            "type": "t_contract(ILendPoolLoan)15606",
+            "type": "t_contract(ILendPoolLoan)6460",
             "contract": "StakeAndBorrowHelper",
             "src": "contracts/misc/StakeAndBorrowHelper.sol:23"
           },
@@ -22136,7 +22136,7 @@
             "label": "WETH",
             "offset": 0,
             "slot": "204",
-            "type": "t_contract(IWETH)15637",
+            "type": "t_contract(IWETH)6491",
             "contract": "StakeAndBorrowHelper",
             "src": "contracts/misc/StakeAndBorrowHelper.sol:24"
           },
@@ -22144,7 +22144,7 @@
             "label": "nftPool",
             "offset": 0,
             "slot": "205",
-            "type": "t_contract(INftPool)11155",
+            "type": "t_contract(INftPool)4459",
             "contract": "StakeAndBorrowHelper",
             "src": "contracts/misc/StakeAndBorrowHelper.sol:26"
           },
@@ -22152,7 +22152,7 @@
             "label": "stBayc",
             "offset": 0,
             "slot": "206",
-            "type": "t_contract(IStakedNft)11981",
+            "type": "t_contract(IStakedNft)5285",
             "contract": "StakeAndBorrowHelper",
             "src": "contracts/misc/StakeAndBorrowHelper.sol:27"
           },
@@ -22160,7 +22160,7 @@
             "label": "stMayc",
             "offset": 0,
             "slot": "207",
-            "type": "t_contract(IStakedNft)11981",
+            "type": "t_contract(IStakedNft)5285",
             "contract": "StakeAndBorrowHelper",
             "src": "contracts/misc/StakeAndBorrowHelper.sol:28"
           },
@@ -22168,7 +22168,7 @@
             "label": "stBakc",
             "offset": 0,
             "slot": "208",
-            "type": "t_contract(IStakedNft)11981",
+            "type": "t_contract(IStakedNft)5285",
             "contract": "StakeAndBorrowHelper",
             "src": "contracts/misc/StakeAndBorrowHelper.sol:29"
           },
@@ -22218,27 +22218,251 @@
             "label": "contract IERC721Upgradeable",
             "numberOfBytes": "20"
           },
-          "t_contract(ILendPool)15573": {
+          "t_contract(ILendPool)6427": {
             "label": "contract ILendPool",
             "numberOfBytes": "20"
           },
-          "t_contract(ILendPoolAddressesProvider)15587": {
+          "t_contract(ILendPoolAddressesProvider)6441": {
             "label": "contract ILendPoolAddressesProvider",
             "numberOfBytes": "20"
           },
-          "t_contract(ILendPoolLoan)15606": {
+          "t_contract(ILendPoolLoan)6460": {
             "label": "contract ILendPoolLoan",
             "numberOfBytes": "20"
           },
-          "t_contract(INftPool)11155": {
+          "t_contract(INftPool)4459": {
             "label": "contract INftPool",
             "numberOfBytes": "20"
           },
-          "t_contract(IStakedNft)11981": {
+          "t_contract(IStakedNft)5285": {
             "label": "contract IStakedNft",
             "numberOfBytes": "20"
           },
-          "t_contract(IWETH)15637": {
+          "t_contract(IWETH)6491": {
+            "label": "contract IWETH",
+            "numberOfBytes": "20"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "dfa763172beb903a0a69bd356f59caa7f836a79ab115b08d17606ad885c1066a": {
+      "address": "0xE9Bd74e5e080fa76b3a36362B5BFcB3c963FF8d2",
+      "txHash": "0x4db67ae8b8ea77b56aa90283dad210a4bc54f00f6b0d24af86961efeeda0d651",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "bendAddressesProvider",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_contract(ILendPoolAddressesProvider)6522",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:24"
+          },
+          {
+            "label": "bendLendPool",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(ILendPool)6508",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:25"
+          },
+          {
+            "label": "bendLendLoan",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_contract(ILendPoolLoan)6541",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:26"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_contract(IWETH)6572",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:27"
+          },
+          {
+            "label": "nftPool",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_contract(INftPool)4459",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:29"
+          },
+          {
+            "label": "stBayc",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_contract(IStakedNft)5285",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:30"
+          },
+          {
+            "label": "stMayc",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_contract(IStakedNft)5285",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:31"
+          },
+          {
+            "label": "stBakc",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_contract(IStakedNft)5285",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:32"
+          },
+          {
+            "label": "bayc",
+            "offset": 0,
+            "slot": "209",
+            "type": "t_contract(IERC721Upgradeable)1231",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:34"
+          },
+          {
+            "label": "mayc",
+            "offset": 0,
+            "slot": "210",
+            "type": "t_contract(IERC721Upgradeable)1231",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:35"
+          },
+          {
+            "label": "bakc",
+            "offset": 0,
+            "slot": "211",
+            "type": "t_contract(IERC721Upgradeable)1231",
+            "contract": "StakeAndBorrowHelper",
+            "src": "contracts/misc/StakeAndBorrowHelper.sol:36"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IERC721Upgradeable)1231": {
+            "label": "contract IERC721Upgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ILendPool)6508": {
+            "label": "contract ILendPool",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ILendPoolAddressesProvider)6522": {
+            "label": "contract ILendPoolAddressesProvider",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ILendPoolLoan)6541": {
+            "label": "contract ILendPoolLoan",
+            "numberOfBytes": "20"
+          },
+          "t_contract(INftPool)4459": {
+            "label": "contract INftPool",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IStakedNft)5285": {
+            "label": "contract IStakedNft",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWETH)6572": {
             "label": "contract IWETH",
             "numberOfBytes": "20"
           },
