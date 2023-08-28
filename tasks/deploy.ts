@@ -19,6 +19,7 @@ import {
   MAYC,
   MAYC_REWARDS_SHARE_RATIO,
   STAKER_MANAGER_V1,
+  WETH,
 } from "./config";
 import {
   deployContract,
@@ -197,6 +198,21 @@ task("deploy:CompoudV1Migrator", "Deploy CompoudV1Migrator").setAction(async (_,
   const coinPoolV2 = await getContractAddressFromDB("BendCoinPool");
 
   await deployProxyContract("CompoudV1Migrator", [apeCoin, stakeManagerV1, coinPoolV1, coinPoolV2], true);
+});
+
+task("deploy:StakeAndBorrowHelper", "Deploy StakeAndBorrowHelper").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  const bendAddrProvider = getParams(BEND_ADDRESS_PROVIDER, network.name);
+  const weth = getParams(WETH, network.name);
+
+  const nftPool = await getContractAddressFromDB("BendNftPool");
+  const stBayc = await getContractAddressFromDB("StBAYC");
+  const stMayc = await getContractAddressFromDB("StMAYC");
+  const stBakc = await getContractAddressFromDB("StBAKC");
+
+  await deployProxyContract("StakeAndBorrowHelper", [bendAddrProvider, weth, nftPool, stBayc, stMayc, stBakc], true);
 });
 
 task("deploy:PoolViewer", "Deploy PoolViewer").setAction(async (_, { network, run }) => {

@@ -58,5 +58,9 @@
   "LendingMigrator": {
     "address": "0x9a922352fF520Ec08B41281B2d1a1a3cfCdA9110",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "StakeAndBorrowHelper": {
+    "address": "0x5A0614a61781FfD636f4686537e2E8691181c32E",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
   }
 }
