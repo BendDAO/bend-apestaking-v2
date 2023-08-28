@@ -15,6 +15,8 @@ import {IWETH} from "./interfaces/IWETH.sol";
 import {IStakedNft} from "../interfaces/IStakedNft.sol";
 import {INftPool} from "../interfaces/INftPool.sol";
 
+import {BendNftPool} from "../BendNftPool.sol";
+
 contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable, PausableUpgradeable {
     ILendPoolAddressesProvider public bendAddressesProvider;
     ILendPool public bendLendPool;
@@ -117,6 +119,7 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
     }
 
     struct RepayAndUnstakeLocalVars {
+        address apeCoinToken;
         uint256 loanId;
         address debtReserve;
         uint256 debtTotalAmount;
@@ -124,6 +127,8 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
         address[] nftsForStakingTop;
         uint256[][] nftTokenIdsForStakingTop;
         uint256[] nftTokenIdsForStakingSub;
+        uint256 apecoinBalanceBeforeUnstake;
+        uint256 apecoinBalanceAfterUnstake;
     }
 
     function repayAndUnstake(
@@ -131,6 +136,8 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
         uint256[] calldata nftTokenIds
     ) public payable whenNotPaused nonReentrant {
         RepayAndUnstakeLocalVars memory vars;
+
+        vars.apeCoinToken = address(BendNftPool(address(nftPool)).apeCoin());
 
         if (msg.value > 0) {
             WETH.deposit{value: msg.value}();
@@ -157,6 +164,8 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
             IERC721Upgradeable ogNftAsset = getOriginalNFTAsset(stnftAssets[i]);
 
             // unstake from the staking pool
+            vars.apecoinBalanceBeforeUnstake = IERC20Upgradeable(vars.apeCoinToken).balanceOf(address(this));
+
             vars.nftTokenIdsForStakingSub = new uint256[](1);
             vars.nftTokenIdsForStakingSub[0] = nftTokenIds[i];
 
@@ -165,6 +174,15 @@ contract StakeAndBorrowHelper is ReentrancyGuardUpgradeable, OwnableUpgradeable,
             vars.nftTokenIdsForStakingTop = new uint256[][](1);
             vars.nftTokenIdsForStakingTop[0] = vars.nftTokenIdsForStakingSub;
             nftPool.withdraw(vars.nftsForStakingTop, vars.nftTokenIdsForStakingTop);
+
+            // transfer apecoin rewards to borrower
+            vars.apecoinBalanceAfterUnstake = IERC20Upgradeable(vars.apeCoinToken).balanceOf(address(this));
+            if (vars.apecoinBalanceAfterUnstake > vars.apecoinBalanceBeforeUnstake) {
+                IERC20Upgradeable(vars.apeCoinToken).transfer(
+                    vars.borrower,
+                    (vars.apecoinBalanceAfterUnstake - vars.apecoinBalanceBeforeUnstake)
+                );
+            }
 
             IERC721Upgradeable(address(ogNftAsset)).safeTransferFrom(address(this), vars.borrower, nftTokenIds[i]);
         }

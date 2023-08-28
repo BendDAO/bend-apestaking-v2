@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Contracts, Env, makeSuite, Snapshots } from "./setup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { makeBNWithDecimals, mintNft } from "./utils";
+import { advanceHours, makeBNWithDecimals, mintNft } from "./utils";
 import { BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 
@@ -30,6 +30,17 @@ makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Sn
     if (lastRevert) {
       await snapshots.revert(lastRevert);
     }
+  });
+
+  it("deposit: preparing some apecoin for stake", async () => {
+    await contracts.apeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.bendCoinPool.connect(env.feeRecipient).depositSelf(makeBNWithDecimals(100000, 18));
+    expect(await contracts.bendCoinPool.totalAssets()).gt(0);
+
+    await contracts.bendStakeManager.updateBotAdmin(env.admin.address);
+
+    lastRevert = "init";
+    await snapshots.capture(lastRevert);
   });
 
   it("stakeAndBorrow: reverts when paused", async () => {
@@ -74,6 +85,8 @@ makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Sn
         baycTokenIds
       );
 
+    await contracts.bendStakeManager.connect(env.admin).stakeBayc(baycTokenIds);
+
     let totalBorrowAmount = BigNumber.from(0);
     for (const [, id] of baycTokenIds.entries()) {
       const nftDebtData = await contracts.mockBendLendPool.getNftDebtData(contracts.stBayc.address, id);
@@ -92,6 +105,12 @@ makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Sn
   });
 
   it("repayAndUnstake: bayc and weth", async () => {
+    await advanceHours(12);
+
+    await contracts.bendStakeManager.claimBayc(baycTokenIds);
+
+    const ownerApeCoinBalanceBefore = await contracts.apeCoin.balanceOf(owner.address);
+
     await contracts.weth.connect(owner).approve(contracts.stakeAndBorrowHelper.address, constants.MaxUint256);
     await contracts.stBayc.connect(owner).setApprovalForAll(contracts.stakeAndBorrowHelper.address, true);
 
@@ -104,6 +123,11 @@ makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Sn
     for (const [, id] of baycTokenIds.entries()) {
       expect(await contracts.bayc.ownerOf(id)).eq(owner.address);
     }
+
+    expect(await contracts.apeCoin.balanceOf(contracts.stakeAndBorrowHelper.address)).eq(0);
+
+    const ownerApeCoinBalanceAfter = await contracts.apeCoin.balanceOf(owner.address);
+    expect(ownerApeCoinBalanceAfter).gt(ownerApeCoinBalanceBefore);
 
     lastRevert = "init";
   });
@@ -133,6 +157,8 @@ makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Sn
         maycTokenIds
       );
 
+    await contracts.bendStakeManager.connect(env.admin).stakeMayc(maycTokenIds);
+
     let totalBorrowAmount = BigNumber.from(0);
     for (const [, id] of maycTokenIds.entries()) {
       const nftDebtData = await contracts.mockBendLendPool.getNftDebtData(contracts.stMayc.address, id);
@@ -150,6 +176,11 @@ makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Sn
   });
 
   it("repayAndUnstake: mayc and usdt", async () => {
+    await advanceHours(10);
+    await contracts.bendStakeManager.claimMayc(maycTokenIds);
+
+    const ownerApeCoinBalanceBefore = await contracts.apeCoin.balanceOf(owner.address);
+
     await contracts.usdt.connect(owner).approve(contracts.stakeAndBorrowHelper.address, constants.MaxUint256);
     await contracts.stMayc.connect(owner).setApprovalForAll(contracts.stakeAndBorrowHelper.address, true);
 
@@ -163,6 +194,11 @@ makeSuite("StakeAndBorrowHelper", (contracts: Contracts, env: Env, snapshots: Sn
     for (const [, id] of maycTokenIds.entries()) {
       expect(await contracts.mayc.ownerOf(id)).eq(owner.address);
     }
+
+    expect(await contracts.apeCoin.balanceOf(contracts.stakeAndBorrowHelper.address)).eq(0);
+
+    const ownerApeCoinBalanceAfter = await contracts.apeCoin.balanceOf(owner.address);
+    expect(ownerApeCoinBalanceAfter).gt(ownerApeCoinBalanceBefore);
 
     lastRevert = "init";
   });
