@@ -92,6 +92,11 @@ interface INftVault is IERC721ReceiverUpgradeable {
 
     function setDelegateCash(address delegate_, address nft_, uint256[] calldata tokenIds, bool value) external;
 
+    function getDelegateCashForToken(
+        address nft_,
+        uint256[] calldata tokenIds_
+    ) external view returns (address[][] memory);
+
     // deposit nft
     function depositNft(address nft_, uint256[] calldata tokenIds_, address staker_) external;
 
