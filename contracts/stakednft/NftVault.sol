@@ -137,18 +137,60 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         }
     }
 
+    function hasDelegateCash(
+        address nft_,
+        address delegate_,
+        uint256[] calldata tokenIds_
+    ) external view override onlyApe(nft_) returns (bool[] memory delegations) {
+        delegations = new bool[](tokenIds_.length);
+        uint256 tokenId_;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            delegations[i] = _vaultStorage.delegationRegistry.checkDelegateForToken(
+                delegate_,
+                address(this),
+                nft_,
+                tokenId_
+            );
+        }
+    }
+
+    function getDelegateCashForToken(
+        address nft_,
+        uint256[] calldata tokenIds_
+    ) external view override returns (address[][] memory delegates) {
+        delegates = new address[][](tokenIds_.length);
+        uint256 tokenId_;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            delegates[i] = _vaultStorage.delegationRegistry.getDelegatesForToken(address(this), nft_, tokenId_);
+        }
+    }
+
     function depositNft(
         address nft_,
         uint256[] calldata tokenIds_,
         address staker_
     ) external override onlyApe(nft_) onlyAuthorized nonReentrant {
+        uint256 tokenId_;
+        uint256 poolId_;
         IApeCoinStaking.Position memory position_;
+        IApeCoinStaking.PairingStatus memory pairingStatus_;
 
         // transfer nft and set permission
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             // block partially stake from official contract
-            position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, tokenIds_[i]);
+            tokenId_ = tokenIds_[i];
+            position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, tokenId_);
             require(position_.stakedAmount == 0, "nftVault: nft already staked");
+
+            if (nft_ == _vaultStorage.bayc || nft_ == _vaultStorage.mayc) {
+                poolId_ = _vaultStorage.apeCoinStaking.getNftPoolId(nft_);
+                pairingStatus_ = _vaultStorage.apeCoinStaking.mainToBakc(poolId_, tokenId_);
+                // block bayc & mayc which already paired with bakc
+                require(!pairingStatus_.isPaired, "nftVault: already paired with bakc");
+            }
+
             IERC721Upgradeable(nft_).safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
             _vaultStorage.nfts[nft_][tokenIds_[i]] = NftStatus(msg.sender, staker_);
         }

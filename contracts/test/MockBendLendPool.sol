@@ -21,13 +21,13 @@ contract MockBendLendPool is ILendPool {
         uint256 amount,
         address nftAsset,
         uint256 nftTokenId,
-        address /*onBehalfOf*/,
+        address onBehalfOf,
         uint16 /*referralCode*/
     ) external {
         MockBendLendPoolLoan lendPoolLoan = MockBendLendPoolLoan(
             ILendPoolAddressesProvider(addressesProvider).getLendPoolLoan()
         );
-        lendPoolLoan.setLoanData(nftAsset, nftTokenId, msg.sender, reserveAsset, amount);
+        lendPoolLoan.setLoanData(nftAsset, nftTokenId, onBehalfOf, reserveAsset, amount);
 
         IERC721(nftAsset).transferFrom(msg.sender, address(this), nftTokenId);
         IERC20(reserveAsset).transfer(msg.sender, amount);

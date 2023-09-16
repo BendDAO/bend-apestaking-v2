@@ -28,11 +28,11 @@ This project contains all smart contracts used for the current BendDAO ApeCoin S
 
 ## Documentation
 
-TBD
+[Docs](https://docs.benddao.xyz/portal/)
 
 ## Audits
 
-TBD
+- [Verilog Solution](https://www.verilog.solutions/audits/benddao_ape_staking_v2/)
 
 ### Run tests
 

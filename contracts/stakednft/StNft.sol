@@ -5,12 +5,14 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {ERC721EnumerableUpgradeable, ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721MetadataUpgradeable.sol";
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC721ReceiverUpgradeable.sol";
 
 import {IStakedNft} from "../interfaces/IStakedNft.sol";
 import {INftVault} from "../interfaces/INftVault.sol";
+import {IBNFTRegistry} from "../interfaces/IBNFTRegistry.sol";
 
 abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgradeable, ERC721EnumerableUpgradeable {
     IERC721MetadataUpgradeable private _nft;
@@ -28,6 +30,8 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
     string private _customBaseURI;
 
     mapping(address => bool) private _authorized;
+
+    IBNFTRegistry public bnftRegistry;
 
     modifier onlyAuthorized() {
         require(_authorized[msg.sender], "StNft: caller is not authorized");
@@ -59,6 +63,11 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
     function onERC721Received(address, address, uint256, bytes calldata) external view override returns (bytes4) {
         require(msg.sender == address(_nft), "StNft: nft not acceptable");
         return IERC721ReceiverUpgradeable.onERC721Received.selector;
+    }
+
+    function setBnftRegistry(address bnftRegistry_) external override onlyOwner {
+        require(bnftRegistry_ != address(0), "StNft: invalid bnft registry");
+        bnftRegistry = IBNFTRegistry(bnftRegistry_);
     }
 
     function authorise(address addr_, bool authorized_) external override onlyOwner {
@@ -158,10 +167,31 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
         return _nft.tokenURI(tokenId_);
     }
 
+    function hasDelegateCash(
+        address delegate,
+        uint256[] calldata tokenIds_
+    ) external view override returns (bool[] memory) {
+        return nftVault.hasDelegateCash(address(_nft), delegate, tokenIds_);
+    }
+
     function setDelegateCash(address delegate_, uint256[] calldata tokenIds_, bool value_) external override {
+        address tokenOwner_;
+        uint256 tokenId_;
+        (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(this));
         for (uint256 i = 0; i < tokenIds_.length; i++) {
-            require(msg.sender == ownerOf(tokenIds_[i]), "stNft: only owner can delegate");
+            tokenId_ = tokenIds_[i];
+            tokenOwner_ = ownerOf(tokenId_);
+            if (tokenOwner_ != msg.sender && bnftProxy != address(0) && tokenOwner_ == bnftProxy) {
+                tokenOwner_ = IERC721Upgradeable(bnftProxy).ownerOf(tokenId_);
+            }
+            require(msg.sender == tokenOwner_, "stNft: only owner can delegate");
         }
         nftVault.setDelegateCash(delegate_, address(_nft), tokenIds_, value_);
+    }
+
+    function getDelegateCashForToken(
+        uint256[] calldata tokenIds_
+    ) external view override returns (address[][] memory delegates) {
+        return nftVault.getDelegateCashForToken(address(_nft), tokenIds_);
     }
 }

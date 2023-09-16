@@ -46,10 +46,13 @@ export const getSignersAddresses = async (): Promise<string[]> =>
 
 export const deployImplementation = async <ContractType extends Contract>(
   contractName: string,
-  verify?: boolean
+  verify?: boolean,
+  libraries?: { [libraryName: string]: string }
 ): Promise<ContractType> => {
-  console.log("deploy", contractName);
-  const instance = await (await DRE.ethers.getContractFactory(contractName)).connect(await getDeploySigner()).deploy();
+  console.log("deploy", contractName, "with libraries:", libraries);
+  const instance = await (await DRE.ethers.getContractFactory(contractName, { libraries }))
+    .connect(await getDeploySigner())
+    .deploy();
   console.log("Impl address:", instance.address);
 
   if (verify) {
@@ -68,7 +71,7 @@ export const deployContract = async <ContractType extends Contract>(
 ): Promise<ContractType> => {
   dbKey = dbKey || contractName;
   console.log("deploy", dbKey);
-  const instance = await (await DRE.ethers.getContractFactory(contractName, libraries))
+  const instance = await (await DRE.ethers.getContractFactory(contractName, { libraries }))
     .connect(await getDeploySigner())
     .deploy(...args);
 

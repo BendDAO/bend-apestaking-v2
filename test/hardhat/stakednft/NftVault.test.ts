@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Contracts, Env, makeSuite, Snapshots } from "../setup";
-import { advanceHours, makeBN18, mintNft, randomUint, shuffledSubarray } from "../utils";
+import { advanceHours, makeBN18, mintNft, randomUint } from "../utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, constants } from "ethers";
 import { ApeCoinStaking, MintableERC721 } from "../../../typechain-types";
@@ -34,6 +34,11 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     await contracts.bayc.connect(owner).setApprovalForAll(contracts.nftVault.address, true);
     await contracts.mayc.connect(owner).setApprovalForAll(contracts.nftVault.address, true);
     await contracts.bakc.connect(owner).setApprovalForAll(contracts.nftVault.address, true);
+
+    await contracts.bayc.connect(owner).setApprovalForAll(contracts.apeStaking.address, true);
+    await contracts.mayc.connect(owner).setApprovalForAll(contracts.apeStaking.address, true);
+    await contracts.bakc.connect(owner).setApprovalForAll(contracts.apeStaking.address, true);
+    await contracts.apeCoin.connect(owner).approve(contracts.apeStaking.address, constants.MaxUint256);
 
     lastRevert = "init";
     await snapshots.capture(lastRevert);
@@ -107,6 +112,75 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       expect(await nft.ownerOf(id)).eq(contracts.nftVault.address);
     }
   };
+
+  it("depositNft: revert when deposit bayc already staked in official", async () => {
+    const baycs: ApeCoinStaking.SingleNftStruct[] = [
+      {
+        tokenId: baycTokenIds[0],
+        amount: makeBN18(randomUint(1, 10094)),
+      },
+    ];
+    await contracts.apeStaking.connect(owner).depositBAYC(baycs);
+    await expect(
+      contracts.nftVault.connect(owner).depositNft(contracts.bayc.address, [baycs[0].tokenId], staker.address)
+    ).revertedWith("nftVault: nft already staked");
+  });
+
+  it("depositNft: revert when deposit mayc already staked in official", async () => {
+    const maycs: ApeCoinStaking.SingleNftStruct[] = [
+      {
+        tokenId: maycTokenIds[0],
+        amount: makeBN18(randomUint(1, 2042)),
+      },
+    ];
+    await contracts.apeStaking.connect(owner).depositMAYC(maycs);
+    await expect(
+      contracts.nftVault.connect(owner).depositNft(contracts.mayc.address, [maycs[0].tokenId], staker.address)
+    ).revertedWith("nftVault: nft already staked");
+  });
+
+  it("depositNft: revert when deposit bakc already staked in official", async () => {
+    const baycPairs: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [
+      {
+        mainTokenId: baycTokenIds[0],
+        bakcTokenId: bakcTokenIds[0],
+        amount: makeBN18(randomUint(1, 856)),
+      },
+    ];
+    await contracts.apeStaking.connect(owner).depositBAKC(baycPairs, []);
+
+    await expect(
+      contracts.nftVault.connect(owner).depositNft(contracts.bakc.address, [baycPairs[0].bakcTokenId], staker.address)
+    ).revertedWith("nftVault: nft already staked");
+  });
+
+  it("depositNft: revert when deposit bayc which already paired with bakc", async () => {
+    const baycPairs: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [
+      {
+        mainTokenId: baycTokenIds[0],
+        bakcTokenId: bakcTokenIds[0],
+        amount: makeBN18(randomUint(1, 856)),
+      },
+    ];
+    await contracts.apeStaking.connect(owner).depositBAKC(baycPairs, []);
+    await expect(
+      contracts.nftVault.connect(owner).depositNft(contracts.bayc.address, [baycPairs[0].mainTokenId], staker.address)
+    ).revertedWith("nftVault: already paired with bakc");
+  });
+
+  it("depositNft: revert when deposit mayc which already paired with bakc", async () => {
+    const maycPairs: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [
+      {
+        mainTokenId: maycTokenIds[0],
+        bakcTokenId: bakcTokenIds[0],
+        amount: makeBN18(randomUint(1, 856)),
+      },
+    ];
+    await contracts.apeStaking.connect(owner).depositBAKC([], maycPairs);
+    await expect(
+      contracts.nftVault.connect(owner).depositNft(contracts.mayc.address, [maycPairs[0].mainTokenId], staker.address)
+    ).revertedWith("nftVault: already paired with bakc");
+  });
 
   it("depositNft", async () => {
     await expectDepositNft(contracts.bayc, baycTokenIds, staker, owner);
@@ -1159,112 +1233,5 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     expect(await contracts.nftVault.totalStakingNft(contracts.bakc.address, staker.address)).eq(0);
     expect(await contracts.nftVault.totalStakingNft(contracts.bayc.address, staker.address)).eq(baycTokenIds.length);
     expect(await contracts.nftVault.totalStakingNft(contracts.mayc.address, staker.address)).eq(maycTokenIds.length);
-  });
-
-  it("withdrawNft: withdraw all bayc, and some of paring bakc not in vault", async () => {
-    await snapshots.revert("init");
-    const baycPaires: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [];
-    const maycPaires: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [];
-    const officalBakcTokenIds = shuffledSubarray(bakcTokenIds, { minLength: 1, maxLength: 3 });
-    for (const [i, id] of officalBakcTokenIds.entries())
-      baycPaires.push({
-        mainTokenId: baycTokenIds[i],
-        bakcTokenId: id,
-        amount: makeBN18(856),
-      });
-    await contracts.apeCoin.connect(owner).approve(contracts.apeStaking.address, constants.MaxUint256);
-    await expect(contracts.apeStaking.connect(owner).depositBAKC(baycPaires, maycPaires)).not.reverted;
-
-    await expect(contracts.nftVault.connect(owner).depositNft(contracts.bayc.address, baycTokenIds, staker.address)).not
-      .reverted;
-
-    let nfts = [];
-    for (let [i, id] of baycTokenIds.entries()) {
-      let amount = makeBN18(randomUint(1, 10094));
-      nfts[i] = {
-        tokenId: id,
-        amount,
-      };
-    }
-    await contracts.nftVault.connect(staker).stakeBaycPool(nfts);
-
-    const stakedBakcTokenIds = _.without(bakcTokenIds, ...officalBakcTokenIds);
-
-    let baycNfts: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [];
-    let maycNfts: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [];
-    let baycIndex = 0;
-    for (let id of stakedBakcTokenIds) {
-      let amount = makeBN18(randomUint(1, 856));
-      baycNfts[baycIndex] = {
-        mainTokenId: baycTokenIds[baycIndex + officalBakcTokenIds.length],
-        bakcTokenId: id,
-        amount,
-      };
-      baycIndex++;
-    }
-
-    await expect(
-      contracts.nftVault.connect(owner).depositNft(contracts.bakc.address, stakedBakcTokenIds, staker.address)
-    ).not.reverted;
-
-    await expect(contracts.nftVault.connect(staker).stakeBakcPool(baycNfts, maycNfts)).not.reverted;
-
-    await advanceHours(100);
-
-    await expect(contracts.nftVault.connect(owner).withdrawNft(contracts.bayc.address, baycTokenIds)).not.reverted;
-  });
-
-  it("withdrawNft: withdraw all mayc, and some of paring bakc not in vault", async () => {
-    await snapshots.revert("init");
-    const baycPaires: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [];
-    const maycPaires: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [];
-
-    const officalBakcTokenIds = shuffledSubarray(bakcTokenIds, { minLength: 1, maxLength: 3 });
-    for (const [i, id] of officalBakcTokenIds.entries())
-      maycPaires.push({
-        mainTokenId: maycTokenIds[i],
-        bakcTokenId: id,
-        amount: makeBN18(856),
-      });
-    await contracts.apeCoin.connect(owner).approve(contracts.apeStaking.address, constants.MaxUint256);
-    await expect(contracts.apeStaking.connect(owner).depositBAKC(baycPaires, maycPaires)).not.reverted;
-
-    await expect(contracts.nftVault.connect(owner).depositNft(contracts.mayc.address, maycTokenIds, staker.address)).not
-      .reverted;
-
-    let nfts = [];
-    for (let [i, id] of maycTokenIds.entries()) {
-      let amount = makeBN18(randomUint(1, 2042));
-      nfts[i] = {
-        tokenId: id,
-        amount,
-      };
-    }
-    await contracts.nftVault.connect(staker).stakeMaycPool(nfts);
-
-    const stakedBakcTokenIds = _.without(bakcTokenIds, ...officalBakcTokenIds);
-
-    let baycNfts: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [];
-    let maycNfts: ApeCoinStaking.PairNftDepositWithAmountStruct[] = [];
-    let maycIndex = 0;
-    for (let id of stakedBakcTokenIds) {
-      let amount = makeBN18(randomUint(1, 856));
-      maycNfts[maycIndex] = {
-        mainTokenId: maycTokenIds[maycIndex + officalBakcTokenIds.length],
-        bakcTokenId: id,
-        amount,
-      };
-      maycIndex++;
-    }
-
-    await expect(
-      contracts.nftVault.connect(owner).depositNft(contracts.bakc.address, stakedBakcTokenIds, staker.address)
-    ).not.reverted;
-
-    await expect(contracts.nftVault.connect(staker).stakeBakcPool(baycNfts, maycNfts)).not.reverted;
-
-    await advanceHours(100);
-
-    await expect(contracts.nftVault.connect(owner).withdrawNft(contracts.mayc.address, maycTokenIds)).not.reverted;
   });
 });
