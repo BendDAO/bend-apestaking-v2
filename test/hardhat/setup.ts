@@ -28,6 +28,7 @@ import {
   MockStakeManagerV1,
   CompoudV1Migrator,
   PoolViewer,
+  BendApeCoinStakedVoting,
 } from "../../typechain-types";
 import { Contract, BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -85,6 +86,8 @@ export interface Contracts {
   mockStakeManagerV1: MockStakeManagerV1;
   compoudV1Migrator: CompoudV1Migrator;
   poolViewer: PoolViewer;
+  // voting
+  stakedVoting: BendApeCoinStakedVoting;
 }
 
 export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
@@ -342,6 +345,14 @@ export async function setupContracts(): Promise<Contracts> {
     bnftRegistry.address,
   ]);
 
+  // voting
+  const stakedVoting = await deployContract<BendApeCoinStakedVoting>("BendApeCoinStakedVoting", [
+    bendCoinPool.address,
+    bendNftPool.address,
+    bendStakeManager.address,
+    bnftRegistry.address,
+  ]);
+
   return {
     initialized: true,
     delegateCash,
@@ -377,6 +388,7 @@ export async function setupContracts(): Promise<Contracts> {
     mockStakeManagerV1,
     compoudV1Migrator,
     poolViewer,
+    stakedVoting,
   } as Contracts;
 }
 

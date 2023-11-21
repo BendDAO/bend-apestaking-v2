@@ -58,5 +58,9 @@
   "LendingMigrator": {
     "address": "0x9a922352fF520Ec08B41281B2d1a1a3cfCdA9110",
     "deployer": "0x99AcDAB13365e4CFcAa139A31de7CF8C80Ac5fb1"
+  },
+  "BendApeCoinStakedVoting": {
+    "address": "0x463a79b1339BfD188D09CA941D2c8120BdE8A0De",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
   }
 }
