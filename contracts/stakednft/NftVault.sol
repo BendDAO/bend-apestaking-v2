@@ -8,7 +8,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-import {INftVault, IApeCoinStaking, IERC721ReceiverUpgradeable} from "../interfaces/INftVault.sol";
+import {INftVault, IApeCoinStaking, IERC721ReceiverUpgradeable, IDelegateRegistryV2} from "../interfaces/INftVault.sol";
 import {IDelegationRegistry} from "../interfaces/IDelegationRegistry.sol";
 
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
@@ -137,24 +137,6 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         }
     }
 
-    function hasDelegateCash(
-        address nft_,
-        address delegate_,
-        uint256[] calldata tokenIds_
-    ) external view override onlyApe(nft_) returns (bool[] memory delegations) {
-        delegations = new bool[](tokenIds_.length);
-        uint256 tokenId_;
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            tokenId_ = tokenIds_[i];
-            delegations[i] = _vaultStorage.delegationRegistry.checkDelegateForToken(
-                delegate_,
-                address(this),
-                nft_,
-                tokenId_
-            );
-        }
-    }
-
     function getDelegateCashForToken(
         address nft_,
         uint256[] calldata tokenIds_
@@ -164,6 +146,59 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
             delegates[i] = _vaultStorage.delegationRegistry.getDelegatesForToken(address(this), nft_, tokenId_);
+        }
+    }
+
+    function setDelegationRegistryV2Contract(address registryV2_) external onlyOwner {
+        _vaultStorage.delegationRegistryV2 = IDelegateRegistryV2(registryV2_);
+    }
+
+    function setDelegateCashV2(
+        address delegate_,
+        address nft_,
+        uint256[] calldata tokenIds_,
+        bool value_
+    ) external override onlyAuthorized onlyApe(nft_) {
+        require(delegate_ != address(0), "nftVault: invalid delegate");
+        uint256 tokenId_;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            require(
+                msg.sender == VaultLogic._ownerOf(_vaultStorage, nft_, tokenId_),
+                "nftVault: only owner can delegate"
+            );
+            _vaultStorage.delegationRegistryV2.delegateERC721(delegate_, nft_, tokenId_, "", value_);
+        }
+    }
+
+    function getDelegateCashForTokenV2(
+        address nft_,
+        uint256[] calldata tokenIds_
+    ) external view override returns (address[][] memory delegates) {
+        IDelegateRegistryV2.Delegation[] memory allDelegations = _vaultStorage
+            .delegationRegistryV2
+            .getOutgoingDelegations(address(this));
+
+        delegates = new address[][](tokenIds_.length);
+        uint256 tokenId_;
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+
+            uint256 tokenDelegatesNum;
+            for (uint256 j = 0; j < allDelegations.length; j++) {
+                if (allDelegations[j].contract_ == nft_ && allDelegations[j].tokenId == tokenId_) {
+                    tokenDelegatesNum++;
+                }
+            }
+
+            delegates[i] = new address[](tokenDelegatesNum);
+            uint256 tokenDelegateIdx;
+            for (uint256 j = 0; j < allDelegations.length; j++) {
+                if (allDelegations[j].contract_ == nft_ && allDelegations[j].tokenId == tokenId_) {
+                    delegates[i][tokenDelegateIdx] = allDelegations[j].to;
+                    tokenDelegateIdx++;
+                }
+            }
         }
     }
 

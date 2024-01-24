@@ -167,13 +167,6 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
         return _nft.tokenURI(tokenId_);
     }
 
-    function hasDelegateCash(
-        address delegate,
-        uint256[] calldata tokenIds_
-    ) external view override returns (bool[] memory) {
-        return nftVault.hasDelegateCash(address(_nft), delegate, tokenIds_);
-    }
-
     function setDelegateCash(address delegate_, uint256[] calldata tokenIds_, bool value_) external override {
         address tokenOwner_;
         uint256 tokenId_;
@@ -193,5 +186,26 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
         uint256[] calldata tokenIds_
     ) external view override returns (address[][] memory delegates) {
         return nftVault.getDelegateCashForToken(address(_nft), tokenIds_);
+    }
+
+    function setDelegateCashV2(address delegate_, uint256[] calldata tokenIds_, bool value_) external override {
+        address tokenOwner_;
+        uint256 tokenId_;
+        (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(this));
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            tokenId_ = tokenIds_[i];
+            tokenOwner_ = ownerOf(tokenId_);
+            if (tokenOwner_ != msg.sender && bnftProxy != address(0) && tokenOwner_ == bnftProxy) {
+                tokenOwner_ = IERC721Upgradeable(bnftProxy).ownerOf(tokenId_);
+            }
+            require(msg.sender == tokenOwner_, "stNft: only owner can delegate");
+        }
+        nftVault.setDelegateCashV2(delegate_, address(_nft), tokenIds_, value_);
+    }
+
+    function getDelegateCashForTokenV2(
+        uint256[] calldata tokenIds_
+    ) external view override returns (address[][] memory delegates) {
+        return nftVault.getDelegateCashForTokenV2(address(_nft), tokenIds_);
     }
 }

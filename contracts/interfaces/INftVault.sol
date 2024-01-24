@@ -7,6 +7,7 @@ import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/to
 
 import {IApeCoinStaking} from "./IApeCoinStaking.sol";
 import {IDelegationRegistry} from "../interfaces/IDelegationRegistry.sol";
+import {IDelegateRegistryV2} from "../interfaces/IDelegateRegistryV2.sol";
 
 interface INftVault is IERC721ReceiverUpgradeable {
     event NftDeposited(address indexed nft, address indexed owner, address indexed staker, uint256[] tokenIds);
@@ -54,6 +55,7 @@ interface INftVault is IERC721ReceiverUpgradeable {
         address bakc;
         IDelegationRegistry delegationRegistry;
         mapping(address => bool) authorized;
+        IDelegateRegistryV2 delegationRegistryV2;
     }
 
     struct Refund {
@@ -83,16 +85,20 @@ interface INftVault is IERC721ReceiverUpgradeable {
 
     function isStaking(address nft_, address staker_, uint256 tokenId_) external view returns (bool);
 
-    // delegate.cash
-    function hasDelegateCash(
-        address nft_,
-        address delegate_,
-        uint256[] calldata tokenIds_
-    ) external view returns (bool[] memory delegations);
+    // delegate.cash V1
 
     function setDelegateCash(address delegate_, address nft_, uint256[] calldata tokenIds, bool value) external;
 
     function getDelegateCashForToken(
+        address nft_,
+        uint256[] calldata tokenIds_
+    ) external view returns (address[][] memory);
+
+    // delegate.cash V2
+
+    function setDelegateCashV2(address delegate_, address nft_, uint256[] calldata tokenIds, bool value) external;
+
+    function getDelegateCashForTokenV2(
         address nft_,
         uint256[] calldata tokenIds_
     ) external view returns (address[][] memory);

@@ -190,6 +190,54 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     await snapshots.capture(lastRevert);
   });
 
+  it("setDelegateCash", async () => {
+    {
+      await contracts.nftVault
+        .connect(owner)
+        .setDelegateCash(owner.address, contracts.bayc.address, baycTokenIds, true);
+      const delegates = await contracts.nftVault.getDelegateCashForToken(contracts.bayc.address, baycTokenIds);
+      expect(delegates.length).eq(baycTokenIds.length);
+      for (let i = 0; i < delegates.length; i++) {
+        expect(delegates[i].length).eq(1);
+        expect(delegates[i][0]).eq(owner.address);
+      }
+    }
+
+    await contracts.nftVault.connect(owner).setDelegateCash(owner.address, contracts.bayc.address, baycTokenIds, false);
+    const delegates = await contracts.nftVault.getDelegateCashForToken(contracts.bayc.address, baycTokenIds);
+    expect(delegates.length).eq(baycTokenIds.length);
+    for (let i = 0; i < delegates.length; i++) {
+      expect(delegates[i].length).eq(0);
+    }
+
+    lastRevert = "depositNft";
+  });
+
+  it("setDelegateCashV2", async () => {
+    {
+      await contracts.nftVault
+        .connect(owner)
+        .setDelegateCashV2(owner.address, contracts.bayc.address, baycTokenIds, true);
+      const delegates = await contracts.nftVault.getDelegateCashForTokenV2(contracts.bayc.address, baycTokenIds);
+      expect(delegates.length).eq(baycTokenIds.length);
+      for (let i = 0; i < delegates.length; i++) {
+        expect(delegates[i].length).eq(1);
+        expect(delegates[i][0]).eq(owner.address);
+      }
+    }
+
+    await contracts.nftVault
+      .connect(owner)
+      .setDelegateCashV2(owner.address, contracts.bayc.address, baycTokenIds, false);
+    const delegates = await contracts.nftVault.getDelegateCashForTokenV2(contracts.bayc.address, baycTokenIds);
+    expect(delegates.length).eq(baycTokenIds.length);
+    for (let i = 0; i < delegates.length; i++) {
+      expect(delegates[i].length).eq(0);
+    }
+
+    lastRevert = "depositNft";
+  });
+
   it("stakeBaycPool", async () => {
     let nfts = [];
     let stakeAmount = constants.Zero;
