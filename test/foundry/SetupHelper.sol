@@ -74,6 +74,11 @@ abstract contract SetupHelper is Test {
     DefaultRewardsStrategy internal bakcStrategy;
     DefaultWithdrawStrategy internal withdrawStrategy;
 
+    struct PoolConfig {
+        uint256 id;
+        uint256 cap;
+    }
+
     function setUp() public virtual {
         // prepare test users
         utilsHelper = new UtilitiesHelper();
@@ -97,6 +102,10 @@ abstract contract SetupHelper is Test {
         mockMAYC = new MintableERC721("Mock MAYC", "MAYC");
         mockBAKC = new MintableERC721("Mock BAKC", "BAKC");
 
+        // update the block info
+        vm.warp(1669748400);
+        vm.roll(100);
+
         // mocked ape staking and config params
         mockApeStaking = new ApeCoinStaking(
             address(mockApeCoin),
@@ -104,26 +113,25 @@ abstract contract SetupHelper is Test {
             address(mockMAYC),
             address(mockBAKC)
         );
-        // ApeCoin pool
-        mockApeStaking.addTimeRange(0, 10500000000000000000000000, 1669748400, 1677610800, 0);
-        mockApeStaking.addTimeRange(0, 9000000000000000000000000, 1677610800, 1685559600, 0);
-        mockApeStaking.addTimeRange(0, 6000000000000000000000000, 1685559600, 1693422000, 0);
-        mockApeStaking.addTimeRange(0, 4500000000000000000000000, 1693422000, 1701284400, 0);
-        // BAYC pool
-        mockApeStaking.addTimeRange(1, 16486750000000000000000000, 1669748400, 1677610800, 10094000000000000000000);
-        mockApeStaking.addTimeRange(1, 14131500000000000000000000, 1677610800, 1685559600, 10094000000000000000000);
-        mockApeStaking.addTimeRange(1, 9421000000000000000000000, 1685559600, 1693422000, 10094000000000000000000);
-        mockApeStaking.addTimeRange(1, 7065750000000000000000000, 1693422000, 1701284400, 10094000000000000000000);
-        // MAYC pool
-        mockApeStaking.addTimeRange(2, 6671000000000000000000000, 1669748400, 1677610800, 2042000000000000000000);
-        mockApeStaking.addTimeRange(2, 5718000000000000000000000, 1677610800, 1685559600, 2042000000000000000000);
-        mockApeStaking.addTimeRange(2, 3812000000000000000000000, 1685559600, 1693422000, 2042000000000000000000);
-        mockApeStaking.addTimeRange(2, 2859000000000000000000000, 1693422000, 1701284400, 2042000000000000000000);
-        // BAKC pool
-        mockApeStaking.addTimeRange(3, 1342250000000000000000000, 1669748400, 1677610800, 856000000000000000000);
-        mockApeStaking.addTimeRange(3, 1150500000000000000000000, 1677610800, 1685559600, 856000000000000000000);
-        mockApeStaking.addTimeRange(3, 767000000000000000000000, 1685559600, 1693422000, 856000000000000000000);
-        mockApeStaking.addTimeRange(3, 575250000000000000000000, 1693422000, 1701284400, 856000000000000000000);
+        PoolConfig[] memory poolConfigs = new PoolConfig[](4);
+        poolConfigs[0] = PoolConfig({id: 0, cap: 0});
+        poolConfigs[1] = PoolConfig({id: 1, cap: 10094000000000000000000});
+        poolConfigs[2] = PoolConfig({id: 2, cap: 2042000000000000000000});
+        poolConfigs[3] = PoolConfig({id: 3, cap: 856000000000000000000});
+        for (uint i = 0; i < poolConfigs.length; i++) {
+            uint256 startTime = (block.timestamp / 3600) * 3600;
+            uint256 timeRane = 3600 * 24 * 90;
+            uint256 poolAmount = 10500000000000000000000000 / (i + 1);
+
+            for (uint j = 0; j < 4; j++) {
+                uint256 endTime = startTime + timeRane;
+                uint256 amount = poolAmount / (j + 1);
+
+                mockApeStaking.addTimeRange(poolConfigs[i].id, amount, startTime, endTime, poolConfigs[i].cap);
+
+                startTime = endTime;
+            }
+        }
 
         // staked nfts
         nftVault = new NftVault();
@@ -215,10 +223,6 @@ abstract contract SetupHelper is Test {
         mockApeCoin.approve(address(coinPool), initDeposit);
         coinPool.deposit(initDeposit, feeRecipient);
         vm.stopPrank();
-
-        // update the block info
-        vm.warp(1669748400);
-        vm.roll(100);
     }
 
     function advanceTime(uint256 timeDelta) internal {

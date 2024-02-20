@@ -29,10 +29,13 @@ import {
   CompoudV1Migrator,
   PoolViewer,
   BendApeCoinStakedVoting,
+  MockDelegationRegistryV2,
 } from "../../typechain-types";
 import { Contract, BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
-import { deployContract } from "./utils";
+import { advanceHours, deployContract } from "./utils";
+import { latest } from "./helpers/block-traveller";
+import { forEach } from "lodash";
 
 export interface Env {
   initialized: boolean;
@@ -88,6 +91,8 @@ export interface Contracts {
   poolViewer: PoolViewer;
   // voting
   stakedVoting: BendApeCoinStakedVoting;
+  // delegate
+  mockDelegationRegistryV2: MockDelegationRegistryV2;
 }
 
 export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
@@ -105,97 +110,44 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.apeCoin.connect(env.admin).transfer(contracts.apeStaking.address, parseEther("100000000"));
 
   // ApeCoin pool
-  await contracts.apeStaking.addTimeRange(0, BigNumber.from("10500000000000000000000000"), 1669748400, 1677610800, 0);
-  await contracts.apeStaking.addTimeRange(0, BigNumber.from("9000000000000000000000000"), 1677610800, 1685559600, 0);
-  await contracts.apeStaking.addTimeRange(0, BigNumber.from("6000000000000000000000000"), 1685559600, 1693422000, 0);
-  await contracts.apeStaking.addTimeRange(0, BigNumber.from("4500000000000000000000000"), 1693422000, 1701284400, 0);
-  // BAYC pool
-  await contracts.apeStaking.addTimeRange(
-    1,
-    BigNumber.from("16486750000000000000000000"),
-    1669748400,
-    1677610800,
-    BigNumber.from("10094000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    1,
-    BigNumber.from("14131500000000000000000000"),
-    1677610800,
-    1685559600,
-    BigNumber.from("10094000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    1,
-    BigNumber.from("9421000000000000000000000"),
-    1685559600,
-    1693422000,
-    BigNumber.from("10094000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    1,
-    BigNumber.from("7065750000000000000000000"),
-    1693422000,
-    1701284400,
-    BigNumber.from("10094000000000000000000")
-  );
-  // MAYC pool
-  await contracts.apeStaking.addTimeRange(
-    2,
-    BigNumber.from("6671000000000000000000000"),
-    1669748400,
-    1677610800,
-    BigNumber.from("2042000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    2,
-    BigNumber.from("5718000000000000000000000"),
-    1677610800,
-    1685559600,
-    BigNumber.from("2042000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    2,
-    BigNumber.from("3812000000000000000000000"),
-    1685559600,
-    1693422000,
-    BigNumber.from("2042000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    2,
-    BigNumber.from("2859000000000000000000000"),
-    1693422000,
-    1701284400,
-    BigNumber.from("2042000000000000000000")
-  );
-  // BAKC pool
-  await contracts.apeStaking.addTimeRange(
-    3,
-    BigNumber.from("1342250000000000000000000"),
-    1669748400,
-    1677610800,
-    BigNumber.from("856000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    3,
-    BigNumber.from("1150500000000000000000000"),
-    1677610800,
-    1685559600,
-    BigNumber.from("856000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    3,
-    BigNumber.from("767000000000000000000000"),
-    1685559600,
-    1693422000,
-    BigNumber.from("856000000000000000000")
-  );
-  await contracts.apeStaking.addTimeRange(
-    3,
-    BigNumber.from("575250000000000000000000"),
-    1693422000,
-    1701284400,
-    BigNumber.from("856000000000000000000")
-  );
+  const latestBlockTime = await latest();
+  const poolConfigs: {
+    id: number;
+    cap: BigNumber;
+  }[] = [];
+  poolConfigs.push({
+    id: 0,
+    cap: BigNumber.from("0"),
+  });
+  poolConfigs.push({
+    id: 1,
+    cap: BigNumber.from("10094000000000000000000"),
+  });
+  poolConfigs.push({
+    id: 2,
+    cap: BigNumber.from("2042000000000000000000"),
+  });
+  poolConfigs.push({
+    id: 3,
+    cap: BigNumber.from("856000000000000000000"),
+  });
+
+  for (const poolConfig of poolConfigs) {
+    let startTime = latestBlockTime - 3600 * 24 * 30;
+    startTime = Math.floor(startTime / 3600) * 3600;
+    let timeRage = 3600 * 24 * 90;
+    let poolAmount = BigNumber.from("10500000000000000000000000").div(poolConfig.id + 1);
+
+    for (let timeIdx = 0; timeIdx < 4; timeIdx++) {
+      let endTime = startTime + timeRage;
+      const amount = poolAmount.div(timeIdx + 1);
+
+      await contracts.apeStaking.addTimeRange(poolConfig.id, amount, startTime, endTime, poolConfig.cap);
+
+      startTime = endTime;
+    }
+  }
+
   // bend staking
   await contracts.mockAaveLendPoolAddressesProvider.setLendingPool(contracts.mockAaveLendPool.address);
 
@@ -250,6 +202,10 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.bnftRegistry.setBNFTContract(contracts.stMayc.address, contracts.bnftStMayc.address);
   await contracts.bnftRegistry.setBNFTContract(contracts.stBakc.address, contracts.bnftStBakc.address);
 
+  await contracts.stBayc.setBnftRegistry(contracts.bnftRegistry.address);
+  await contracts.stMayc.setBnftRegistry(contracts.bnftRegistry.address);
+  await contracts.stBakc.setBnftRegistry(contracts.bnftRegistry.address);
+
   await contracts.stBayc.authorise(contracts.bendStakeManager.address, true);
   await contracts.stMayc.authorise(contracts.bendStakeManager.address, true);
   await contracts.stBakc.authorise(contracts.bendStakeManager.address, true);
@@ -258,6 +214,8 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.nftVault.authorise(contracts.stMayc.address, true);
   await contracts.nftVault.authorise(contracts.stBakc.address, true);
   await contracts.nftVault.authorise(contracts.bendStakeManager.address, true);
+
+  await contracts.nftVault.setDelegationRegistryV2Contract(contracts.mockDelegationRegistryV2.address);
 
   await contracts.compoudV1Migrator.initialize(
     contracts.apeCoin.address,
@@ -353,6 +311,9 @@ export async function setupContracts(): Promise<Contracts> {
     bnftRegistry.address,
   ]);
 
+  // delegate registry v2
+  const mockDelegationRegistryV2 = await deployContract<MockDelegationRegistryV2>("MockDelegationRegistryV2", []);
+
   return {
     initialized: true,
     delegateCash,
@@ -389,6 +350,7 @@ export async function setupContracts(): Promise<Contracts> {
     compoudV1Migrator,
     poolViewer,
     stakedVoting,
+    mockDelegationRegistryV2,
   } as Contracts;
 }
 

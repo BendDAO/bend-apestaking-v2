@@ -1,0 +1,153 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "contract_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "rights",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bool",
+        "name": "enable",
+        "type": "bool"
+      }
+    ],
+    "name": "delegateERC721",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "delegationHash",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "delegationHashes",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "getDelegationsFromHashes",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum IDelegateRegistryV2.DelegationType",
+            "name": "type_",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "rights",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "contract_",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IDelegateRegistryV2.Delegation[]",
+        "name": "delegations",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      }
+    ],
+    "name": "getOutgoingDelegations",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum IDelegateRegistryV2.DelegationType",
+            "name": "type_",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "rights",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "contract_",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IDelegateRegistryV2.Delegation[]",
+        "name": "delegations",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

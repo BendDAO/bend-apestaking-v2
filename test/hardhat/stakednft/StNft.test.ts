@@ -64,6 +64,56 @@ export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [
       await snapshots.capture(lastRevert);
     });
 
+    it("setDelegateCash", async () => {
+      {
+        await stNft.connect(stNftOwner).setDelegateCash(stNftOwner.address, tokenIds, true);
+
+        const delegates = await stNft.getDelegateCashForToken(tokenIds);
+        expect(delegates.length).eq(tokenIds.length);
+        for (let i = 0; i < delegates.length; i++) {
+          expect(delegates[i].length).eq(1);
+          expect(delegates[i][0]).eq(stNftOwner.address);
+        }
+      }
+
+      {
+        await stNft.connect(stNftOwner).setDelegateCash(stNftOwner.address, tokenIds, false);
+
+        const delegates = await stNft.getDelegateCashForToken(tokenIds);
+        expect(delegates.length).eq(tokenIds.length);
+        for (let i = 0; i < delegates.length; i++) {
+          expect(delegates[i].length).eq(0);
+        }
+      }
+
+      lastRevert = "mint";
+    });
+
+    it("setDelegateCashV2", async () => {
+      {
+        await stNft.connect(stNftOwner).setDelegateCashV2(stNftOwner.address, tokenIds, true);
+
+        const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
+        expect(delegates.length).eq(tokenIds.length);
+        for (let i = 0; i < delegates.length; i++) {
+          expect(delegates[i].length).eq(1);
+          expect(delegates[i][0]).eq(stNftOwner.address);
+        }
+      }
+
+      {
+        await stNft.connect(stNftOwner).setDelegateCashV2(stNftOwner.address, tokenIds, false);
+
+        const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
+        expect(delegates.length).eq(tokenIds.length);
+        for (let i = 0; i < delegates.length; i++) {
+          expect(delegates[i].length).eq(0);
+        }
+      }
+
+      lastRevert = "mint";
+    });
+
     it("burn", async () => {
       expect(await stNft.totalStaked(staker.address)).eq(tokenIds.length);
       expect(await stNft.totalStaked(stNftOwner.address)).eq(0);
