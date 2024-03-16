@@ -4,8 +4,9 @@ pragma solidity 0.8.18;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
 import {IAaveLendPoolAddressesProvider} from "./interfaces/IAaveLendPoolAddressesProvider.sol";
 import {IAaveLendPool} from "./interfaces/IAaveLendPool.sol";
@@ -23,6 +24,8 @@ contract LendingMigrator is
     OwnableUpgradeable,
     PausableUpgradeable
 {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
     event NftMigrated(address indexed borrower, address indexed nftAsset, uint256 nftTokenId, uint256 debtAmount);
 
     uint256 public constant PERCENTAGE_FACTOR = 1e4;
@@ -190,7 +193,7 @@ contract LendingMigrator is
             (address, address[], uint256[], uint256[])
         );
 
-        IERC20Upgradeable(assets[0]).approve(address(bendLendPool), type(uint256).max);
+        IERC20Upgradeable(assets[0]).safeApprove(address(bendLendPool), type(uint256).max);
 
         for (uint256 i = 0; i < execVars.nftTokenIds.length; i++) {
             RepayAndBorrowLocaVars memory vars;
@@ -201,10 +204,10 @@ contract LendingMigrator is
             _repayAndBorrowPerNft(execVars, vars);
         }
 
-        IERC20Upgradeable(assets[0]).approve(address(bendLendPool), 0);
+        IERC20Upgradeable(assets[0]).safeApprove(address(bendLendPool), 0);
 
         execVars.repayToAave = amounts[0] + premiums[0];
-        IERC20Upgradeable(assets[0]).approve(msg.sender, execVars.repayToAave);
+        IERC20Upgradeable(assets[0]).safeApprove(msg.sender, execVars.repayToAave);
 
         return true;
     }
