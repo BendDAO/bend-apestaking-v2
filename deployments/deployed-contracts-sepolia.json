@@ -1,0 +1,66 @@
+{
+  "VaultLogic": {
+    "address": "0x6e280259faB2e3E9d0E665ed0311A6E6f5f72b24",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "NftVault": {
+    "address": "0x1f9b18D502d8A406564b0cF4e4B7ad9d4eEb2a52",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "StBAYC": {
+    "address": "0x214455B76E5A5dECB48557417397B831efC6219b",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "StMAYC": {
+    "address": "0xE5165Aae8D50371A277f266eC5A0E00405B532C8",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "StBAKC": {
+    "address": "0x7354e69221F33291c5993721fb762d39ecc239A5",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "BendCoinPool": {
+    "address": "0xe8fd314458e7a3E1013AB259a5cDd9d8170ffF43",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "BendNftPool": {
+    "address": "0x4d88286FB725d3bd094d2D389Cf6e8518adf5a05",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "BendStakeManager": {
+    "address": "0xEEE4f9bdbBC0f261DeaD86E0BAC441D3E3Ae7ac6",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "BaycRewardsStrategy": {
+    "address": "0xB68d4a3f93A657E8A6Ff17a2fb4acfd4769474c7",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "MaycRewardsStrategy": {
+    "address": "0x297642D337EC625825feB175aAb4F968A35FFbEc",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "BakcRewardsStrategy": {
+    "address": "0x35A95F3C6803728602e7833C4BA3e8b9916A366e",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "DefaultWithdrawStrategy": {
+    "address": "0xE363444f9B18968674B03130f37fa8DCabe5091D",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "LendingMigrator": {
+    "address": "0x94C4C2eA9e68cDA0D999A915310A1E07880c9Da2",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "CompoudV1Migrator": {
+    "address": "0x60C7eb6362D4fD6dFa53f6610784924eFaA1d178",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "PoolViewer": {
+    "address": "0xa9A3b239CC1C2Fc9D40E6258464a9c180aaA3A19",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  },
+  "BendApeCoinStakedVoting": {
+    "address": "0xD102205D4Fa0449BC2CeBa7b7C741Ab363409cCa",
+    "deployer": "0xafF5C36642385b6c7Aaf7585eC785aB2316b5db6"
+  }
+}
