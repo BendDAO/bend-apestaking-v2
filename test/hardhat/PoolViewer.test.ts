@@ -38,4 +38,15 @@ makeSuite("PoolViewer", (contracts: Contracts, env: Env, snapshots: Snapshots) =
     const viewerStatsUser = await contracts.poolViewer.viewUserPendingRewards(env.feeRecipient.address);
     expect(viewerStatsUser.baycPoolRewards).eq(0);
   });
+
+  it("pending rewards for bend v2", async () => {
+    const viewerStatsUser1 = await contracts.poolViewer.viewUserPendingRewardsForBendV2(env.feeRecipient.address, []);
+    expect(viewerStatsUser1.baycPoolRewards).eq(0);
+
+    const viewerStatsUser2 = await contracts.poolViewer.viewUserPendingRewardsForBendV2(
+      env.feeRecipient.address,
+      [1, 2, 3]
+    );
+    expect(viewerStatsUser2.baycPoolRewards).eq(0);
+  });
 });

@@ -30,6 +30,7 @@ import {
   PoolViewer,
   BendApeCoinStakedVoting,
   MockDelegationRegistryV2,
+  MockAddressProviderV2,
 } from "../../typechain-types";
 import { Contract, BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -88,6 +89,8 @@ export interface Contracts {
   mockCoinPoolV1: MockBendApeCoinV1;
   mockStakeManagerV1: MockStakeManagerV1;
   compoudV1Migrator: CompoudV1Migrator;
+  // v2 lending
+  mockAddressProviderV2: MockAddressProviderV2;
   poolViewer: PoolViewer;
   // voting
   stakedVoting: BendApeCoinStakedVoting;
@@ -223,6 +226,8 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
     contracts.mockCoinPoolV1.address,
     contracts.bendCoinPool.address
   );
+
+  await contracts.bendNftPool.setV2AddressProvider(contracts.mockAddressProviderV2.address);
 }
 
 export async function setupContracts(): Promise<Contracts> {
@@ -296,11 +301,15 @@ export async function setupContracts(): Promise<Contracts> {
   const mockStakeManagerV1 = await deployContract<MockStakeManagerV1>("MockStakeManagerV1", [apeCoin.address]);
   const compoudV1Migrator = await deployContract<CompoudV1Migrator>("CompoudV1Migrator", []);
 
+  // v2 lending
+  const mockAddressProviderV2 = await deployContract<MockAddressProviderV2>("MockAddressProviderV2", []);
+
   const poolViewer = await deployContract<PoolViewer>("PoolViewer", [
     apeStaking.address,
     bendCoinPool.address,
     bendStakeManager.address,
     bnftRegistry.address,
+    mockAddressProviderV2.address,
   ]);
 
   // voting
@@ -348,6 +357,7 @@ export async function setupContracts(): Promise<Contracts> {
     mockCoinPoolV1,
     mockStakeManagerV1,
     compoudV1Migrator,
+    mockAddressProviderV2,
     poolViewer,
     stakedVoting,
     mockDelegationRegistryV2,

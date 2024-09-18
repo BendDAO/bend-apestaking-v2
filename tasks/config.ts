@@ -134,3 +134,9 @@ export const COIN_POOL_V1: Params<string> = {
   [Network.goerli]: "0x780592BEBaC01FAe7e1040E14C41F921C0A5c789",
   [Network.mainnet]: "0xEB3837c611fb2C5550F816f227D85262f0d04A52",
 };
+
+export const BENDV2_ADDRESS_PROVIDER: Params<string> = {
+  [Network.sepolia]: "0x1ee799adcF1A1A0fd9F7E8fD29dB6e816374AE29",
+  [Network.goerli]: "0x0000000000000000000000000000000000000000",
+  [Network.mainnet]: "0xa9Afc955d549D43DB056655b98FaB02870A45Fcd",
+};
