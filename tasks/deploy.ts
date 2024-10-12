@@ -10,6 +10,7 @@ import {
   BAYC,
   BAYC_REWARDS_SHARE_RATIO,
   BEND_ADDRESS_PROVIDER,
+  BENDV2_ADDRESS_PROVIDER,
   BNFT_REGISTRY,
   COIN_POOL_V1,
   DELEAGATE_CASH,
@@ -207,8 +208,9 @@ task("deploy:PoolViewer", "Deploy PoolViewer").setAction(async (_, { network, ru
   const coinPool = await getContractAddressFromDB("BendCoinPool");
   const stakeManager = await getContractAddressFromDB("BendStakeManager");
   const bnftRegistry = getParams(BNFT_REGISTRY, network.name);
+  const v2AddressProvider = getParams(BENDV2_ADDRESS_PROVIDER, network.name);
 
-  await deployContract("PoolViewer", [apeStaking, coinPool, stakeManager, bnftRegistry], true);
+  await deployContract("PoolViewer", [apeStaking, coinPool, stakeManager, bnftRegistry, v2AddressProvider], true);
 });
 
 task("deploy:StakedVoting", "Deploy Voting").setAction(async (_, { network, run }) => {

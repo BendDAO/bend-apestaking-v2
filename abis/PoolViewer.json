@@ -20,10 +20,28 @@
         "internalType": "contract IBNFTRegistry",
         "name": "bnftRegistry_",
         "type": "address"
+      },
+      {
+        "internalType": "contract IAddressProviderV2",
+        "name": "v2AddressProvider_",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "MODULEID__POOL_LENS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [],
@@ -106,6 +124,40 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "userAddr_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32[]",
+        "name": "v2PoolIds_",
+        "type": "uint32[]"
+      }
+    ],
+    "name": "getAllStakedNftCountForBendV2",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "baycNum",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maycNum",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bakcNum",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "contract IStakedNft",
         "name": "nft_",
         "type": "address"
@@ -117,6 +169,35 @@
       }
     ],
     "name": "getStakedNftCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "count",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IStakedNft",
+        "name": "nft_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "userAddr_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32[]",
+        "name": "v2PoolIds_",
+        "type": "uint32[]"
+      }
+    ],
+    "name": "getStakedNftCountForBendV2",
     "outputs": [
       {
         "internalType": "uint256",
@@ -146,6 +227,45 @@
     "outputs": [
       {
         "internalType": "contract IStakeManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "v2AddressProvider",
+    "outputs": [
+      {
+        "internalType": "contract IAddressProviderV2",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "v2PoolLens",
+    "outputs": [
+      {
+        "internalType": "contract IPoolLensV2",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "v2PoolManager",
+    "outputs": [
+      {
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -295,6 +415,52 @@
       }
     ],
     "name": "viewUserPendingRewards",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "coinPoolRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "baycPoolRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maycPoolRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bakcPoolRewards",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct PoolViewer.PendingRewards",
+        "name": "rewards",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "userAddr_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32[]",
+        "name": "v2PoolIds_",
+        "type": "uint32[]"
+      }
+    ],
+    "name": "viewUserPendingRewardsForBendV2",
     "outputs": [
       {
         "components": [

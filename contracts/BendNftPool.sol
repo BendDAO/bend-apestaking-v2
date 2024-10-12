@@ -13,11 +13,13 @@ import {IStakeManager} from "./interfaces/IStakeManager.sol";
 import {INftPool, IStakedNft, IApeCoinStaking} from "./interfaces/INftPool.sol";
 import {ICoinPool} from "./interfaces/ICoinPool.sol";
 import {IBNFTRegistry} from "./interfaces/IBNFTRegistry.sol";
+import {IAddressProviderV2, IPoolLensV2} from "./interfaces/IBendV2Interfaces.sol";
 
 contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeERC20Upgradeable for ICoinPool;
     uint256 private constant APE_COIN_PRECISION = 1e18;
+    uint private constant MODULEID__POOL_LENS = 4;
 
     IApeCoinStaking public apeCoinStaking;
     IERC20Upgradeable public apeCoin;
@@ -28,6 +30,9 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
     address public mayc;
     address public bakc;
     IBNFTRegistry public bnftRegistry;
+    IAddressProviderV2 public v2AddressProvider;
+    address public v2PoolManager;
+    IPoolLensV2 public v2PoolLens;
 
     modifier onlyApe(address nft_) {
         require(bayc == nft_ || mayc == nft_ || bakc == nft_, "BendNftPool: not ape");
@@ -111,7 +116,8 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         _checkDuplicateNfts(nfts_);
         _checkDuplicateTokenIds(tokenIds_);
 
-        _claim(msg.sender, msg.sender, nfts_, tokenIds_);
+        uint32[][] memory v2PoolIds_ = new uint32[][](0);
+        _claim(msg.sender, msg.sender, nfts_, tokenIds_, v2PoolIds_);
 
         PoolState storage pool_;
         uint256 tokenId_;
@@ -146,7 +152,8 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         address owner_,
         address receiver_,
         address[] calldata nfts_,
-        uint256[][] calldata tokenIds_
+        uint256[][] calldata tokenIds_,
+        uint32[][] memory v2PoolIds_
     ) internal {
         address nft_;
         PoolState storage pool_;
@@ -157,6 +164,9 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
 
         for (uint256 i = 0; i < nfts_.length; i++) {
             require(tokenIds_[i].length > 0, "BendNftPool: empty tokenIds");
+            if (v2PoolIds_.length > 0) {
+                require(v2PoolIds_[i].length == tokenIds_[i].length, "BendNftPool: invalid v2PoolIds");
+            }
             nft_ = nfts_[i];
             pool_ = poolStates[nft_];
             (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(pool_.stakedNft));
@@ -169,6 +179,20 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
                 tokenOwner_ = pool_.stakedNft.ownerOf(tokenId_);
                 if (tokenOwner_ != owner_ && bnftProxy != address(0) && tokenOwner_ == bnftProxy) {
                     tokenOwner_ = IERC721Upgradeable(bnftProxy).ownerOf(tokenId_);
+                }
+                // special case for stNFT deposited in v2 protocol
+                if (v2PoolIds_.length > 0) {
+                    if (
+                        tokenOwner_ != owner_ &&
+                        address(v2PoolManager) != address(0) &&
+                        tokenOwner_ == address(v2PoolManager)
+                    ) {
+                        (tokenOwner_, , ) = v2PoolLens.getERC721TokenData(
+                            v2PoolIds_[i][j],
+                            address(pool_.stakedNft),
+                            tokenId_
+                        );
+                    }
                 }
                 require(tokenOwner_ == owner_, "BendNftPool: invalid token owner");
                 require(pool_.stakedNft.stakerOf(tokenId_) == address(staker), "BendNftPool: invalid token staker");
@@ -202,7 +226,20 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         _checkDuplicateNfts(nfts_);
         _checkDuplicateTokenIds(tokenIds_);
 
-        _claim(msg.sender, msg.sender, nfts_, tokenIds_);
+        uint32[][] memory v2PoolIds_ = new uint32[][](0);
+
+        _claim(msg.sender, msg.sender, nfts_, tokenIds_, v2PoolIds_);
+    }
+
+    function claimForBendV2(
+        address[] calldata nfts_,
+        uint256[][] calldata tokenIds_,
+        uint32[][] calldata v2PoolIds_
+    ) external onlyApes(nfts_) nonReentrant whenNotPaused {
+        _checkDuplicateNfts(nfts_);
+        _checkDuplicateTokenIds(tokenIds_);
+
+        _claim(msg.sender, msg.sender, nfts_, tokenIds_, v2PoolIds_);
     }
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
@@ -343,5 +380,11 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         } else {
             _unpause();
         }
+    }
+
+    function setV2AddressProvider(address v2Provider_) public onlyOwner {
+        v2AddressProvider = IAddressProviderV2(v2Provider_);
+        v2PoolManager = v2AddressProvider.getPoolManager();
+        v2PoolLens = IPoolLensV2(v2AddressProvider.getPoolModuleProxy(MODULEID__POOL_LENS));
     }
 }

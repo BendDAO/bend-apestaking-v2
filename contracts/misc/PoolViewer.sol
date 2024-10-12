@@ -12,6 +12,7 @@ import {IStakeManager} from "../interfaces/IStakeManager.sol";
 import {IWithdrawStrategy} from "../interfaces/IWithdrawStrategy.sol";
 import {IRewardsStrategy} from "../interfaces/IRewardsStrategy.sol";
 import {IBNFTRegistry} from "../interfaces/IBNFTRegistry.sol";
+import {IAddressProviderV2, IPoolLensV2} from "../interfaces/IBendV2Interfaces.sol";
 
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
@@ -19,6 +20,8 @@ contract PoolViewer {
     using ApeStakingLib for IApeCoinStaking;
     using Math for uint256;
     uint256 public constant PERCENTAGE_FACTOR = 1e4;
+    uint public constant MODULEID__POOL_LENS = 4;
+
     struct PoolState {
         uint256 coinPoolPendingApeCoin;
         uint256 coinPoolPendingRewards;
@@ -43,12 +46,16 @@ contract PoolViewer {
     address public immutable bayc;
     address public immutable mayc;
     address public immutable bakc;
+    IAddressProviderV2 public v2AddressProvider;
+    address public v2PoolManager;
+    IPoolLensV2 public v2PoolLens;
 
     constructor(
         IApeCoinStaking apeCoinStaking_,
         ICoinPool coinPool_,
         IStakeManager staker_,
-        IBNFTRegistry bnftRegistry_
+        IBNFTRegistry bnftRegistry_,
+        IAddressProviderV2 v2AddressProvider_
     ) {
         apeCoinStaking = apeCoinStaking_;
         coinPool = coinPool_;
@@ -58,6 +65,10 @@ contract PoolViewer {
         bayc = address(apeCoinStaking.bayc());
         mayc = address(apeCoinStaking.mayc());
         bakc = address(apeCoinStaking.bakc());
+
+        v2AddressProvider = v2AddressProvider_;
+        v2PoolManager = v2AddressProvider.getPoolManager();
+        v2PoolLens = IPoolLensV2(v2AddressProvider.getPoolModuleProxy(MODULEID__POOL_LENS));
     }
 
     function viewPool() external view returns (PoolState memory poolState) {
@@ -192,6 +203,65 @@ contract PoolViewer {
                     count += 1;
                 }
             }
+        }
+    }
+
+    function getStakedNftCountForBendV2(
+        IStakedNft nft_,
+        address userAddr_,
+        uint32[] calldata v2PoolIds_
+    ) public view returns (uint256 count) {
+        count = getStakedNftCount(nft_, userAddr_);
+
+        for (uint i = 0; i < v2PoolIds_.length; i++) {
+            (uint256 totalCrossSupply, uint256 totalIsolateSupply, , ) = v2PoolLens.getUserAssetData(
+                userAddr_,
+                v2PoolIds_[i],
+                address(nft_)
+            );
+            count += (totalCrossSupply + totalIsolateSupply);
+        }
+    }
+
+    function getAllStakedNftCountForBendV2(
+        address userAddr_,
+        uint32[] calldata v2PoolIds_
+    ) public view returns (uint256 baycNum, uint256 maycNum, uint256 bakcNum) {
+        baycNum = getStakedNftCountForBendV2(staker.stBayc(), userAddr_, v2PoolIds_);
+        maycNum = getStakedNftCountForBendV2(staker.stMayc(), userAddr_, v2PoolIds_);
+        bakcNum = getStakedNftCountForBendV2(staker.stBakc(), userAddr_, v2PoolIds_);
+    }
+
+    function viewUserPendingRewardsForBendV2(
+        address userAddr_,
+        uint32[] calldata v2PoolIds_
+    ) public view returns (PendingRewards memory rewards) {
+        rewards = viewPoolPendingRewards();
+
+        uint256 totalSupply = coinPool.totalSupply();
+        if (totalSupply > 0) {
+            rewards.coinPoolRewards = rewards.coinPoolRewards.mulDiv(
+                coinPool.balanceOf(userAddr_),
+                totalSupply,
+                Math.Rounding.Down
+            );
+        }
+
+        (uint256 baycNum, uint256 maycNum, uint256 bakcNum) = getAllStakedNftCountForBendV2(userAddr_, v2PoolIds_);
+
+        uint256 totalStakedNft = staker.stBayc().totalStaked(address(staker));
+        if (totalStakedNft > 0) {
+            rewards.baycPoolRewards = rewards.baycPoolRewards.mulDiv(baycNum, totalStakedNft, Math.Rounding.Down);
+        }
+
+        totalStakedNft = staker.stMayc().totalStaked(address(staker));
+        if (totalStakedNft > 0) {
+            rewards.maycPoolRewards = rewards.maycPoolRewards.mulDiv(maycNum, totalStakedNft, Math.Rounding.Down);
+        }
+
+        totalStakedNft = staker.stBakc().totalStaked(address(staker));
+        if (totalStakedNft > 0) {
+            rewards.bakcPoolRewards = rewards.bakcPoolRewards.mulDiv(bakcNum, totalStakedNft, Math.Rounding.Down);
         }
     }
 }
