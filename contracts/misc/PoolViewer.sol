@@ -264,4 +264,34 @@ contract PoolViewer {
             rewards.bakcPoolRewards = rewards.bakcPoolRewards.mulDiv(bakcNum, totalStakedNft, Math.Rounding.Down);
         }
     }
+
+    function getPoolUIByIndex(uint256 poolId_, uint256 index_) public view returns (IApeCoinStaking.PoolUI memory) {
+        IApeCoinStaking.PoolWithoutTimeRange memory poolNoTR = apeCoinStaking.pools(poolId_);
+        IApeCoinStaking.TimeRange memory tr = apeCoinStaking.getTimeRangeBy(poolId_, index_);
+        return IApeCoinStaking.PoolUI(poolId_, poolNoTR.stakedAmount, tr);
+    }
+
+    function getPoolUIByID(uint256 poolId_) public view returns (IApeCoinStaking.PoolUI memory) {
+        IApeCoinStaking.PoolWithoutTimeRange memory poolNoTR = apeCoinStaking.pools(poolId_);
+        IApeCoinStaking.TimeRange memory tr = apeCoinStaking.getTimeRangeBy(poolId_, poolNoTR.lastRewardsRangeIndex);
+        return IApeCoinStaking.PoolUI(poolId_, poolNoTR.stakedAmount, tr);
+    }
+
+    function getPoolsUI()
+        public
+        view
+        returns (
+            IApeCoinStaking.PoolUI memory,
+            IApeCoinStaking.PoolUI memory,
+            IApeCoinStaking.PoolUI memory,
+            IApeCoinStaking.PoolUI memory
+        )
+    {
+        return (
+            getPoolUIByID(ApeStakingLib.APE_COIN_POOL_ID),
+            getPoolUIByID(ApeStakingLib.BAYC_POOL_ID),
+            getPoolUIByID(ApeStakingLib.MAYC_POOL_ID),
+            getPoolUIByID(ApeStakingLib.BAKC_POOL_ID)
+        );
+    }
 }
