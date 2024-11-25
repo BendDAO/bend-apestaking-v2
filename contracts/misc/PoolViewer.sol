@@ -75,9 +75,9 @@ contract PoolViewer {
         poolState.coinPoolPendingApeCoin = coinPool.pendingApeCoin();
         poolState.coinPoolPendingRewards = staker.pendingRewards(0);
         poolState.coinPoolStakedAmount = staker.stakedApeCoin(0);
-        poolState.baycPoolMaxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAYC_POOL_ID).capPerPosition;
-        poolState.maycPoolMaxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.MAYC_POOL_ID).capPerPosition;
-        poolState.bakcPoolMaxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAKC_POOL_ID).capPerPosition;
+        poolState.baycPoolMaxCap = ApeStakingLib.BAYC_MAX_CAP;
+        poolState.maycPoolMaxCap = ApeStakingLib.MAYC_MAX_CAP;
+        poolState.bakcPoolMaxCap = ApeStakingLib.BAKC_MAX_CAP;
     }
 
     function viewNftPoolPendingRewards(
