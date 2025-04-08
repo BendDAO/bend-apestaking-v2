@@ -4,6 +4,7 @@ import { mintNft } from "../utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { MintableERC721, IStakedNft } from "../../../typechain-types";
 import { constants } from "ethers";
+import { arrayify } from "ethers/lib/utils";
 
 export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [IStakedNft, MintableERC721]): void {
   makeSuite(name, (contracts: Contracts, env: Env, snapshots: Snapshots) => {
@@ -103,6 +104,33 @@ export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [
 
       {
         await stNft.connect(stNftOwner).setDelegateCashV2(stNftOwner.address, tokenIds, false);
+
+        const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
+        expect(delegates.length).eq(tokenIds.length);
+        for (let i = 0; i < delegates.length; i++) {
+          expect(delegates[i].length).eq(0);
+        }
+      }
+
+      lastRevert = "mint";
+    });
+
+    it("setDelegateCashV2WithRights", async () => {
+      const rights = arrayify("0x000000000000000000000000000000000000000000000000000000ffffffffff");
+
+      {
+        await stNft.connect(stNftOwner).setDelegateCashV2WithRights(stNftOwner.address, tokenIds, rights, true);
+
+        const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
+        expect(delegates.length).eq(tokenIds.length);
+        for (let i = 0; i < delegates.length; i++) {
+          expect(delegates[i].length).eq(1);
+          expect(delegates[i][0]).eq(stNftOwner.address);
+        }
+      }
+
+      {
+        await stNft.connect(stNftOwner).setDelegateCashV2WithRights(stNftOwner.address, tokenIds, rights, false);
 
         const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
         expect(delegates.length).eq(tokenIds.length);

@@ -159,6 +159,26 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256[] calldata tokenIds_,
         bool value_
     ) external override onlyAuthorized onlyApe(nft_) {
+        _setDelegateCashV2(delegate_, nft_, tokenIds_, "", value_);
+    }
+
+    function setDelegateCashV2WithRights(
+        address delegate_,
+        address nft_,
+        uint256[] calldata tokenIds_,
+        bytes32 rights,
+        bool value_
+    ) external override onlyAuthorized onlyApe(nft_) {
+        _setDelegateCashV2(delegate_, nft_, tokenIds_, rights, value_);
+    }
+
+    function _setDelegateCashV2(
+        address delegate_,
+        address nft_,
+        uint256[] calldata tokenIds_,
+        bytes32 rights,
+        bool value_
+    ) internal {
         require(delegate_ != address(0), "nftVault: invalid delegate");
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -167,7 +187,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 msg.sender == VaultLogic._ownerOf(_vaultStorage, nft_, tokenId_),
                 "nftVault: only owner can delegate"
             );
-            _vaultStorage.delegationRegistryV2.delegateERC721(delegate_, nft_, tokenId_, "", value_);
+            _vaultStorage.delegationRegistryV2.delegateERC721(delegate_, nft_, tokenId_, rights, value_);
         }
     }
 
