@@ -189,6 +189,19 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
     }
 
     function setDelegateCashV2(address delegate_, uint256[] calldata tokenIds_, bool value_) external override {
+        _setDelegateCashV2(delegate_, tokenIds_, "", value_);
+    }
+
+    function setDelegateCashV2WithRights(
+        address delegate_,
+        uint256[] calldata tokenIds_,
+        bytes32 rights,
+        bool value_
+    ) external override {
+        _setDelegateCashV2(delegate_, tokenIds_, rights, value_);
+    }
+
+    function _setDelegateCashV2(address delegate_, uint256[] calldata tokenIds_, bytes32 rights, bool value_) internal {
         address tokenOwner_;
         uint256 tokenId_;
         (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(this));
@@ -200,7 +213,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
             }
             require(msg.sender == tokenOwner_, "stNft: only owner can delegate");
         }
-        nftVault.setDelegateCashV2(delegate_, address(_nft), tokenIds_, value_);
+        nftVault.setDelegateCashV2WithRights(delegate_, address(_nft), tokenIds_, rights, value_);
     }
 
     function getDelegateCashForTokenV2(

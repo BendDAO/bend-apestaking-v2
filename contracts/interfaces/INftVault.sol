@@ -98,6 +98,14 @@ interface INftVault is IERC721ReceiverUpgradeable {
 
     function setDelegateCashV2(address delegate_, address nft_, uint256[] calldata tokenIds, bool value) external;
 
+    function setDelegateCashV2WithRights(
+        address delegate_,
+        address nft_,
+        uint256[] calldata tokenIds,
+        bytes32 rights,
+        bool value
+    ) external;
+
     function getDelegateCashForTokenV2(
         address nft_,
         uint256[] calldata tokenIds_

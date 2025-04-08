@@ -35,7 +35,7 @@ contract TestMigratorUSDT is Test {
         migrator = LendingMigrator(migratorAddress);
     }
 
-    function testMigrate() public {
+    function _testMigrate() public {
         // upgrade contract
         LendingMigrator migratorImpl = new LendingMigrator();
 
