@@ -94,7 +94,7 @@ export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [
       {
         await stNft.connect(stNftOwner).setDelegateCashV2(stNftOwner.address, tokenIds, true);
 
-        const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
+        const { delegates } = await stNft.getDelegateCashForTokenV2(tokenIds);
         expect(delegates.length).eq(tokenIds.length);
         for (let i = 0; i < delegates.length; i++) {
           expect(delegates[i].length).eq(1);
@@ -105,7 +105,7 @@ export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [
       {
         await stNft.connect(stNftOwner).setDelegateCashV2(stNftOwner.address, tokenIds, false);
 
-        const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
+        const { delegates } = await stNft.getDelegateCashForTokenV2(tokenIds);
         expect(delegates.length).eq(tokenIds.length);
         for (let i = 0; i < delegates.length; i++) {
           expect(delegates[i].length).eq(0);
@@ -121,7 +121,7 @@ export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [
       {
         await stNft.connect(stNftOwner).setDelegateCashV2WithRights(stNftOwner.address, tokenIds, rights, true);
 
-        const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
+        const { delegates } = await stNft.getDelegateCashForTokenV2(tokenIds);
         expect(delegates.length).eq(tokenIds.length);
         for (let i = 0; i < delegates.length; i++) {
           expect(delegates[i].length).eq(1);
@@ -132,7 +132,7 @@ export function makeStNftTest(name: string, getNfts: (contracts: Contracts) => [
       {
         await stNft.connect(stNftOwner).setDelegateCashV2WithRights(stNftOwner.address, tokenIds, rights, false);
 
-        const delegates = await stNft.getDelegateCashForTokenV2(tokenIds);
+        const { delegates } = await stNft.getDelegateCashForTokenV2(tokenIds);
         expect(delegates.length).eq(tokenIds.length);
         for (let i = 0; i < delegates.length; i++) {
           expect(delegates[i].length).eq(0);

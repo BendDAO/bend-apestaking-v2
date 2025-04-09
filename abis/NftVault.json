@@ -566,6 +566,11 @@
         "internalType": "address[][]",
         "name": "delegates",
         "type": "address[][]"
+      },
+      {
+        "internalType": "bytes32[][]",
+        "name": "rights",
+        "type": "bytes32[][]"
       }
     ],
     "stateMutability": "view",

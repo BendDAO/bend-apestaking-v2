@@ -49,5 +49,7 @@ interface IStakedNft is IERC721MetadataUpgradeable, IERC721ReceiverUpgradeable, 
         bool value_
     ) external;
 
-    function getDelegateCashForTokenV2(uint256[] calldata tokenIds_) external view returns (address[][] memory);
+    function getDelegateCashForTokenV2(
+        uint256[] calldata tokenIds_
+    ) external view returns (address[][] memory, bytes32[][] memory);
 }

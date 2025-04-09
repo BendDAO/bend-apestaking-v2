@@ -218,7 +218,7 @@ abstract contract StNft is IStakedNft, OwnableUpgradeable, ReentrancyGuardUpgrad
 
     function getDelegateCashForTokenV2(
         uint256[] calldata tokenIds_
-    ) external view override returns (address[][] memory delegates) {
+    ) external view override returns (address[][] memory delegates, bytes32[][] memory rights) {
         return nftVault.getDelegateCashForTokenV2(address(_nft), tokenIds_);
     }
 }
