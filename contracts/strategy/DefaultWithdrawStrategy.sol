@@ -20,7 +20,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
     using SafeCastUpgradeable for uint248;
 
     IApeCoinStaking public apeCoinStaking;
-    IERC20 public apeCoin;
+    IERC20 public wrapApeCoin;
     IStakeManager public staker;
     ICoinPool public coinPool;
     INftVault public nftVault;
@@ -40,10 +40,14 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
         coinPool = coinPool_;
         staker = staker_;
 
-        apeCoin = IERC20(apeCoinStaking.apeCoin());
+        wrapApeCoin = IERC20(coinPool.getWrapApeCoin());
         bayc = address(apeCoinStaking.bayc());
         mayc = address(apeCoinStaking.mayc());
         bakc = address(apeCoinStaking.bakc());
+    }
+
+    function initGlobalState() public onlyStaker {
+        wrapApeCoin = IERC20(coinPool.getWrapApeCoin());
     }
 
     struct WithdrawApeCoinVars {
@@ -58,22 +62,24 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
     }
 
     function withdrawApeCoin(uint256 required) external override onlyStaker returns (uint256 withdrawn) {
+        require(address(wrapApeCoin) != address(0), "DWS: wrapApeCoin not set");
+
         WithdrawApeCoinVars memory vars;
-        vars.initBalance = apeCoin.balanceOf(address(coinPool));
+        vars.initBalance = wrapApeCoin.balanceOf(address(coinPool));
 
         // 1. withdraw refund
         (uint256 refundPrincipal, uint256 refundReward) = staker.totalRefund();
         if (refundPrincipal > 0 || refundReward > 0) {
             staker.withdrawTotalRefund();
         }
-        vars.changedBalance = _changedBalance(apeCoin, address(coinPool), vars.initBalance);
+        vars.changedBalance = _changedBalance(address(coinPool), vars.initBalance);
 
         // 2. claim ape coin pool
         if (vars.changedBalance < required) {
             vars.pendingRewards = staker.pendingRewards(ApeStakingLib.APE_COIN_POOL_ID);
             if (vars.pendingRewards > 0) {
                 staker.claimApeCoin();
-                vars.changedBalance = _changedBalance(apeCoin, address(coinPool), vars.initBalance);
+                vars.changedBalance = _changedBalance(address(coinPool), vars.initBalance);
             }
         }
 
@@ -86,7 +92,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
                     unstakeAmount = vars.stakedApeCoin;
                 }
                 staker.unstakeApeCoin(unstakeAmount);
-                vars.changedBalance = _changedBalance(apeCoin, address(coinPool), vars.initBalance);
+                vars.changedBalance = _changedBalance(address(coinPool), vars.initBalance);
             }
         }
 
@@ -106,11 +112,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
                         .nftPosition(ApeStakingLib.BAYC_POOL_ID, vars.tokenId)
                         .stakedAmount;
 
-                    vars.pendingRewards = apeCoinStaking.pendingRewards(
-                        ApeStakingLib.BAYC_POOL_ID,
-                        address(staker),
-                        vars.tokenId
-                    );
+                    vars.pendingRewards = apeCoinStaking.pendingRewards(ApeStakingLib.BAYC_POOL_ID, vars.tokenId);
                     vars.pendingRewards -= staker.calculateFee(vars.pendingRewards);
 
                     vars.totalWithdrawn += vars.stakedApeCoin;
@@ -127,7 +129,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
                         tokenIds[i] = nftVault.stakingNftIdByIndex(bayc, address(staker), i);
                     }
                     staker.unstakeBayc(tokenIds);
-                    vars.changedBalance = _changedBalance(apeCoin, address(coinPool), vars.initBalance);
+                    vars.changedBalance = _changedBalance(address(coinPool), vars.initBalance);
                 }
             }
         }
@@ -148,11 +150,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
                         .nftPosition(ApeStakingLib.MAYC_POOL_ID, vars.tokenId)
                         .stakedAmount;
 
-                    vars.pendingRewards = apeCoinStaking.pendingRewards(
-                        ApeStakingLib.MAYC_POOL_ID,
-                        address(staker),
-                        vars.tokenId
-                    );
+                    vars.pendingRewards = apeCoinStaking.pendingRewards(ApeStakingLib.MAYC_POOL_ID, vars.tokenId);
                     vars.pendingRewards -= staker.calculateFee(vars.pendingRewards);
 
                     vars.totalWithdrawn += vars.stakedApeCoin;
@@ -170,7 +168,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
                         tokenIds[i] = nftVault.stakingNftIdByIndex(mayc, address(staker), i);
                     }
                     staker.unstakeMayc(tokenIds);
-                    vars.changedBalance = _changedBalance(apeCoin, address(coinPool), vars.initBalance);
+                    vars.changedBalance = _changedBalance(address(coinPool), vars.initBalance);
                 }
             }
         }
@@ -191,11 +189,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
                         .nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.tokenId)
                         .stakedAmount;
 
-                    vars.pendingRewards = apeCoinStaking.pendingRewards(
-                        ApeStakingLib.BAKC_POOL_ID,
-                        address(staker),
-                        vars.tokenId
-                    );
+                    vars.pendingRewards = apeCoinStaking.pendingRewards(ApeStakingLib.BAKC_POOL_ID, vars.tokenId);
                     vars.pendingRewards -= staker.calculateFee(vars.pendingRewards);
 
                     vars.totalWithdrawn += vars.stakedApeCoin;
@@ -207,47 +201,12 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
                     }
                 }
                 if (vars.unstakeNftSize > 0) {
-                    uint256 baycPairSize;
-                    uint256 baycPairIndex;
-                    uint256 maycPairSize;
-                    uint256 maycPairIndex;
-                    uint256 bakcTokenId;
-
-                    IApeCoinStaking.PairingStatus memory pairingStatus;
+                    uint256[] memory tokenIds = new uint256[](vars.unstakeNftSize);
                     for (uint256 i = 0; i < vars.unstakeNftSize; i++) {
-                        bakcTokenId = nftVault.stakingNftIdByIndex(bakc, address(staker), i);
-
-                        pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.BAYC_POOL_ID);
-                        if (pairingStatus.isPaired) {
-                            baycPairSize += 1;
-                        } else {
-                            pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.MAYC_POOL_ID);
-                            maycPairSize += 1;
-                        }
+                        tokenIds[i] = nftVault.stakingNftIdByIndex(bakc, address(staker), i);
                     }
-                    IApeCoinStaking.PairNft[] memory baycPairs = new IApeCoinStaking.PairNft[](baycPairSize);
-                    IApeCoinStaking.PairNft[] memory maycPairs = new IApeCoinStaking.PairNft[](maycPairSize);
-                    for (uint256 i = 0; i < vars.unstakeNftSize; i++) {
-                        // bakc either paired with bayc or mayc here
-                        bakcTokenId = nftVault.stakingNftIdByIndex(bakc, address(staker), i);
-                        pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.BAYC_POOL_ID);
-                        if (pairingStatus.isPaired) {
-                            baycPairs[baycPairIndex] = IApeCoinStaking.PairNft({
-                                mainTokenId: pairingStatus.tokenId.toUint128(),
-                                bakcTokenId: bakcTokenId.toUint128()
-                            });
-                            baycPairIndex += 1;
-                        } else {
-                            pairingStatus = apeCoinStaking.bakcToMain(bakcTokenId, ApeStakingLib.MAYC_POOL_ID);
-                            maycPairs[maycPairIndex] = IApeCoinStaking.PairNft({
-                                mainTokenId: pairingStatus.tokenId.toUint128(),
-                                bakcTokenId: bakcTokenId.toUint128()
-                            });
-                            maycPairIndex += 1;
-                        }
-                    }
-                    staker.unstakeBakc(baycPairs, maycPairs);
-                    vars.changedBalance = _changedBalance(apeCoin, address(coinPool), vars.initBalance);
+                    staker.unstakeBakc(tokenIds);
+                    vars.changedBalance = _changedBalance(address(coinPool), vars.initBalance);
                 }
             }
         }
@@ -255,7 +214,7 @@ contract DefaultWithdrawStrategy is IWithdrawStrategy, ReentrancyGuardUpgradeabl
         withdrawn = vars.changedBalance;
     }
 
-    function _changedBalance(IERC20 token_, address recipient_, uint256 initBalance_) internal view returns (uint256) {
-        return token_.balanceOf(recipient_) - initBalance_;
+    function _changedBalance(address recipient_, uint256 initBalance_) internal view returns (uint256) {
+        return wrapApeCoin.balanceOf(recipient_) - initBalance_;
     }
 }

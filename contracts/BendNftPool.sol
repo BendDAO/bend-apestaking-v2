@@ -22,7 +22,7 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
     uint private constant MODULEID__POOL_LENS = 4;
 
     IApeCoinStaking public apeCoinStaking;
-    IERC20Upgradeable public apeCoin;
+    IERC20Upgradeable public wrapApeCoin;
     mapping(address => PoolState) public poolStates;
     IStakeManager public override staker;
     ICoinPool public coinPool;
@@ -79,8 +79,8 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
         poolStates[mayc].stakedNft = stMayc_;
         poolStates[bakc].stakedNft = stBakc_;
 
-        apeCoin = IERC20Upgradeable(apeCoinStaking.apeCoin());
-        apeCoin.approve(address(coinPool), type(uint256).max);
+        wrapApeCoin = IERC20Upgradeable(coinPool.getWrapApeCoin());
+        wrapApeCoin.approve(address(coinPool), type(uint256).max);
     }
 
     function deposit(
@@ -243,7 +243,7 @@ contract BendNftPool is INftPool, OwnableUpgradeable, PausableUpgradeable, Reent
     }
 
     function receiveApeCoin(address nft_, uint256 rewardsAmount_) external override onlyApe(nft_) onlyStaker {
-        apeCoin.safeTransferFrom(msg.sender, address(this), rewardsAmount_);
+        wrapApeCoin.safeTransferFrom(msg.sender, address(this), rewardsAmount_);
         poolStates[nft_].pendingApeCoin += rewardsAmount_;
         if (rewardsAmount_ > 0) {
             emit NftRewardDistributed(nft_, rewardsAmount_);

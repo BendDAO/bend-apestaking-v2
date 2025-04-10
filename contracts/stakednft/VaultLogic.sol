@@ -7,16 +7,13 @@ import {SafeCastUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/mat
 
 import {IApeCoinStaking} from "../interfaces/IApeCoinStaking.sol";
 import {INftVault} from "../interfaces/INftVault.sol";
+import {IWAPE} from "../interfaces/IWAPE.sol";
 
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
 library VaultLogic {
-    event SingleNftUnstaked(address indexed nft, address indexed staker, IApeCoinStaking.SingleNft[] nfts);
-    event PairedNftUnstaked(
-        address indexed staker,
-        IApeCoinStaking.PairNftWithdrawWithAmount[] baycPairs,
-        IApeCoinStaking.PairNftWithdrawWithAmount[] maycPairs
-    );
+    event SingleNftUnstaked(address indexed nft, address indexed staker, uint256[] tokenIds, uint256[] amounts);
+
     using SafeCastUpgradeable for uint256;
     using SafeCastUpgradeable for uint248;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
@@ -78,19 +75,16 @@ library VaultLogic {
         uint256 poolId;
         uint256 cachedBalance;
         uint256 tokenId;
-        uint256 bakcTokenId;
         uint256 stakedAmount;
         // refunds
         address staker;
         uint256 totalPrincipal;
         uint256 totalReward;
-        uint256 totalPairingPrincipal;
-        uint256 totalPairingReward;
         // array
         uint256 singleNftIndex;
         uint256 singleNftSize;
-        uint256 pairingNftIndex;
-        uint256 pairingNftSize;
+        uint256[] singleNftTokenIds;
+        uint256[] singleNftAmounts;
     }
 
     function _refundSinglePool(
@@ -98,18 +92,21 @@ library VaultLogic {
         address nft_,
         uint256[] calldata tokenIds_
     ) external {
-        require(nft_ == _vaultStorage.bayc || nft_ == _vaultStorage.mayc, "nftVault: not bayc or mayc");
         require(tokenIds_.length > 0, "nftVault: invalid tokenIds");
 
         RefundSinglePoolVars memory vars;
-        IApeCoinStaking.PairingStatus memory pairingStatus;
         INftVault.Refund storage refund;
 
-        vars.poolId = ApeStakingLib.BAYC_POOL_ID;
-        if (nft_ == _vaultStorage.mayc) {
+        if (nft_ == _vaultStorage.bayc) {
+            vars.poolId = ApeStakingLib.BAYC_POOL_ID;
+        } else if (nft_ == _vaultStorage.mayc) {
             vars.poolId = ApeStakingLib.MAYC_POOL_ID;
+        } else if (nft_ == _vaultStorage.bakc) {
+            vars.poolId = ApeStakingLib.BAKC_POOL_ID;
+        } else {
+            revert("nftVault: invalid nft");
         }
-        vars.cachedBalance = _vaultStorage.apeCoin.balanceOf(address(this));
+        vars.cachedBalance = _vaultStorage.wrapApeCoin.balanceOf(address(this));
         vars.staker = _stakerOf(_vaultStorage, nft_, tokenIds_[0]);
         require(vars.staker != address(0), "nftVault: invalid staker");
 
@@ -126,49 +123,39 @@ library VaultLogic {
             if (vars.stakedAmount > 0) {
                 vars.singleNftSize += 1;
             }
-
-            pairingStatus = _vaultStorage.apeCoinStaking.mainToBakc(vars.poolId, vars.tokenId);
-            vars.bakcTokenId = pairingStatus.tokenId;
-            vars.stakedAmount = _vaultStorage
-                .apeCoinStaking
-                .nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.bakcTokenId)
-                .stakedAmount;
-
-            //  Still have ape coin staking in pairing pool
-            if (
-                pairingStatus.isPaired &&
-                // make sure the bakc locked in valult
-                IERC721Upgradeable(_vaultStorage.bakc).ownerOf(vars.bakcTokenId) == address(this) &&
-                vars.stakedAmount > 0
-            ) {
-                vars.pairingNftSize += 1;
-            }
         }
 
         if (vars.singleNftSize > 0) {
-            IApeCoinStaking.SingleNft[] memory singleNfts_ = new IApeCoinStaking.SingleNft[](vars.singleNftSize);
+            vars.singleNftTokenIds = new uint256[](vars.singleNftSize);
+            vars.singleNftAmounts = new uint256[](vars.singleNftSize);
             for (uint256 i = 0; i < tokenIds_.length; i++) {
                 vars.tokenId = tokenIds_[i];
                 vars.stakedAmount = _vaultStorage.apeCoinStaking.nftPosition(vars.poolId, vars.tokenId).stakedAmount;
                 if (vars.stakedAmount > 0) {
                     vars.totalPrincipal += vars.stakedAmount;
-                    singleNfts_[vars.singleNftIndex] = IApeCoinStaking.SingleNft({
-                        tokenId: vars.tokenId.toUint32(),
-                        amount: vars.stakedAmount.toUint224()
-                    });
+
+                    vars.singleNftTokenIds[vars.singleNftIndex] = vars.tokenId;
+                    vars.singleNftAmounts[vars.singleNftIndex] = vars.stakedAmount;
                     vars.singleNftIndex += 1;
+
                     _vaultStorage.stakingTokenIds[nft_][vars.staker].remove(vars.tokenId);
                 }
             }
-            if (nft_ == _vaultStorage.bayc) {
-                _vaultStorage.apeCoinStaking.withdrawBAYC(singleNfts_, address(this));
-            } else {
-                _vaultStorage.apeCoinStaking.withdrawMAYC(singleNfts_, address(this));
-            }
+
+            // withdraw nft from staking, and wrap ape coin
+            _vaultStorage.apeCoinStaking.withdraw(
+                vars.poolId,
+                vars.singleNftTokenIds,
+                vars.singleNftAmounts,
+                address(this)
+            );
+            IWAPE(address(_vaultStorage.wrapApeCoin)).deposit{value: address(this).balance}();
+
             vars.totalReward =
-                _vaultStorage.apeCoin.balanceOf(address(this)) -
+                _vaultStorage.wrapApeCoin.balanceOf(address(this)) -
                 vars.cachedBalance -
                 vars.totalPrincipal;
+
             // refund ape coin for single nft
             refund = _vaultStorage.refunds[nft_][vars.staker];
             refund.principal += vars.totalPrincipal;
@@ -179,201 +166,7 @@ library VaultLogic {
                 _updateRewardsDebt(_vaultStorage, nft_, vars.staker, vars.totalReward);
             }
             _decreasePosition(_vaultStorage, nft_, vars.staker, vars.totalPrincipal);
-            emit SingleNftUnstaked(nft_, vars.staker, singleNfts_);
-        }
-
-        if (vars.pairingNftSize > 0) {
-            IApeCoinStaking.PairNftWithdrawWithAmount[]
-                memory pairingNfts = new IApeCoinStaking.PairNftWithdrawWithAmount[](vars.pairingNftSize);
-            IApeCoinStaking.PairNftWithdrawWithAmount[] memory emptyNfts;
-
-            for (uint256 i = 0; i < tokenIds_.length; i++) {
-                vars.tokenId = tokenIds_[i];
-
-                pairingStatus = _vaultStorage.apeCoinStaking.mainToBakc(vars.poolId, vars.tokenId);
-                vars.bakcTokenId = pairingStatus.tokenId;
-                vars.stakedAmount = _vaultStorage
-                    .apeCoinStaking
-                    .nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.bakcTokenId)
-                    .stakedAmount;
-                if (
-                    pairingStatus.isPaired &&
-                    // make sure the bakc locked in valult
-                    IERC721Upgradeable(_vaultStorage.bakc).ownerOf(vars.bakcTokenId) == address(this) &&
-                    vars.stakedAmount > 0
-                ) {
-                    vars.totalPairingPrincipal += vars.stakedAmount;
-                    pairingNfts[vars.pairingNftIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                        mainTokenId: vars.tokenId.toUint32(),
-                        bakcTokenId: vars.bakcTokenId.toUint32(),
-                        amount: vars.stakedAmount.toUint184(),
-                        isUncommit: true
-                    });
-                    vars.pairingNftIndex += 1;
-                    _vaultStorage.stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.bakcTokenId);
-                }
-            }
-            vars.cachedBalance = _vaultStorage.apeCoin.balanceOf(address(this));
-
-            if (nft_ == _vaultStorage.bayc) {
-                _vaultStorage.apeCoinStaking.withdrawBAKC(pairingNfts, emptyNfts);
-                emit PairedNftUnstaked(vars.staker, pairingNfts, emptyNfts);
-            } else {
-                _vaultStorage.apeCoinStaking.withdrawBAKC(emptyNfts, pairingNfts);
-                emit PairedNftUnstaked(vars.staker, emptyNfts, pairingNfts);
-            }
-            vars.totalPairingReward =
-                _vaultStorage.apeCoin.balanceOf(address(this)) -
-                vars.cachedBalance -
-                vars.totalPairingPrincipal;
-
-            // refund ape coin for paring nft
-            refund = _vaultStorage.refunds[_vaultStorage.bakc][vars.staker];
-            refund.principal += vars.totalPairingPrincipal;
-            refund.reward += vars.totalPairingReward;
-
-            // update bakc position and debt
-            if (vars.totalPairingReward > 0) {
-                _updateRewardsDebt(_vaultStorage, _vaultStorage.bakc, vars.staker, vars.totalPairingReward);
-            }
-            _decreasePosition(_vaultStorage, _vaultStorage.bakc, vars.staker, vars.totalPairingPrincipal);
-        }
-    }
-
-    struct RefundPairingPoolVars {
-        uint256 cachedBalance;
-        uint256 tokenId;
-        uint256 stakedAmount;
-        // refund
-        address staker;
-        uint256 totalPrincipal;
-        uint256 totalReward;
-        // array
-        uint256 baycIndex;
-        uint256 baycSize;
-        uint256 maycIndex;
-        uint256 maycSize;
-    }
-
-    function _refundPairingPool(INftVault.VaultStorage storage _vaultStorage, uint256[] calldata tokenIds_) external {
-        require(tokenIds_.length > 0, "nftVault: invalid tokenIds");
-        RefundPairingPoolVars memory vars;
-        IApeCoinStaking.PairingStatus memory pairingStatus;
-
-        vars.staker = _stakerOf(_vaultStorage, _vaultStorage.bakc, tokenIds_[0]);
-        require(vars.staker != address(0), "nftVault: invalid staker");
-        vars.cachedBalance = _vaultStorage.apeCoin.balanceOf(address(this));
-
-        // Calculate the nft array size
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            vars.tokenId = tokenIds_[i];
-            require(
-                msg.sender == _ownerOf(_vaultStorage, _vaultStorage.bakc, vars.tokenId),
-                "nftVault: caller must be nft owner"
-            );
-            // make sure the bakc locked in valult
-            require(
-                address(this) == IERC721Upgradeable(_vaultStorage.bakc).ownerOf(vars.tokenId),
-                "nftVault: invalid token id"
-            );
-            require(
-                vars.staker == _stakerOf(_vaultStorage, _vaultStorage.bakc, vars.tokenId),
-                "nftVault: staker must be same"
-            );
-
-            vars.stakedAmount = _vaultStorage
-                .apeCoinStaking
-                .nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.tokenId)
-                .stakedAmount;
-            if (vars.stakedAmount > 0) {
-                pairingStatus = _vaultStorage.apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.BAYC_POOL_ID);
-
-                // make sure the bayc locked in valult
-                if (
-                    pairingStatus.isPaired &&
-                    IERC721Upgradeable(_vaultStorage.bayc).ownerOf(pairingStatus.tokenId) == address(this)
-                ) {
-                    vars.baycSize += 1;
-                } else {
-                    pairingStatus = _vaultStorage.apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.MAYC_POOL_ID);
-                    // make sure the mayc locked in valult
-                    if (
-                        pairingStatus.isPaired &&
-                        IERC721Upgradeable(_vaultStorage.mayc).ownerOf(pairingStatus.tokenId) == address(this)
-                    ) {
-                        vars.maycSize += 1;
-                    }
-                }
-            }
-        }
-
-        if (vars.baycSize > 0 || vars.maycSize > 0) {
-            IApeCoinStaking.PairNftWithdrawWithAmount[]
-                memory baycNfts_ = new IApeCoinStaking.PairNftWithdrawWithAmount[](vars.baycSize);
-            IApeCoinStaking.PairNftWithdrawWithAmount[]
-                memory maycNfts_ = new IApeCoinStaking.PairNftWithdrawWithAmount[](vars.maycSize);
-            for (uint256 i = 0; i < tokenIds_.length; i++) {
-                vars.tokenId = tokenIds_[i];
-                vars.stakedAmount = _vaultStorage
-                    .apeCoinStaking
-                    .nftPosition(ApeStakingLib.BAKC_POOL_ID, vars.tokenId)
-                    .stakedAmount;
-                if (vars.stakedAmount > 0) {
-                    pairingStatus = _vaultStorage.apeCoinStaking.bakcToMain(vars.tokenId, ApeStakingLib.BAYC_POOL_ID);
-                    // make sure the bayc locked in valult
-                    if (
-                        pairingStatus.isPaired &&
-                        IERC721Upgradeable(_vaultStorage.bayc).ownerOf(pairingStatus.tokenId) == address(this)
-                    ) {
-                        vars.totalPrincipal += vars.stakedAmount;
-                        baycNfts_[vars.baycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                            mainTokenId: pairingStatus.tokenId.toUint32(),
-                            bakcTokenId: vars.tokenId.toUint32(),
-                            amount: vars.stakedAmount.toUint184(),
-                            isUncommit: true
-                        });
-                        vars.baycIndex += 1;
-                        _vaultStorage.stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.tokenId);
-                    } else {
-                        pairingStatus = _vaultStorage.apeCoinStaking.bakcToMain(
-                            vars.tokenId,
-                            ApeStakingLib.MAYC_POOL_ID
-                        );
-                        // make sure the mayc locked in valult
-                        if (
-                            pairingStatus.isPaired &&
-                            IERC721Upgradeable(_vaultStorage.mayc).ownerOf(pairingStatus.tokenId) == address(this)
-                        ) {
-                            vars.totalPrincipal += vars.stakedAmount;
-                            maycNfts_[vars.maycIndex] = IApeCoinStaking.PairNftWithdrawWithAmount({
-                                mainTokenId: pairingStatus.tokenId.toUint32(),
-                                bakcTokenId: vars.tokenId.toUint32(),
-                                amount: vars.stakedAmount.toUint184(),
-                                isUncommit: true
-                            });
-                            vars.maycIndex += 1;
-                            _vaultStorage.stakingTokenIds[_vaultStorage.bakc][vars.staker].remove(vars.tokenId);
-                        }
-                    }
-                }
-            }
-
-            _vaultStorage.apeCoinStaking.withdrawBAKC(baycNfts_, maycNfts_);
-            vars.totalReward =
-                _vaultStorage.apeCoin.balanceOf(address(this)) -
-                vars.cachedBalance -
-                vars.totalPrincipal;
-            // refund ape coin for bakc
-            INftVault.Refund storage _refund = _vaultStorage.refunds[_vaultStorage.bakc][vars.staker];
-            _refund.principal += vars.totalPrincipal;
-            _refund.reward += vars.totalReward;
-
-            // update bakc position and debt
-            if (vars.totalReward > 0) {
-                _updateRewardsDebt(_vaultStorage, _vaultStorage.bakc, vars.staker, vars.totalReward);
-            }
-            _decreasePosition(_vaultStorage, _vaultStorage.bakc, vars.staker, vars.totalPrincipal);
-            emit PairedNftUnstaked(vars.staker, baycNfts_, maycNfts_);
+            emit SingleNftUnstaked(nft_, vars.staker, vars.singleNftTokenIds, vars.singleNftAmounts);
         }
     }
 }

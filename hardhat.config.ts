@@ -42,6 +42,9 @@ const config: HardhatUserConfig = {
     hardhat: {
       initialBaseFeePerGas: 0,
       allowUnlimitedContractSize: true,
+      accounts: {
+        accountsBalance: "100000000000000000000000000", // 100000K ETH
+      },
     },
     sepolia: {
       gasPrice: 25 * GWEI,

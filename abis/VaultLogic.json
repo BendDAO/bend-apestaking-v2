@@ -5,75 +5,6 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "staker",
-        "type": "address"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "mainTokenId",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "bakcTokenId",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint184",
-            "name": "amount",
-            "type": "uint184"
-          },
-          {
-            "internalType": "bool",
-            "name": "isUncommit",
-            "type": "bool"
-          }
-        ],
-        "indexed": false,
-        "internalType": "struct IApeCoinStaking.PairNftWithdrawWithAmount[]",
-        "name": "baycPairs",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "mainTokenId",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "bakcTokenId",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint184",
-            "name": "amount",
-            "type": "uint184"
-          },
-          {
-            "internalType": "bool",
-            "name": "isUncommit",
-            "type": "bool"
-          }
-        ],
-        "indexed": false,
-        "internalType": "struct IApeCoinStaking.PairNftWithdrawWithAmount[]",
-        "name": "maycPairs",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "PairedNftUnstaked",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
         "name": "nft",
         "type": "address"
       },
@@ -84,22 +15,16 @@
         "type": "address"
       },
       {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "tokenId",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint224",
-            "name": "amount",
-            "type": "uint224"
-          }
-        ],
         "indexed": false,
-        "internalType": "struct IApeCoinStaking.SingleNft[]",
-        "name": "nfts",
-        "type": "tuple[]"
+        "internalType": "uint256[]",
+        "name": "tokenIds",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
       }
     ],
     "name": "SingleNftUnstaked",

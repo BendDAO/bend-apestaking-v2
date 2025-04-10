@@ -13,26 +13,10 @@ interface INftVault is IERC721ReceiverUpgradeable {
     event NftDeposited(address indexed nft, address indexed owner, address indexed staker, uint256[] tokenIds);
     event NftWithdrawn(address indexed nft, address indexed owner, address indexed staker, uint256[] tokenIds);
 
-    event SingleNftStaked(address indexed nft, address indexed staker, IApeCoinStaking.SingleNft[] nfts);
-    event PairedNftStaked(
-        address indexed staker,
-        IApeCoinStaking.PairNftDepositWithAmount[] baycPairs,
-        IApeCoinStaking.PairNftDepositWithAmount[] maycPairs
-    );
-    event SingleNftUnstaked(address indexed nft, address indexed staker, IApeCoinStaking.SingleNft[] nfts);
-    event PairedNftUnstaked(
-        address indexed staker,
-        IApeCoinStaking.PairNftWithdrawWithAmount[] baycPairs,
-        IApeCoinStaking.PairNftWithdrawWithAmount[] maycPairs
-    );
+    event SingleNftStaked(address indexed nft, address indexed staker, uint256[] tokenIds, uint256[] amounts);
+    event SingleNftUnstaked(address indexed nft, address indexed staker, uint256[] tokenIds, uint256[] amounts);
 
     event SingleNftClaimed(address indexed nft, address indexed staker, uint256[] tokenIds, uint256 rewards);
-    event PairedNftClaimed(
-        address indexed staker,
-        IApeCoinStaking.PairNft[] baycPairs,
-        IApeCoinStaking.PairNft[] maycPairs,
-        uint256 rewards
-    );
 
     struct NftStatus {
         address owner;
@@ -49,7 +33,7 @@ interface INftVault is IERC721ReceiverUpgradeable {
         // nft address => staker address => staking nft tokenId array
         mapping(address => mapping(address => EnumerableSetUpgradeable.UintSet)) stakingTokenIds;
         IApeCoinStaking apeCoinStaking;
-        IERC20Upgradeable apeCoin;
+        IERC20Upgradeable wrapApeCoin;
         address bayc;
         address mayc;
         address bakc;
@@ -113,29 +97,28 @@ interface INftVault is IERC721ReceiverUpgradeable {
     function withdrawRefunds(address nft_) external;
 
     // stake
-    function stakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external;
+    function stakeBaycPool(uint256[] calldata tokenIds_, uint256[] calldata amounts_) external;
 
-    function stakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external;
+    function stakeMaycPool(uint256[] calldata tokenIds_, uint256[] calldata amounts_) external;
 
-    function stakeBakcPool(
-        IApeCoinStaking.PairNftDepositWithAmount[] calldata baycPairs_,
-        IApeCoinStaking.PairNftDepositWithAmount[] calldata maycPairs_
-    ) external;
+    function stakeBakcPool(uint256[] calldata tokenIds_, uint256[] calldata amounts_) external;
 
     // unstake
     function unstakeBaycPool(
-        IApeCoinStaking.SingleNft[] calldata nfts_,
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_,
         address recipient_
     ) external returns (uint256 principal, uint256 rewards);
 
     function unstakeMaycPool(
-        IApeCoinStaking.SingleNft[] calldata nfts_,
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_,
         address recipient_
     ) external returns (uint256 principal, uint256 rewards);
 
     function unstakeBakcPool(
-        IApeCoinStaking.PairNftWithdrawWithAmount[] calldata baycPairs_,
-        IApeCoinStaking.PairNftWithdrawWithAmount[] calldata maycPairs_,
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_,
         address recipient_
     ) external returns (uint256 principal, uint256 rewards);
 
@@ -144,9 +127,5 @@ interface INftVault is IERC721ReceiverUpgradeable {
 
     function claimMaycPool(uint256[] calldata tokenIds_, address recipient_) external returns (uint256 rewards);
 
-    function claimBakcPool(
-        IApeCoinStaking.PairNft[] calldata baycPairs_,
-        IApeCoinStaking.PairNft[] calldata maycPairs_,
-        address recipient_
-    ) external returns (uint256 rewards);
+    function claimBakcPool(uint256[] calldata tokenIds_, address recipient_) external returns (uint256 rewards);
 }

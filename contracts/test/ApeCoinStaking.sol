@@ -42,21 +42,55 @@ access to the Smart Contract.
 */
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {SafeCastLib} from "./ApeCoinStaking/SafeCastLib.sol";
+import {LibMap} from "./ApeCoinStaking/LibMap.sol";
+import {Ownable} from "./ApeCoinStaking/Ownable.sol";
+import {IShadowCallbackReceiver} from "./ApeCoinStaking/IShadowCallbackReceiver.sol";
+
+interface INFTShadow {
+    function ownerOf(uint256 tokenId) external view returns (address);
+
+    function readWithCallback(
+        uint256[] calldata tokenIds,
+        uint32[] calldata eids,
+        uint128 callbackGasLimit
+    ) external payable returns (bytes32);
+
+    function locked(uint256 tokenId) external view returns (bool);
+}
+
+interface IBeacon {
+    function quoteRead(
+        address baseCollectionAddress,
+        uint256[] calldata tokenIds,
+        uint32[] calldata dstEids,
+        uint128 supplementalGasLimit
+    ) external view returns (uint256 nativeFee, uint256 lzTokenFee);
+}
 
 /**
  * @title ApeCoin Staking Contract
  * @notice Stake ApeCoin across four different pools that release hourly rewards
  * @author HorizenLabs
  */
-contract ApeCoinStaking is Ownable {
-    using SafeCast for uint256;
-    using SafeCast for int256;
+contract ApeCoinStaking is IShadowCallbackReceiver, Ownable {
+    using SafeCastLib for uint256;
+    using SafeCastLib for int256;
 
-    /// @notice State for ApeCoin, BAYC, MAYC, and Pair Pools
+    using LibMap for LibMap.Uint16Map;
+    using LibMap for LibMap.Uint128Map;
+
+    struct PendingClaim {
+        uint8 poolId;
+        uint8 requestType;
+        address caller;
+        address recipient;
+        uint96 numNfts;
+        LibMap.Uint16Map tokenIds;
+        LibMap.Uint128Map amounts;
+    }
+
+    /// @notice State for BAYC, MAYC, and BAKC Pools
     struct Pool {
         uint48 lastRewardedTimestampHour;
         uint16 lastRewardsRangeIndex;
@@ -86,36 +120,8 @@ contract ApeCoinStaking is Ownable {
         uint256 stakedAmount;
         int256 rewardsDebt;
     }
-    mapping(address => Position) public addressPosition;
 
-    /// @dev Struct for depositing and withdrawing from the BAYC and MAYC NFT pools
-    struct SingleNft {
-        uint32 tokenId;
-        uint224 amount;
-    }
-    /// @dev Struct for depositing from the BAKC (Pair) pool
-    struct PairNftDepositWithAmount {
-        uint32 mainTokenId;
-        uint32 bakcTokenId;
-        uint184 amount;
-    }
-    /// @dev Struct for withdrawing from the BAKC (Pair) pool
-    struct PairNftWithdrawWithAmount {
-        uint32 mainTokenId;
-        uint32 bakcTokenId;
-        uint184 amount;
-        bool isUncommit;
-    }
-    /// @dev Struct for claiming from an NFT pool
-    struct PairNft {
-        uint128 mainTokenId;
-        uint128 bakcTokenId;
-    }
-    /// @dev NFT paired status.  Can be used bi-directionally (BAYC/MAYC -> BAKC) or (BAKC -> BAYC/MAYC)
-    struct PairingStatus {
-        uint248 tokenId;
-        bool isPaired;
-    }
+    mapping(bytes32 guid => PendingClaim claim) internal _pendingClaims;
 
     // @dev UI focused payload
     struct DashboardStake {
@@ -124,340 +130,389 @@ contract ApeCoinStaking is Ownable {
         uint256 deposited;
         uint256 unclaimed;
         uint256 rewards24hr;
-        DashboardPair pair;
     }
-    /// @dev Sub struct for DashboardStake
-    struct DashboardPair {
-        uint256 mainTokenId;
-        uint256 mainTypePoolId;
-    }
-    /// @dev Placeholder for pair status, used by ApeCoin Pool
-    DashboardPair private NULL_PAIR = DashboardPair(0, 0);
 
-    /// @notice Internal ApeCoin amount for distributing staking reward claims
-    IERC20 public immutable apeCoin;
-    uint256 private constant APE_COIN_PRECISION = 1e18;
-    uint256 private constant MIN_DEPOSIT = 1 * APE_COIN_PRECISION;
-    uint256 private constant SECONDS_PER_HOUR = 3600;
-    uint256 private constant SECONDS_PER_MINUTE = 60;
+    uint256 private constant _APE_COIN_PRECISION = 1e18;
+    uint256 private constant _MIN_DEPOSIT = 1 * _APE_COIN_PRECISION;
+    uint256 private constant _SECONDS_PER_HOUR = 3600;
+    uint256 private constant _SECONDS_PER_MINUTE = 60;
+    uint128 private constant _BASE_CALLBACK_GAS_LIMIT = 60_000;
+    uint128 private constant _INCREMENTAL_CALLBACK_GAS_LIMIT = 15_000;
 
-    uint256 constant APECOIN_POOL_ID = 0;
-    uint256 constant BAYC_POOL_ID = 1;
-    uint256 constant MAYC_POOL_ID = 2;
-    uint256 constant BAKC_POOL_ID = 3;
+    uint256 private constant _BAYC_POOL_ID = 1;
+    uint256 private constant _MAYC_POOL_ID = 2;
+    uint256 private constant _BAKC_POOL_ID = 3;
+
+    uint8 private constant _CLAIM_TYPE = 0;
+    uint8 private constant _WITHDRAW_TYPE = 1;
+
+    // leave pools[0] null and revert if trying to access it
     Pool[4] public pools;
 
+    IBeacon private _beacon;
+
+    uint32[] private _eids;
+
     /// @dev NFT contract mapping per pool
-    mapping(uint256 => ERC721Enumerable) public nftContracts;
+    mapping(uint256 => INFTShadow) public nftContracts;
     /// @dev poolId => tokenId => nft position
     mapping(uint256 => mapping(uint256 => Position)) public nftPosition;
-    /// @dev main type pool ID: 1: BAYC 2: MAYC => main token ID => bakc token ID
-    mapping(uint256 => mapping(uint256 => PairingStatus)) public mainToBakc;
-    /// @dev bakc Token ID => main type pool ID: 1: BAYC 2: MAYC => main token ID
-    mapping(uint256 => mapping(uint256 => PairingStatus)) public bakcToMain;
 
-    /** Custom Events */
+    /**
+     * Custom Events
+     */
+    event TimeRangeAdded(
+        uint256 indexed poolId,
+        uint256 index,
+        uint256 startTimestamp,
+        uint256 endTimestamp,
+        uint256 rewardsPerHour,
+        uint256 capPerPosition
+    );
     event UpdatePool(
         uint256 indexed poolId,
         uint256 lastRewardedBlock,
         uint256 stakedAmount,
         uint256 accumulatedRewardsPerShare
     );
-    event Deposit(address indexed user, uint256 amount, address recipient);
-    event DepositNft(address indexed user, uint256 indexed poolId, uint256 amount, uint256 tokenId);
-    event DepositPairNft(
-        address indexed user,
-        uint256 amount,
-        uint256 mainTypePoolId,
-        uint256 mainTokenId,
-        uint256 bakcTokenId
+    event Deposit(address indexed user, uint256 indexed poolId, uint256 amount, uint256 tokenId);
+    event Withdraw(address indexed user, uint256 indexed poolId, uint256 amount, address recipient, uint256 tokenId);
+    event Claim(address indexed user, uint256 indexed poolId, uint256 amount, uint256 tokenId);
+    event RequestSubmitted(
+        bytes32 indexed guid,
+        address indexed caller,
+        uint8 indexed poolId,
+        uint8 requestType,
+        uint256[] nfts,
+        address recipient
     );
-    event Withdraw(address indexed user, uint256 amount, address recipient);
-    event WithdrawNft(address indexed user, uint256 indexed poolId, uint256 amount, address recipient, uint256 tokenId);
-    event WithdrawPairNft(
-        address indexed user,
-        uint256 amount,
-        uint256 mainTypePoolId,
-        uint256 mainTokenId,
-        uint256 bakcTokenId
-    );
-    event ClaimRewards(address indexed user, uint256 amount, address recipient);
-    event ClaimRewardsNft(address indexed user, uint256 indexed poolId, uint256 amount, uint256 tokenId);
-    event ClaimRewardsPairNft(
-        address indexed user,
-        uint256 amount,
-        uint256 mainTypePoolId,
-        uint256 mainTokenId,
-        uint256 bakcTokenId
-    );
+    event CallbackExecuted(bytes32 indexed guid);
 
-    error DepositMoreThanOneAPE();
+    error RefundFailed();
+    error InvalidAmount();
     error InvalidPoolId();
-    error StartMustBeGreaterThanEnd();
-    error StartNotWholeHour();
-    error EndNotWholeHour();
-    error StartMustEqualLastEnd();
+    error WithdrawFailed();
     error CallerNotOwner();
-    error MainTokenNotOwnedOrPaired();
-    error BAKCNotOwnedOrPaired();
-    error BAKCAlreadyPaired();
+    error TransferFailed();
+    error ZeroArrayLength();
+    error EndNotWholeHour();
+    error InsufficientFee();
+    error InvalidRecipient();
+    error DistributionEnded();
+    error StartNotWholeHour();
     error ExceededCapAmount();
-    error NotOwnerOfMain();
-    error NotOwnerOfBAKC();
-    error ProvidedTokensNotPaired();
+    error MismatchArrayLength();
     error ExceededStakedAmount();
-    error NeitherTokenInPairOwnedByCaller();
-    error SplitPairCantPartiallyWithdraw();
-    error UncommitWrongParameters();
+    error DepositMoreThanOneAPE();
+    error StartMustEqualLastEnd();
+    error StartGreaterThanEnd();
 
     /**
      * @notice Construct a new ApeCoinStaking instance
-     * @param _apeCoinContractAddress The ApeCoin ERC20 contract address
      * @param _baycContractAddress The BAYC NFT contract address
      * @param _maycContractAddress The MAYC NFT contract address
      * @param _bakcContractAddress The BAKC NFT contract address
      */
     constructor(
-        address _apeCoinContractAddress,
+        address beacon,
         address _baycContractAddress,
         address _maycContractAddress,
         address _bakcContractAddress
     ) {
-        apeCoin = IERC20(_apeCoinContractAddress);
-        nftContracts[BAYC_POOL_ID] = ERC721Enumerable(_baycContractAddress);
-        nftContracts[MAYC_POOL_ID] = ERC721Enumerable(_maycContractAddress);
-        nftContracts[BAKC_POOL_ID] = ERC721Enumerable(_bakcContractAddress);
+        nftContracts[_BAYC_POOL_ID] = INFTShadow(_baycContractAddress);
+        nftContracts[_MAYC_POOL_ID] = INFTShadow(_maycContractAddress);
+        nftContracts[_BAKC_POOL_ID] = INFTShadow(_bakcContractAddress);
+        _beacon = IBeacon(beacon);
+
+        _initializeOwner(msg.sender);
+    }
+
+    modifier validPool(uint256 poolId) {
+        if (poolId > _BAKC_POOL_ID || poolId < _BAYC_POOL_ID) {
+            revert InvalidPoolId();
+        }
+        _;
+    }
+
+    // Refunds from LZ or other native currency transactions are forwarded to the owner
+    receive() external payable {
+        (bool success, ) = owner().call{value: msg.value}("");
+        if (!success) revert RefundFailed();
     }
 
     // Deposit/Commit Methods
-
     /**
-     * @notice Deposit ApeCoin to the ApeCoin Pool
-     * @param _amount Amount in ApeCoin
-     * @param _recipient Address the deposit it stored to
-     * @dev ApeCoin deposit must be >= 1 ApeCoin
+     * @notice Deposit ApeCoin to an NFT pool
+     * @param poolId The pool ID
+     * @param tokenIds Array of tokenIds
+     * @param amounts Array of amounts
+     * @dev Commits 1 or more NFTs, each with an ApeCoin amount to the NFT pool.\
+     * Each NFT committed must attach an ApeCoin amount >= 1 ApeCoin and <= the NFT pool cap amount.
      */
-    function depositApeCoin(uint256 _amount, address _recipient) public {
-        if (_amount < MIN_DEPOSIT) revert DepositMoreThanOneAPE();
-        updatePool(APECOIN_POOL_ID);
+    function deposit(
+        uint256 poolId,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts
+    ) external payable validPool(poolId) {
+        if (tokenIds.length == 0) revert ZeroArrayLength();
+        if (tokenIds.length != amounts.length) revert MismatchArrayLength();
 
-        Position storage position = addressPosition[_recipient];
-        _deposit(APECOIN_POOL_ID, position, _amount);
+        uint256 totalDeposit = 0;
+        for (uint256 i = 0; i < tokenIds.length; ++i) {
+            totalDeposit += amounts[i];
+        }
+        if (msg.value != totalDeposit) revert InvalidAmount();
 
-        apeCoin.transferFrom(msg.sender, address(this), _amount);
-
-        emit Deposit(msg.sender, _amount, _recipient);
-    }
-
-    /**
-     * @notice Deposit ApeCoin to the ApeCoin Pool
-     * @param _amount Amount in ApeCoin
-     * @dev Deposit on behalf of msg.sender. ApeCoin deposit must be >= 1 ApeCoin
-     */
-    function depositSelfApeCoin(uint256 _amount) external {
-        depositApeCoin(_amount, msg.sender);
-    }
-
-    /**
-     * @notice Deposit ApeCoin to the BAYC Pool
-     * @param _nfts Array of SingleNft structs
-     * @dev Commits 1 or more BAYC NFTs, each with an ApeCoin amount to the BAYC pool.\
-     * Each BAYC committed must attach an ApeCoin amount >= 1 ApeCoin and <= the BAYC pool cap amount.
-     */
-    function depositBAYC(SingleNft[] calldata _nfts) external {
-        _depositNft(BAYC_POOL_ID, _nfts);
-    }
-
-    /**
-     * @notice Deposit ApeCoin to the MAYC Pool
-     * @param _nfts Array of SingleNft structs
-     * @dev Commits 1 or more MAYC NFTs, each with an ApeCoin amount to the MAYC pool.\
-     * Each MAYC committed must attach an ApeCoin amount >= 1 ApeCoin and <= the MAYC pool cap amount.
-     */
-    function depositMAYC(SingleNft[] calldata _nfts) external {
-        _depositNft(MAYC_POOL_ID, _nfts);
-    }
-
-    /**
-     * @notice Deposit ApeCoin to the Pair Pool, where Pair = (BAYC + BAKC) or (MAYC + BAKC)
-     * @param _baycPairs Array of PairNftDepositWithAmount structs
-     * @param _maycPairs Array of PairNftDepositWithAmount structs
-     * @dev Commits 1 or more Pairs, each with an ApeCoin amount to the Pair pool.\
-     * Each BAKC committed must attach an ApeCoin amount >= 1 ApeCoin and <= the Pair pool cap amount.\
-     * Example 1: BAYC + BAKC + 1 ApeCoin:  [[0, 0, "1000000000000000000"],[]]\
-     * Example 2: MAYC + BAKC + 1 ApeCoin:  [[], [0, 0, "1000000000000000000"]]\
-     * Example 3: (BAYC + BAKC + 1 ApeCoin) and (MAYC + BAKC + 1 ApeCoin): [[0, 0, "1000000000000000000"], [0, 1, "1000000000000000000"]]
-     */
-    function depositBAKC(
-        PairNftDepositWithAmount[] calldata _baycPairs,
-        PairNftDepositWithAmount[] calldata _maycPairs
-    ) external {
-        updatePool(BAKC_POOL_ID);
-        _depositPairNft(BAYC_POOL_ID, _baycPairs);
-        _depositPairNft(MAYC_POOL_ID, _maycPairs);
+        _depositNft(poolId, tokenIds, amounts);
     }
 
     // Claim Rewards Methods
-
     /**
-     * @notice Claim rewards for msg.sender and send to recipient
-     * @param _recipient Address to send claim reward to
+     * @notice Claim rewards for an NFT pool and send to recipient
+     * @param poolId The pool ID
+     * @param tokenIds Array of tokenIds
+     * @param recipient Address to send claim reward to
      */
-    function claimApeCoin(address _recipient) public {
-        updatePool(APECOIN_POOL_ID);
+    function claim(uint256 poolId, uint256[] calldata tokenIds, address recipient) external payable validPool(poolId) {
+        if (tokenIds.length == 0) revert ZeroArrayLength();
+        if (recipient == address(0)) revert InvalidRecipient();
 
-        Position storage position = addressPosition[msg.sender];
-        uint256 rewardsToBeClaimed = _claim(APECOIN_POOL_ID, position, _recipient);
+        uint256 valueForFees = msg.value;
+        valueForFees -= _requestClaim(poolId, tokenIds, recipient, valueForFees);
 
-        emit ClaimRewards(msg.sender, rewardsToBeClaimed, _recipient);
+        _refundIfOver(valueForFees);
     }
 
-    /// @notice Claim and send rewards
-    function claimSelfApeCoin() external {
-        claimApeCoin(msg.sender);
-    }
+    function claimSelf(uint256 poolId, uint256[] calldata tokenIds) external payable validPool(poolId) {
+        if (tokenIds.length == 0) revert ZeroArrayLength();
 
-    /**
-     * @notice Claim rewards for array of BAYC NFTs and send to recipient
-     * @param _nfts Array of NFTs owned and committed by the msg.sender
-     * @param _recipient Address to send claim reward to
-     */
-    function claimBAYC(uint256[] calldata _nfts, address _recipient) external {
-        _claimNft(BAYC_POOL_ID, _nfts, _recipient);
-    }
+        uint256 valueForFees = msg.value;
+        valueForFees -= _requestClaim(poolId, tokenIds, msg.sender, valueForFees);
 
-    /**
-     * @notice Claim rewards for array of BAYC NFTs
-     * @param _nfts Array of NFTs owned and committed by the msg.sender
-     */
-    function claimSelfBAYC(uint256[] calldata _nfts) external {
-        _claimNft(BAYC_POOL_ID, _nfts, msg.sender);
-    }
-
-    /**
-     * @notice Claim rewards for array of MAYC NFTs and send to recipient
-     * @param _nfts Array of NFTs owned and committed by the msg.sender
-     * @param _recipient Address to send claim reward to
-     */
-    function claimMAYC(uint256[] calldata _nfts, address _recipient) external {
-        _claimNft(MAYC_POOL_ID, _nfts, _recipient);
-    }
-
-    /**
-     * @notice Claim rewards for array of MAYC NFTs
-     * @param _nfts Array of NFTs owned and committed by the msg.sender
-     */
-    function claimSelfMAYC(uint256[] calldata _nfts) external {
-        _claimNft(MAYC_POOL_ID, _nfts, msg.sender);
-    }
-
-    /**
-     * @notice Claim rewards for array of Paired NFTs and send to recipient
-     * @param _baycPairs Array of Paired BAYC NFTs owned and committed by the msg.sender
-     * @param _maycPairs Array of Paired MAYC NFTs owned and committed by the msg.sender
-     * @param _recipient Address to send claim reward to
-     */
-    function claimBAKC(PairNft[] calldata _baycPairs, PairNft[] calldata _maycPairs, address _recipient) public {
-        updatePool(BAKC_POOL_ID);
-        _claimPairNft(BAYC_POOL_ID, _baycPairs, _recipient);
-        _claimPairNft(MAYC_POOL_ID, _maycPairs, _recipient);
-    }
-
-    /**
-     * @notice Claim rewards for array of Paired NFTs
-     * @param _baycPairs Array of Paired BAYC NFTs owned and committed by the msg.sender
-     * @param _maycPairs Array of Paired MAYC NFTs owned and committed by the msg.sender
-     */
-    function claimSelfBAKC(PairNft[] calldata _baycPairs, PairNft[] calldata _maycPairs) external {
-        claimBAKC(_baycPairs, _maycPairs, msg.sender);
+        _refundIfOver(valueForFees);
     }
 
     // Uncommit/Withdraw Methods
-
     /**
-     * @notice Withdraw staked ApeCoin from the ApeCoin pool.  Performs an automatic claim as part of the withdraw process.
-     * @param _amount Amount of ApeCoin
-     * @param _recipient Address to send withdraw amount and claim to
+     * @notice Withdraw staked ApeCoin from the BAYC pool.  If withdraw is total staked amount, performs an automatic claim.
+     * @param tokenIds Array of tokenIds
+     * @param amounts Array of amounts
+     * @param recipient Address to send withdraw amount and claim to
      */
-    function withdrawApeCoin(uint256 _amount, address _recipient) public {
-        updatePool(APECOIN_POOL_ID);
+    function withdraw(
+        uint256 poolId,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts,
+        address recipient
+    ) external payable validPool(poolId) {
+        if (tokenIds.length == 0) revert ZeroArrayLength();
+        if (tokenIds.length != amounts.length) revert MismatchArrayLength();
+        if (recipient == address(0)) revert InvalidRecipient();
 
-        Position storage position = addressPosition[msg.sender];
-        if (_amount == position.stakedAmount) {
-            uint256 rewardsToBeClaimed = _claim(APECOIN_POOL_ID, position, _recipient);
-            emit ClaimRewards(msg.sender, rewardsToBeClaimed, _recipient);
-        }
-        _withdraw(APECOIN_POOL_ID, position, _amount);
+        uint256 valueForFees = msg.value;
+        valueForFees -= _requestWithdraw(poolId, tokenIds, amounts, recipient, valueForFees);
 
-        apeCoin.transfer(_recipient, _amount);
-
-        emit Withdraw(msg.sender, _amount, _recipient);
-    }
-
-    /**
-     * @notice Withdraw staked ApeCoin from the ApeCoin pool.  If withdraw is total staked amount, performs an automatic claim.
-     * @param _amount Amount of ApeCoin
-     */
-    function withdrawSelfApeCoin(uint256 _amount) external {
-        withdrawApeCoin(_amount, msg.sender);
+        _refundIfOver(valueForFees);
     }
 
     /**
      * @notice Withdraw staked ApeCoin from the BAYC pool.  If withdraw is total staked amount, performs an automatic claim.
-     * @param _nfts Array of BAYC NFT's with staked amounts
-     * @param _recipient Address to send withdraw amount and claim to
+     * @param tokenIds Array of tokenIds
+     * @param amounts Array of amounts
      */
-    function withdrawBAYC(SingleNft[] calldata _nfts, address _recipient) external {
-        _withdrawNft(BAYC_POOL_ID, _nfts, _recipient);
+    function withdrawSelf(
+        uint256 poolId,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts
+    ) external payable validPool(poolId) {
+        if (tokenIds.length == 0) revert ZeroArrayLength();
+        if (tokenIds.length != amounts.length) revert MismatchArrayLength();
+
+        uint256 valueForFees = msg.value;
+        valueForFees -= _requestWithdraw(poolId, tokenIds, amounts, msg.sender, valueForFees);
+
+        _refundIfOver(valueForFees);
     }
 
     /**
-     * @notice Withdraw staked ApeCoin from the BAYC pool.  If withdraw is total staked amount, performs an automatic claim.
-     * @param _nfts Array of BAYC NFT's with staked amounts
+     * @notice Deposit ApeCoin to BAYC, MAYC, and BAKC pools
+     * @param baycTokenIds Array of BAYC token IDs
+     * @param maycTokenIds Array of MAYC token IDs
+     * @param bakcTokenIds Array of BAKC token IDs
+     * @param baycAmounts Array of BAYC staked amounts
+     * @param maycAmounts Array of MAYC staked amounts
+     * @param bakcAmounts Array of BAKC staked amounts
      */
-    function withdrawSelfBAYC(SingleNft[] calldata _nfts) external {
-        _withdrawNft(BAYC_POOL_ID, _nfts, msg.sender);
-    }
+    // function depositBatch(
+    //     uint256[] calldata baycTokenIds,
+    //     uint256[] calldata maycTokenIds,
+    //     uint256[] calldata bakcTokenIds,
+    //     uint256[] calldata baycAmounts,
+    //     uint256[] calldata maycAmounts,
+    //     uint256[] calldata bakcAmounts
+    // ) external payable {
+    //     if (baycTokenIds.length == 0 && maycTokenIds.length == 0 && bakcTokenIds.length == 0) revert ZeroArrayLength();
+    //     if (
+    //         baycTokenIds.length != baycAmounts.length || maycTokenIds.length != maycAmounts.length
+    //             || bakcTokenIds.length != bakcAmounts.length
+    //     ) revert MismatchArrayLength();
+
+    //     uint256 totalDeposit = 0;
+    //     for (uint256 i = 0; i < baycTokenIds.length; ++i) {
+    //         totalDeposit += baycAmounts[i];
+    //     }
+    //     for (uint256 i = 0; i < maycTokenIds.length; ++i) {
+    //         totalDeposit += maycAmounts[i];
+    //     }
+    //     for (uint256 i = 0; i < bakcTokenIds.length; ++i) {
+    //         totalDeposit += bakcAmounts[i];
+    //     }
+    //     if (msg.value != totalDeposit) revert InvalidAmount();
+
+    //     if (baycTokenIds.length > 0) _depositNft(_BAYC_POOL_ID, baycTokenIds, baycAmounts);
+    //     if (maycTokenIds.length > 0) _depositNft(_MAYC_POOL_ID, maycTokenIds, maycAmounts);
+    //     if (bakcTokenIds.length > 0) _depositNft(_BAKC_POOL_ID, bakcTokenIds, bakcAmounts);
+    // }
 
     /**
-     * @notice Withdraw staked ApeCoin from the MAYC pool.  If withdraw is total staked amount, performs an automatic claim.
-     * @param _nfts Array of MAYC NFT's with staked amounts
-     * @param _recipient Address to send withdraw amount and claim to
+     * @notice Claim rewards for array of BAYC, MAYC, and BAKC and send to recipient
+     * @param baycTokenIds Array of BAYC token IDs
+     * @param maycTokenIds Array of MAYC token IDs
+     * @param bakcTokenIds Array of BAKC token IDs
+     * @param recipient Address to send claim reward to
      */
-    function withdrawMAYC(SingleNft[] calldata _nfts, address _recipient) external {
-        _withdrawNft(MAYC_POOL_ID, _nfts, _recipient);
-    }
+    // function claimBatch(
+    //     uint256[] calldata baycTokenIds,
+    //     uint256[] calldata maycTokenIds,
+    //     uint256[] calldata bakcTokenIds,
+    //     address recipient
+    // ) external payable {
+    //     if (baycTokenIds.length == 0 && maycTokenIds.length == 0 && bakcTokenIds.length == 0) revert ZeroArrayLength();
+    //     if (recipient == address(0)) revert InvalidRecipient();
+    //     uint256 valueForFees = msg.value;
+    //     if (baycTokenIds.length > 0) {
+    //         valueForFees -= _requestClaim(_BAYC_POOL_ID, baycTokenIds, recipient, valueForFees);
+    //     }
+    //     if (maycTokenIds.length > 0) {
+    //         valueForFees -= _requestClaim(_MAYC_POOL_ID, maycTokenIds, recipient, valueForFees);
+    //     }
+    //     if (bakcTokenIds.length > 0) {
+    //         valueForFees -= _requestClaim(_BAKC_POOL_ID, bakcTokenIds, recipient, valueForFees);
+    //     }
+
+    //     _refundIfOver(valueForFees);
+    // }
 
     /**
-     * @notice Withdraw staked ApeCoin from the MAYC pool.  If withdraw is total staked amount, performs an automatic claim.
-     * @param _nfts Array of MAYC NFT's with staked amounts
+     * @notice Claim rewards for array of BAYC, MAYC, and BAKC
+     * @param baycTokenIds Array of BAYC token IDs
+     * @param maycTokenIds Array of MAYC token IDs
+     * @param bakcTokenIds Array of BAKC token IDs
      */
-    function withdrawSelfMAYC(SingleNft[] calldata _nfts) external {
-        _withdrawNft(MAYC_POOL_ID, _nfts, msg.sender);
-    }
+    // function claimBatchSelf(
+    //     uint256[] calldata baycTokenIds,
+    //     uint256[] calldata maycTokenIds,
+    //     uint256[] calldata bakcTokenIds
+    // ) external payable {
+    //     if (baycTokenIds.length == 0 && maycTokenIds.length == 0 && bakcTokenIds.length == 0) revert ZeroArrayLength();
+
+    //     uint256 valueForFees = msg.value;
+    //     if (baycTokenIds.length > 0) {
+    //         valueForFees -= _requestClaim(_BAYC_POOL_ID, baycTokenIds, msg.sender, valueForFees);
+    //     }
+    //     if (maycTokenIds.length > 0) {
+    //         valueForFees -= _requestClaim(_MAYC_POOL_ID, maycTokenIds, msg.sender, valueForFees);
+    //     }
+    //     if (bakcTokenIds.length > 0) {
+    //         valueForFees -= _requestClaim(_BAKC_POOL_ID, bakcTokenIds, msg.sender, valueForFees);
+    //     }
+
+    //     _refundIfOver(valueForFees);
+    // }
 
     /**
-     * @notice Withdraw staked ApeCoin from the Pair pool.  If withdraw is total staked amount, performs an automatic claim.
-     * @param _baycPairs Array of Paired BAYC NFT's with staked amounts and isUncommit boolean
-     * @param _maycPairs Array of Paired MAYC NFT's with staked amounts and isUncommit boolean
-     * @dev if pairs have split ownership and BAKC is attempting a withdraw, the withdraw must be for the total staked amount
+     * @notice Withdraw staked ApeCoin from the BAYC, MAYC, and BAKC pools.
+     * @param baycTokenIds Array of BAYC token IDs
+     * @param maycTokenIds Array of MAYC token IDs
+     * @param bakcTokenIds Array of BAKC token IDs
+     * @param baycAmounts Array of BAYC staked amounts
+     * @param maycAmounts Array of MAYC staked amounts
+     * @param bakcAmounts Array of BAKC staked amounts
+     * @param recipient Address to send withdraw amount and claim to
      */
-    function withdrawBAKC(
-        PairNftWithdrawWithAmount[] calldata _baycPairs,
-        PairNftWithdrawWithAmount[] calldata _maycPairs
-    ) external {
-        updatePool(BAKC_POOL_ID);
-        _withdrawPairNft(BAYC_POOL_ID, _baycPairs);
-        _withdrawPairNft(MAYC_POOL_ID, _maycPairs);
-    }
+    // function withdrawBatch(
+    //     uint256[] calldata baycTokenIds,
+    //     uint256[] calldata maycTokenIds,
+    //     uint256[] calldata bakcTokenIds,
+    //     uint256[] calldata baycAmounts,
+    //     uint256[] calldata maycAmounts,
+    //     uint256[] calldata bakcAmounts,
+    //     address recipient
+    // ) external payable {
+    //     if (baycTokenIds.length == 0 && maycTokenIds.length == 0 && bakcTokenIds.length == 0) revert ZeroArrayLength();
+    //     if (
+    //         baycTokenIds.length != baycAmounts.length || maycTokenIds.length != maycAmounts.length
+    //             || bakcTokenIds.length != bakcAmounts.length
+    //     ) revert MismatchArrayLength();
+    //     if (recipient == address(0)) revert InvalidRecipient();
+
+    //     uint256 valueForFees = msg.value;
+    //     if (baycTokenIds.length > 0) {
+    //         valueForFees -= _requestWithdraw(_BAYC_POOL_ID, baycTokenIds, baycAmounts, recipient, valueForFees);
+    //     }
+    //     if (maycTokenIds.length > 0) {
+    //         valueForFees -= _requestWithdraw(_MAYC_POOL_ID, maycTokenIds, maycAmounts, recipient, valueForFees);
+    //     }
+    //     if (bakcTokenIds.length > 0) {
+    //         valueForFees -= _requestWithdraw(_BAKC_POOL_ID, bakcTokenIds, bakcAmounts, recipient, valueForFees);
+    //     }
+
+    //     _refundIfOver(valueForFees);
+    // }
+
+    /**
+     * @notice Withdraw staked ApeCoin from the BAYC, MAYC, and BAKC pools.
+     * @param baycTokenIds Array of BAYC token IDs
+     * @param maycTokenIds Array of MAYC token IDs
+     * @param bakcTokenIds Array of BAKC token IDs
+     * @param baycAmounts Array of BAYC staked amounts
+     * @param maycAmounts Array of MAYC staked amounts
+     * @param bakcAmounts Array of BAKC staked amounts
+     */
+    // function withdrawBatchSelf(
+    //     uint256[] calldata baycTokenIds,
+    //     uint256[] calldata maycTokenIds,
+    //     uint256[] calldata bakcTokenIds,
+    //     uint256[] calldata baycAmounts,
+    //     uint256[] calldata maycAmounts,
+    //     uint256[] calldata bakcAmounts
+    // ) external payable {
+    //     if (baycTokenIds.length == 0 && maycTokenIds.length == 0 && bakcTokenIds.length == 0) revert ZeroArrayLength();
+    //     if (
+    //         baycTokenIds.length != baycAmounts.length || maycTokenIds.length != maycAmounts.length
+    //             || bakcTokenIds.length != bakcAmounts.length
+    //     ) revert MismatchArrayLength();
+
+    //     uint256 valueForFees = msg.value;
+    //     if (baycTokenIds.length > 0) {
+    //         valueForFees -= _requestWithdraw(_BAYC_POOL_ID, baycTokenIds, baycAmounts, msg.sender, valueForFees);
+    //     }
+    //     if (maycTokenIds.length > 0) {
+    //         valueForFees -= _requestWithdraw(_MAYC_POOL_ID, maycTokenIds, maycAmounts, msg.sender, valueForFees);
+    //     }
+    //     if (bakcTokenIds.length > 0) {
+    //         valueForFees -= _requestWithdraw(_BAKC_POOL_ID, bakcTokenIds, bakcAmounts, msg.sender, valueForFees);
+    //     }
+
+    //     _refundIfOver(valueForFees);
+    // }
 
     // Time Range Methods
-
     /**
      * @notice Add single time range with a given rewards per hour for a given pool
      * @dev In practice one Time Range will represent one quarter (defined by `_startTimestamp`and `_endTimeStamp` as whole hours)
      * where the rewards per hour is constant for a given pool.
-     * @param _poolId Available pool values 0-3
+     * @param _poolId Available pool values 1-3
      * @param _amount Total amount of ApeCoin to be distributed over the range
      * @param _startTimestamp Whole hour timestamp representation
      * @param _endTimeStamp Whole hour timestamp representation
@@ -469,9 +524,9 @@ contract ApeCoinStaking is Ownable {
         uint256 _startTimestamp,
         uint256 _endTimeStamp,
         uint256 _capPerPosition
-    ) external onlyOwner {
-        if (_poolId > BAKC_POOL_ID) revert InvalidPoolId();
-        if (_startTimestamp >= _endTimeStamp) revert StartMustBeGreaterThanEnd();
+    ) external payable validPool(_poolId) onlyOwner {
+        if (msg.value != _amount) revert InvalidAmount();
+        if (_startTimestamp >= _endTimeStamp) revert StartGreaterThanEnd();
         if (getMinute(_startTimestamp) > 0 || getSecond(_startTimestamp) > 0) revert StartNotWholeHour();
         if (getMinute(_endTimeStamp) > 0 || getSecond(_endTimeStamp) > 0) revert EndNotWholeHour();
 
@@ -482,7 +537,7 @@ contract ApeCoinStaking is Ownable {
         }
 
         uint256 hoursInSeconds = _endTimeStamp - _startTimestamp;
-        uint256 rewardsPerHour = (_amount * SECONDS_PER_HOUR) / hoursInSeconds;
+        uint256 rewardsPerHour = (_amount * _SECONDS_PER_HOUR) / hoursInSeconds;
 
         TimeRange memory next = TimeRange(
             _startTimestamp.toUint48(),
@@ -491,37 +546,88 @@ contract ApeCoinStaking is Ownable {
             _capPerPosition.toUint96()
         );
         pool.timeRanges.push(next);
+
+        emit TimeRangeAdded(
+            _poolId,
+            pool.timeRanges.length - 1,
+            _startTimestamp,
+            _endTimeStamp,
+            rewardsPerHour,
+            _capPerPosition
+        );
+    }
+
+    /**
+     * @notice Set the EIDs for the Shadow contract
+     * @param eids These EIDs should be all EIDs supported by the Beacon contract
+     */
+    function setEids(uint32[] calldata eids) external onlyOwner {
+        _eids = eids;
     }
 
     /**
      * @notice Removes the last Time Range for a given pool.
-     * @param _poolId Available pool values 0-3
+     * @param _poolId Available pool values 1-3
      */
-    function removeLastTimeRange(uint256 _poolId) external onlyOwner {
+    function removeLastTimeRange(uint256 _poolId) external validPool(_poolId) onlyOwner {
         pools[_poolId].timeRanges.pop();
+    }
+
+    /**
+     * @notice Execute callback for a pending claim
+     * @param guid The GUID of the pending claim
+     */
+    function executeCallback(bytes32 guid) external {
+        PendingClaim storage _claim_ = _pendingClaims[guid];
+
+        uint256 poolId = _claim_.poolId;
+        INFTShadow nftShadow = INFTShadow(address(nftContracts[poolId]));
+        if (msg.sender != address(nftShadow)) revert Unauthorized();
+
+        // reassemble the uint16map to tokenIds
+        uint256 numNfts = _claim_.numNfts;
+        uint256[] memory tokenIds = new uint256[](numNfts);
+        for (uint256 i = 0; i < numNfts; ++i) {
+            tokenIds[i] = uint256(_claim_.tokenIds.get(i));
+        }
+
+        if (_claim_.requestType == _CLAIM_TYPE) {
+            _claimNft(poolId, tokenIds, _claim_.recipient, _claim_.caller);
+        } else {
+            uint256[] memory amounts = new uint256[](numNfts);
+            for (uint256 i = 0; i < numNfts; ++i) {
+                amounts[i] = uint256(_claim_.amounts.get(i));
+            }
+            _withdraw(poolId, tokenIds, amounts, _claim_.recipient, _claim_.caller);
+        }
+
+        emit CallbackExecuted(guid);
     }
 
     /**
      * @notice Lookup method for a TimeRange struct
      * @return TimeRange A Pool's timeRanges struct by index.
-     * @param _poolId Available pool values 0-3
+     * @param _poolId Available pool values 1-3
      * @param _index Target index in a Pool's timeRanges array
      */
-    function getTimeRangeBy(uint256 _poolId, uint256 _index) public view returns (TimeRange memory) {
+    function getTimeRangeBy(uint256 _poolId, uint256 _index) public view validPool(_poolId) returns (TimeRange memory) {
         return pools[_poolId].timeRanges[_index];
     }
 
     // Pool Methods
-
     /**
      * @notice Lookup available rewards for a pool over a given time range
      * @return uint256 The amount of ApeCoin rewards to be distributed by pool for a given time range
      * @return uint256 The amount of time ranges
-     * @param _poolId Available pool values 0-3
+     * @param _poolId Available pool values 1-3
      * @param _from Whole hour timestamp representation
      * @param _to Whole hour timestamp representation
      */
-    function rewardsBy(uint256 _poolId, uint256 _from, uint256 _to) public view returns (uint256, uint256) {
+    function rewardsBy(
+        uint256 _poolId,
+        uint256 _from,
+        uint256 _to
+    ) public view validPool(_poolId) returns (uint256, uint256) {
         Pool memory pool = pools[_poolId];
 
         uint256 currentIndex = pool.lastRewardsRangeIndex;
@@ -541,18 +647,15 @@ contract ApeCoinStaking is Ownable {
         uint256 startTimestampHour;
         uint256 endTimestampHour;
         uint256 length = pool.timeRanges.length;
-        for (uint256 i = currentIndex; i < length; ) {
+        for (uint256 i = currentIndex; i < length; ++i) {
             current = pool.timeRanges[i];
             startTimestampHour = _from <= current.startTimestampHour ? current.startTimestampHour : _from;
             endTimestampHour = _to <= current.endTimestampHour ? _to : current.endTimestampHour;
 
-            rewards = rewards + ((endTimestampHour - startTimestampHour) * current.rewardsPerHour) / SECONDS_PER_HOUR;
+            rewards = rewards + ((endTimestampHour - startTimestampHour) * current.rewardsPerHour) / _SECONDS_PER_HOUR;
 
             if (_to <= endTimestampHour) {
                 return (rewards, i);
-            }
-            unchecked {
-                ++i;
             }
         }
 
@@ -562,13 +665,14 @@ contract ApeCoinStaking is Ownable {
     /**
      * @notice Updates reward variables `lastRewardedTimestampHour`, `accumulatedRewardsPerShare` and `lastRewardsRangeIndex`
      * for a given pool.
-     * @param _poolId Available pool values 0-3
+     * @param _poolId Available pool values 1-3
      */
-    function updatePool(uint256 _poolId) public {
+    function updatePool(uint256 _poolId) public validPool(_poolId) {
         Pool storage pool = pools[_poolId];
+        if (pool.timeRanges.length == 0) return;
 
         if (block.timestamp < pool.timeRanges[0].startTimestampHour) return;
-        if (block.timestamp <= pool.lastRewardedTimestampHour + SECONDS_PER_HOUR) return;
+        if (block.timestamp <= pool.lastRewardedTimestampHour + _SECONDS_PER_HOUR) return;
 
         uint48 lastTimestampHour = pool.timeRanges[pool.timeRanges.length - 1].endTimestampHour;
         uint48 previousTimestampHour = getPreviousTimestampHour().toUint48();
@@ -585,7 +689,7 @@ contract ApeCoinStaking is Ownable {
             pool.lastRewardsRangeIndex = index.toUint16();
         }
         pool.accumulatedRewardsPerShare = (pool.accumulatedRewardsPerShare +
-            (rewards * APE_COIN_PRECISION) /
+            (rewards * _APE_COIN_PRECISION) /
             pool.stakedAmount).toUint96();
         pool.lastRewardedTimestampHour = previousTimestampHour > lastTimestampHour
             ? lastTimestampHour
@@ -607,24 +711,21 @@ contract ApeCoinStaking is Ownable {
                 block.timestamp <= currentTimeRange.endTimestampHour
             ) return current;
         }
-        revert("distribution ended");
+        revert DistributionEnded();
     }
 
     /**
      * @notice Fetches a PoolUI struct (poolId, stakedAmount, currentTimeRange) for each reward pool
-     * @return PoolUI for ApeCoin.
      * @return PoolUI for BAYC.
      * @return PoolUI for MAYC.
      * @return PoolUI for BAKC.
      */
-    function getPoolsUI() public view returns (PoolUI memory, PoolUI memory, PoolUI memory, PoolUI memory) {
-        Pool memory apeCoinPool = pools[0];
+    function getPoolsUI() external view returns (PoolUI memory, PoolUI memory, PoolUI memory) {
         Pool memory baycPool = pools[1];
         Pool memory maycPool = pools[2];
         Pool memory bakcPool = pools[3];
-        uint256 current = getCurrentTimeRangeIndex(apeCoinPool);
+        uint256 current = getCurrentTimeRangeIndex(baycPool);
         return (
-            PoolUI(0, apeCoinPool.stakedAmount, apeCoinPool.timeRanges[current]),
             PoolUI(1, baycPool.stakedAmount, baycPool.timeRanges[current]),
             PoolUI(2, maycPool.stakedAmount, maycPool.timeRanges[current]),
             PoolUI(3, bakcPool.stakedAmount, bakcPool.timeRanges[current])
@@ -633,73 +734,53 @@ contract ApeCoinStaking is Ownable {
 
     /**
      * @notice Fetches an address total staked amount, used by voting contract
-     * @return amount uint256 staked amount for all pools.
-     * @param _address An Ethereum address
+     * @param baycTokenIds An array of BAYC token ids
+     * @param maycTokenIds An array of MAYC token ids
+     * @param bakcTokenIds An array of BAKC token ids
+     * @return total uint256 staked amount for all pools.
      */
-    function stakedTotal(address _address) external view returns (uint256) {
-        uint256 total = addressPosition[_address].stakedAmount;
-
-        total += _stakedTotal(BAYC_POOL_ID, _address);
-        total += _stakedTotal(MAYC_POOL_ID, _address);
-        total += _stakedTotalPair(_address);
+    function stakedTotal(
+        uint256[] memory baycTokenIds,
+        uint256[] memory maycTokenIds,
+        uint256[] memory bakcTokenIds
+    ) external view returns (uint256 total) {
+        total += _stakedTotal(_BAYC_POOL_ID, baycTokenIds);
+        total += _stakedTotal(_MAYC_POOL_ID, maycTokenIds);
+        total += _stakedTotal(_BAKC_POOL_ID, bakcTokenIds);
 
         return total;
     }
 
-    function _stakedTotal(uint256 _poolId, address _addr) private view returns (uint256) {
+    function _stakedTotal(uint256 _poolId, uint256[] memory tokenIds) private view returns (uint256) {
         uint256 total = 0;
-        uint256 nftCount = nftContracts[_poolId].balanceOf(_addr);
-        for (uint256 i = 0; i < nftCount; ++i) {
-            uint256 tokenId = nftContracts[_poolId].tokenOfOwnerByIndex(_addr, i);
+        for (uint256 i = 0; i < tokenIds.length; ++i) {
+            uint256 tokenId = tokenIds[i];
             total += nftPosition[_poolId][tokenId].stakedAmount;
         }
 
         return total;
     }
 
-    function _stakedTotalPair(address _addr) private view returns (uint256) {
-        uint256 total = 0;
-
-        uint256 nftCount = nftContracts[BAYC_POOL_ID].balanceOf(_addr);
-        for (uint256 i = 0; i < nftCount; ++i) {
-            uint256 baycTokenId = nftContracts[BAYC_POOL_ID].tokenOfOwnerByIndex(_addr, i);
-            if (mainToBakc[BAYC_POOL_ID][baycTokenId].isPaired) {
-                uint256 bakcTokenId = mainToBakc[BAYC_POOL_ID][baycTokenId].tokenId;
-                total += nftPosition[BAKC_POOL_ID][bakcTokenId].stakedAmount;
-            }
-        }
-
-        nftCount = nftContracts[MAYC_POOL_ID].balanceOf(_addr);
-        for (uint256 i = 0; i < nftCount; ++i) {
-            uint256 maycTokenId = nftContracts[MAYC_POOL_ID].tokenOfOwnerByIndex(_addr, i);
-            if (mainToBakc[MAYC_POOL_ID][maycTokenId].isPaired) {
-                uint256 bakcTokenId = mainToBakc[MAYC_POOL_ID][maycTokenId].tokenId;
-                total += nftPosition[BAKC_POOL_ID][bakcTokenId].stakedAmount;
-            }
-        }
-
-        return total;
-    }
-
     /**
-     * @notice Fetches a DashboardStake = [poolId, tokenId, deposited, unclaimed, rewards24Hrs, paired] \
+     * @notice Fetches a DashboardStake = [poolId, tokenId, deposited, unclaimed, rewards24Hrs] \
      * for each pool, for an Ethereum address
      * @return dashboardStakes An array of DashboardStake structs
      * @param _address An Ethereum address
      */
-    function getAllStakes(address _address) public view returns (DashboardStake[] memory) {
-        DashboardStake memory apeCoinStake = getApeCoinStake(_address);
-        DashboardStake[] memory baycStakes = getBaycStakes(_address);
-        DashboardStake[] memory maycStakes = getMaycStakes(_address);
-        DashboardStake[] memory bakcStakes = getBakcStakes(_address);
-        DashboardStake[] memory splitStakes = getSplitStakes(_address);
+    function getAllStakes(
+        address _address,
+        uint256[] calldata baycTokenIds,
+        uint256[] calldata maycTokenIds,
+        uint256[] calldata bakcTokenIds
+    ) external view returns (DashboardStake[] memory) {
+        DashboardStake[] memory baycStakes = _getStakes(_address, _BAYC_POOL_ID, baycTokenIds);
+        DashboardStake[] memory maycStakes = _getStakes(_address, _MAYC_POOL_ID, maycTokenIds);
+        DashboardStake[] memory bakcStakes = _getStakes(_address, _BAKC_POOL_ID, bakcTokenIds);
 
-        uint256 count = (baycStakes.length + maycStakes.length + bakcStakes.length + splitStakes.length + 1);
+        uint256 count = (baycStakes.length + maycStakes.length + bakcStakes.length);
         DashboardStake[] memory allStakes = new DashboardStake[](count);
 
-        uint256 offset = 0;
-        allStakes[offset] = apeCoinStake;
-        ++offset;
+        uint256 offset;
 
         for (uint256 i = 0; i < baycStakes.length; ++i) {
             allStakes[offset] = baycStakes[i];
@@ -716,205 +797,86 @@ contract ApeCoinStaking is Ownable {
             ++offset;
         }
 
-        for (uint256 i = 0; i < splitStakes.length; ++i) {
-            allStakes[offset] = splitStakes[i];
-            ++offset;
-        }
-
         return allStakes;
-    }
-
-    /**
-     * @notice Fetches a DashboardStake for the ApeCoin pool
-     * @return dashboardStake A dashboardStake struct
-     * @param _address An Ethereum address
-     */
-    function getApeCoinStake(address _address) public view returns (DashboardStake memory) {
-        uint256 tokenId = 0;
-        uint256 deposited = addressPosition[_address].stakedAmount;
-        uint256 unclaimed = deposited > 0 ? this.pendingRewards(0, _address, tokenId) : 0;
-        uint256 rewards24Hrs = deposited > 0 ? _estimate24HourRewards(0, _address, 0) : 0;
-
-        return DashboardStake(APECOIN_POOL_ID, tokenId, deposited, unclaimed, rewards24Hrs, NULL_PAIR);
     }
 
     /**
      * @notice Fetches an array of DashboardStakes for the BAYC pool
      * @return dashboardStakes An array of DashboardStake structs
      */
-    function getBaycStakes(address _address) public view returns (DashboardStake[] memory) {
-        return _getStakes(_address, BAYC_POOL_ID);
+    function getBaycStakes(
+        address _address,
+        uint256[] memory tokenIds
+    ) external view returns (DashboardStake[] memory) {
+        return _getStakes(_address, _BAYC_POOL_ID, tokenIds);
     }
 
     /**
      * @notice Fetches an array of DashboardStakes for the MAYC pool
      * @return dashboardStakes An array of DashboardStake structs
      */
-    function getMaycStakes(address _address) public view returns (DashboardStake[] memory) {
-        return _getStakes(_address, MAYC_POOL_ID);
+    function getMaycStakes(
+        address _address,
+        uint256[] memory tokenIds
+    ) external view returns (DashboardStake[] memory) {
+        return _getStakes(_address, _MAYC_POOL_ID, tokenIds);
     }
 
     /**
      * @notice Fetches an array of DashboardStakes for the BAKC pool
      * @return dashboardStakes An array of DashboardStake structs
      */
-    function getBakcStakes(address _address) public view returns (DashboardStake[] memory) {
-        return _getStakes(_address, BAKC_POOL_ID);
-    }
-
-    /**
-     * @notice Fetches an array of DashboardStakes for the Pair Pool when ownership is split \
-     * ie (BAYC/MAYC) and BAKC in pair pool have different owners.
-     * @return dashboardStakes An array of DashboardStake structs
-     * @param _address An Ethereum address
-     */
-    function getSplitStakes(address _address) public view returns (DashboardStake[] memory) {
-        uint256 baycSplits = _getSplitStakeCount(
-            nftContracts[BAYC_POOL_ID].balanceOf(_address),
-            _address,
-            BAYC_POOL_ID
-        );
-        uint256 maycSplits = _getSplitStakeCount(
-            nftContracts[MAYC_POOL_ID].balanceOf(_address),
-            _address,
-            MAYC_POOL_ID
-        );
-        uint256 totalSplits = baycSplits + maycSplits;
-
-        if (totalSplits == 0) {
-            return new DashboardStake[](0);
-        }
-
-        DashboardStake[] memory baycSplitStakes = _getSplitStakes(baycSplits, _address, BAYC_POOL_ID);
-        DashboardStake[] memory maycSplitStakes = _getSplitStakes(maycSplits, _address, MAYC_POOL_ID);
-
-        DashboardStake[] memory splitStakes = new DashboardStake[](totalSplits);
-        uint256 offset = 0;
-        for (uint256 i = 0; i < baycSplitStakes.length; ++i) {
-            splitStakes[offset] = baycSplitStakes[i];
-            ++offset;
-        }
-
-        for (uint256 i = 0; i < maycSplitStakes.length; ++i) {
-            splitStakes[offset] = maycSplitStakes[i];
-            ++offset;
-        }
-
-        return splitStakes;
-    }
-
-    function _getSplitStakes(
-        uint256 splits,
+    function getBakcStakes(
         address _address,
-        uint256 _mainPoolId
+        uint256[] memory tokenIds
+    ) external view returns (DashboardStake[] memory) {
+        return _getStakes(_address, _BAKC_POOL_ID, tokenIds);
+    }
+
+    function _getStakes(
+        address _address,
+        uint256 _poolId,
+        uint256[] memory tokenIds
     ) private view returns (DashboardStake[] memory) {
-        DashboardStake[] memory dashboardStakes = new DashboardStake[](splits);
-        uint256 counter;
+        DashboardStake[] memory dashboardStakes = new DashboardStake[](tokenIds.length);
+        uint256 validStakeCount = 0;
 
-        for (uint256 i = 0; i < nftContracts[_mainPoolId].balanceOf(_address); ++i) {
-            uint256 mainTokenId = nftContracts[_mainPoolId].tokenOfOwnerByIndex(_address, i);
-            if (mainToBakc[_mainPoolId][mainTokenId].isPaired) {
-                uint256 bakcTokenId = mainToBakc[_mainPoolId][mainTokenId].tokenId;
-                address currentOwner = nftContracts[BAKC_POOL_ID].ownerOf(bakcTokenId);
+        for (uint256 i = 0; i < tokenIds.length; ++i) {
+            uint256 tokenId = tokenIds[i];
+            // Verify ownership
+            if (nftContracts[_poolId].ownerOf(tokenId) == _address) {
+                uint256 deposited = nftPosition[_poolId][tokenId].stakedAmount;
+                uint256 unclaimed = deposited > 0 ? this.pendingRewards(_poolId, tokenId) : 0;
+                uint256 rewards24Hrs = deposited > 0 ? _estimate24HourRewards(_poolId, tokenId) : 0;
 
-                /* Split Pair Check*/
-                if (currentOwner != _address) {
-                    uint256 deposited = nftPosition[BAKC_POOL_ID][bakcTokenId].stakedAmount;
-                    uint256 unclaimed = deposited > 0
-                        ? this.pendingRewards(BAKC_POOL_ID, currentOwner, bakcTokenId)
-                        : 0;
-                    uint256 rewards24Hrs = deposited > 0
-                        ? _estimate24HourRewards(BAKC_POOL_ID, currentOwner, bakcTokenId)
-                        : 0;
-
-                    DashboardPair memory pair = NULL_PAIR;
-                    if (bakcToMain[bakcTokenId][_mainPoolId].isPaired) {
-                        pair = DashboardPair(bakcToMain[bakcTokenId][_mainPoolId].tokenId, _mainPoolId);
-                    }
-
-                    DashboardStake memory dashboardStake = DashboardStake(
-                        BAKC_POOL_ID,
-                        bakcTokenId,
+                if (deposited > 0 || unclaimed > 0) {
+                    dashboardStakes[validStakeCount] = DashboardStake(
+                        _poolId,
+                        tokenId,
                         deposited,
                         unclaimed,
-                        rewards24Hrs,
-                        pair
+                        rewards24Hrs
                     );
-                    dashboardStakes[counter] = dashboardStake;
-                    ++counter;
+                    validStakeCount++;
                 }
             }
+        }
+
+        // Resize array if needed
+        if (validStakeCount < tokenIds.length) {
+            DashboardStake[] memory resizedStakes = new DashboardStake[](validStakeCount);
+            for (uint256 i = 0; i < validStakeCount; ++i) {
+                resizedStakes[i] = dashboardStakes[i];
+            }
+            return resizedStakes;
         }
 
         return dashboardStakes;
     }
 
-    function _getSplitStakeCount(
-        uint256 nftCount,
-        address _address,
-        uint256 _mainPoolId
-    ) private view returns (uint256) {
-        uint256 splitCount;
-        for (uint256 i = 0; i < nftCount; ++i) {
-            uint256 mainTokenId = nftContracts[_mainPoolId].tokenOfOwnerByIndex(_address, i);
-            if (mainToBakc[_mainPoolId][mainTokenId].isPaired) {
-                uint256 bakcTokenId = mainToBakc[_mainPoolId][mainTokenId].tokenId;
-                address currentOwner = nftContracts[BAKC_POOL_ID].ownerOf(bakcTokenId);
-                if (currentOwner != _address) {
-                    ++splitCount;
-                }
-            }
-        }
-
-        return splitCount;
-    }
-
-    function _getStakes(address _address, uint256 _poolId) private view returns (DashboardStake[] memory) {
-        uint256 nftCount = nftContracts[_poolId].balanceOf(_address);
-        DashboardStake[] memory dashboardStakes = nftCount > 0
-            ? new DashboardStake[](nftCount)
-            : new DashboardStake[](0);
-
-        if (nftCount == 0) {
-            return dashboardStakes;
-        }
-
-        for (uint256 i = 0; i < nftCount; ++i) {
-            uint256 tokenId = nftContracts[_poolId].tokenOfOwnerByIndex(_address, i);
-            uint256 deposited = nftPosition[_poolId][tokenId].stakedAmount;
-            uint256 unclaimed = deposited > 0 ? this.pendingRewards(_poolId, _address, tokenId) : 0;
-            uint256 rewards24Hrs = deposited > 0 ? _estimate24HourRewards(_poolId, _address, tokenId) : 0;
-
-            DashboardPair memory pair = NULL_PAIR;
-            if (_poolId == BAKC_POOL_ID) {
-                if (bakcToMain[tokenId][BAYC_POOL_ID].isPaired) {
-                    pair = DashboardPair(bakcToMain[tokenId][BAYC_POOL_ID].tokenId, BAYC_POOL_ID);
-                } else if (bakcToMain[tokenId][MAYC_POOL_ID].isPaired) {
-                    pair = DashboardPair(bakcToMain[tokenId][MAYC_POOL_ID].tokenId, MAYC_POOL_ID);
-                }
-            }
-
-            DashboardStake memory dashboardStake = DashboardStake(
-                _poolId,
-                tokenId,
-                deposited,
-                unclaimed,
-                rewards24Hrs,
-                pair
-            );
-            dashboardStakes[i] = dashboardStake;
-        }
-
-        return dashboardStakes;
-    }
-
-    function _estimate24HourRewards(
-        uint256 _poolId,
-        address _address,
-        uint256 _tokenId
-    ) private view returns (uint256) {
+    function _estimate24HourRewards(uint256 _poolId, uint256 _tokenId) private view returns (uint256) {
         Pool memory pool = pools[_poolId];
-        Position memory position = _poolId == 0 ? addressPosition[_address] : nftPosition[_poolId][_tokenId];
+        Position memory position = nftPosition[_poolId][_tokenId];
 
         TimeRange memory rewards = getTimeRangeBy(_poolId, pool.lastRewardsRangeIndex);
         return (position.stakedAmount * uint256(rewards.rewardsPerHour) * 24) / uint256(pool.stakedAmount);
@@ -923,13 +885,12 @@ contract ApeCoinStaking is Ownable {
     /**
      * @notice Fetches the current amount of claimable ApeCoin rewards for a given position from a given pool.
      * @return uint256 value of pending rewards
-     * @param _poolId Available pool values 0-3
-     * @param _address Address to lookup Position for
+     * @param _poolId Available pool values 1-3
      * @param _tokenId An NFT id
      */
-    function pendingRewards(uint256 _poolId, address _address, uint256 _tokenId) external view returns (uint256) {
+    function pendingRewards(uint256 _poolId, uint256 _tokenId) external view returns (uint256) {
         Pool memory pool = pools[_poolId];
-        Position memory position = _poolId == 0 ? addressPosition[_address] : nftPosition[_poolId][_tokenId];
+        Position memory position = nftPosition[_poolId][_tokenId];
 
         (uint256 rewardsSinceLastCalculated, ) = rewardsBy(
             _poolId,
@@ -938,28 +899,91 @@ contract ApeCoinStaking is Ownable {
         );
         uint256 accumulatedRewardsPerShare = pool.accumulatedRewardsPerShare;
 
-        if (block.timestamp > pool.lastRewardedTimestampHour + SECONDS_PER_HOUR && pool.stakedAmount != 0) {
+        if (block.timestamp > pool.lastRewardedTimestampHour + _SECONDS_PER_HOUR && pool.stakedAmount != 0) {
             accumulatedRewardsPerShare =
                 accumulatedRewardsPerShare +
-                (rewardsSinceLastCalculated * APE_COIN_PRECISION) /
+                (rewardsSinceLastCalculated * _APE_COIN_PRECISION) /
                 pool.stakedAmount;
         }
         return
             ((position.stakedAmount * accumulatedRewardsPerShare).toInt256() - position.rewardsDebt).toUint256() /
-            APE_COIN_PRECISION;
+            _APE_COIN_PRECISION;
+    }
+
+    /**
+     * @notice Fetches the LZ fee for a request to read a batch of NFTs from all pools.
+     * @return fee uint256 fee for the request
+     * @param baycTokenIds An array of BAYC token ids
+     * @param maycTokenIds An array of MAYC token ids
+     * @param bakcTokenIds An array of BAKC token ids
+     */
+    function quoteRequestBatch(
+        uint256[] calldata baycTokenIds,
+        uint256[] calldata maycTokenIds,
+        uint256[] calldata bakcTokenIds
+    ) external view returns (uint256 fee) {
+        unchecked {
+            fee += quoteRequest(_BAYC_POOL_ID, baycTokenIds);
+            fee += quoteRequest(_MAYC_POOL_ID, maycTokenIds);
+            fee += quoteRequest(_BAKC_POOL_ID, bakcTokenIds);
+        }
+
+        return fee;
+    }
+
+    /**
+     * @notice Fetches a PendingClaim struct for a given guid
+     * @return poolId uint8 poolId
+     * @return requestType uint8 requestType
+     * @return caller address caller
+     * @return recipient address recipient
+     * @return numNfts uint96 numNfts
+     * @param guid bytes32 guid
+     */
+    function pendingClaims(
+        bytes32 guid
+    ) external view returns (uint8 poolId, uint8 requestType, address caller, address recipient, uint96 numNfts) {
+        return (
+            _pendingClaims[guid].poolId,
+            _pendingClaims[guid].requestType,
+            _pendingClaims[guid].caller,
+            _pendingClaims[guid].recipient,
+            _pendingClaims[guid].numNfts
+        );
+    }
+
+    /**
+     * @notice Fetches the LZ fee for a request to read a batch of NFTs from a given pool.
+     * @param poolId Available pool values 1-3
+     * @param tokenIds An array of NFT ids
+     * @return fee uint256 fee for the request
+     */
+    function quoteRequest(uint256 poolId, uint256[] calldata tokenIds) public view returns (uint256 fee) {
+        if (tokenIds.length == 0) return 0;
+
+        INFTShadow shadowContract = nftContracts[poolId];
+        (uint256[] memory lockedNfts, ) = _splitNfts(shadowContract, tokenIds);
+        if (lockedNfts.length == 0) return 0;
+
+        uint128 callbackGasLimit = _BASE_CALLBACK_GAS_LIMIT +
+            _INCREMENTAL_CALLBACK_GAS_LIMIT *
+            uint128(lockedNfts.length);
+
+        // base collection address for BAYC, MAYC, BAKC are same as shadows
+        (uint256 nativeFee, ) = _beacon.quoteRead(address(shadowContract), tokenIds, _eids, callbackGasLimit);
+        return nativeFee;
     }
 
     // Convenience methods for timestamp calculation
-
     /// @notice the minutes (0 to 59) of a timestamp
     function getMinute(uint256 timestamp) internal pure returns (uint256 minute) {
-        uint256 secs = timestamp % SECONDS_PER_HOUR;
-        minute = secs / SECONDS_PER_MINUTE;
+        uint256 secs = timestamp % _SECONDS_PER_HOUR;
+        minute = secs / _SECONDS_PER_MINUTE;
     }
 
     /// @notice the seconds (0 to 59) of a timestamp
     function getSecond(uint256 timestamp) internal pure returns (uint256 second) {
-        second = timestamp % SECONDS_PER_MINUTE;
+        second = timestamp % _SECONDS_PER_MINUTE;
     }
 
     /// @notice the previous whole hour of a timestamp
@@ -976,72 +1000,30 @@ contract ApeCoinStaking is Ownable {
         _position.rewardsDebt += (_amount * pool.accumulatedRewardsPerShare).toInt256();
     }
 
-    function _depositNft(uint256 _poolId, SingleNft[] calldata _nfts) private {
+    function _depositNft(uint256 _poolId, uint256[] calldata _tokenIds, uint256[] calldata _amounts) private {
         updatePool(_poolId);
-        uint256 tokenId;
-        uint256 amount;
         Position storage position;
-        uint256 length = _nfts.length;
-        uint256 totalDeposit;
-        for (uint256 i; i < length; ) {
-            tokenId = _nfts[i].tokenId;
+        uint256 length = _tokenIds.length;
+        for (uint256 i; i < length; ++i) {
+            uint256 tokenId = _tokenIds[i];
             position = nftPosition[_poolId][tokenId];
             if (position.stakedAmount == 0) {
                 if (nftContracts[_poolId].ownerOf(tokenId) != msg.sender) revert CallerNotOwner();
             }
-            amount = _nfts[i].amount;
+            uint256 amount = _amounts[i];
             _depositNftGuard(_poolId, position, amount);
-            totalDeposit += amount;
-            emit DepositNft(msg.sender, _poolId, amount, tokenId);
-            unchecked {
-                ++i;
-            }
+            emit Deposit(msg.sender, _poolId, amount, tokenId);
         }
-        if (totalDeposit > 0) apeCoin.transferFrom(msg.sender, address(this), totalDeposit);
-    }
-
-    function _depositPairNft(uint256 mainTypePoolId, PairNftDepositWithAmount[] calldata _nfts) private {
-        uint256 length = _nfts.length;
-        uint256 totalDeposit;
-        PairNftDepositWithAmount memory pair;
-        Position storage position;
-        for (uint256 i; i < length; ) {
-            pair = _nfts[i];
-            position = nftPosition[BAKC_POOL_ID][pair.bakcTokenId];
-
-            if (position.stakedAmount == 0) {
-                if (
-                    nftContracts[mainTypePoolId].ownerOf(pair.mainTokenId) != msg.sender ||
-                    mainToBakc[mainTypePoolId][pair.mainTokenId].isPaired
-                ) revert MainTokenNotOwnedOrPaired();
-                if (
-                    nftContracts[BAKC_POOL_ID].ownerOf(pair.bakcTokenId) != msg.sender ||
-                    bakcToMain[pair.bakcTokenId][mainTypePoolId].isPaired
-                ) revert BAKCNotOwnedOrPaired();
-
-                mainToBakc[mainTypePoolId][pair.mainTokenId] = PairingStatus(pair.bakcTokenId, true);
-                bakcToMain[pair.bakcTokenId][mainTypePoolId] = PairingStatus(pair.mainTokenId, true);
-            } else if (
-                pair.mainTokenId != bakcToMain[pair.bakcTokenId][mainTypePoolId].tokenId ||
-                pair.bakcTokenId != mainToBakc[mainTypePoolId][pair.mainTokenId].tokenId
-            ) revert BAKCAlreadyPaired();
-
-            _depositNftGuard(BAKC_POOL_ID, position, pair.amount);
-            totalDeposit += pair.amount;
-            emit DepositPairNft(msg.sender, pair.amount, mainTypePoolId, pair.mainTokenId, pair.bakcTokenId);
-            unchecked {
-                ++i;
-            }
-        }
-        if (totalDeposit > 0) apeCoin.transferFrom(msg.sender, address(this), totalDeposit);
     }
 
     function _depositNftGuard(uint256 _poolId, Position storage _position, uint256 _amount) private {
-        if (_amount < MIN_DEPOSIT) revert DepositMoreThanOneAPE();
+        if (_amount < _MIN_DEPOSIT) revert DepositMoreThanOneAPE();
         if (
             _amount + _position.stakedAmount >
             pools[_poolId].timeRanges[pools[_poolId].lastRewardsRangeIndex].capPerPosition
-        ) revert ExceededCapAmount();
+        ) {
+            revert ExceededCapAmount();
+        }
 
         _deposit(_poolId, _position, _amount);
     }
@@ -1054,156 +1036,185 @@ contract ApeCoinStaking is Ownable {
         Pool storage pool = pools[_poolId];
 
         int256 accumulatedApeCoins = (_position.stakedAmount * uint256(pool.accumulatedRewardsPerShare)).toInt256();
-        rewardsToBeClaimed = (accumulatedApeCoins - _position.rewardsDebt).toUint256() / APE_COIN_PRECISION;
+        rewardsToBeClaimed = (accumulatedApeCoins - _position.rewardsDebt).toUint256() / _APE_COIN_PRECISION;
 
         _position.rewardsDebt = accumulatedApeCoins;
 
         if (rewardsToBeClaimed != 0) {
-            apeCoin.transfer(_recipient, rewardsToBeClaimed);
+            (bool success, ) = _recipient.call{value: rewardsToBeClaimed}("");
+            if (!success) revert TransferFailed();
         }
     }
 
-    function _claimNft(uint256 _poolId, uint256[] calldata _nfts, address _recipient) private {
+    function _requestClaim(
+        uint256 _poolId,
+        uint256[] calldata _nfts,
+        address _recipient,
+        uint256 valueForFees
+    ) private returns (uint256 fee) {
+        // pass _nfts a second time in place of amounts, it gets ignored in the claim context
+        fee = _request(_poolId, _nfts, _nfts, _recipient, _CLAIM_TYPE, valueForFees);
+    }
+
+    function _requestWithdraw(
+        uint256 _poolId,
+        uint256[] calldata _tokenIds,
+        uint256[] calldata _amounts,
+        address _recipient,
+        uint256 valueForFees
+    ) private returns (uint256 fee) {
+        fee = _request(_poolId, _tokenIds, _amounts, _recipient, _WITHDRAW_TYPE, valueForFees);
+    }
+
+    function _request(
+        uint256 _poolId,
+        uint256[] calldata _tokenIds,
+        uint256[] calldata _amounts,
+        address _recipient,
+        uint8 _type,
+        uint256 valueForFees
+    ) private returns (uint256 fee) {
+        INFTShadow _shadowContract = nftContracts[_poolId];
+
+        (uint256[] memory lockedNfts, uint256[] memory unlockedNfts) = _splitNfts(_shadowContract, _tokenIds);
+
+        uint256 lockedNftsCount = lockedNfts.length;
+        if (lockedNftsCount > 0) {
+            uint128 callbackGasLimit = _BASE_CALLBACK_GAS_LIMIT +
+                _INCREMENTAL_CALLBACK_GAS_LIMIT *
+                uint128(lockedNftsCount);
+            (fee, ) = _beacon.quoteRead(address(_shadowContract), lockedNfts, _eids, callbackGasLimit);
+            if (valueForFees < fee) revert InsufficientFee();
+
+            bytes32 guid = _shadowContract.readWithCallback{value: fee}(lockedNfts, _eids, callbackGasLimit);
+
+            _pendingClaims[guid].poolId = uint8(_poolId);
+            _pendingClaims[guid].requestType = _type;
+            _pendingClaims[guid].recipient = _recipient;
+            _pendingClaims[guid].numNfts = uint96(lockedNftsCount);
+            _pendingClaims[guid].caller = msg.sender;
+
+            for (uint256 i; i < lockedNftsCount; ++i) {
+                _pendingClaims[guid].tokenIds.set(i, lockedNfts[i].toUint16());
+                if (_type == _WITHDRAW_TYPE) {
+                    _pendingClaims[guid].amounts.set(i, _amounts[i].toUint128());
+                }
+            }
+
+            emit RequestSubmitted(guid, msg.sender, uint8(_poolId), _type, lockedNfts, _recipient);
+        }
+
+        if (unlockedNfts.length > 0) {
+            if (_type == _CLAIM_TYPE) {
+                _claimNft(_poolId, unlockedNfts, _recipient, msg.sender);
+            } else if (_type == _WITHDRAW_TYPE) {
+                _withdraw(_poolId, unlockedNfts, _amounts, _recipient, msg.sender);
+            }
+        }
+    }
+
+    function _splitNfts(
+        INFTShadow _shadowContract,
+        uint256[] memory _tokenIds
+    ) private view returns (uint256[] memory, uint256[] memory) {
+        uint256[] memory lockedNftsRaw = new uint256[](_tokenIds.length);
+        uint256[] memory unlockedNftsRaw = new uint256[](_tokenIds.length);
+        uint256 lockedNftsCount = 0;
+        uint256 unlockedNftsCount = 0;
+
+        for (uint256 i; i < _tokenIds.length; ++i) {
+            if (_shadowContract.locked(_tokenIds[i])) {
+                lockedNftsRaw[lockedNftsCount] = _tokenIds[i];
+                unchecked {
+                    ++lockedNftsCount;
+                }
+            } else {
+                unlockedNftsRaw[unlockedNftsCount] = _tokenIds[i];
+                unchecked {
+                    ++unlockedNftsCount;
+                }
+            }
+        }
+
+        // resize arrays
+        uint256[] memory lockedNfts = new uint256[](lockedNftsCount);
+        uint256[] memory unlockedNfts = new uint256[](unlockedNftsCount);
+
+        for (uint256 i; i < lockedNftsCount; ++i) {
+            lockedNfts[i] = lockedNftsRaw[i];
+        }
+        for (uint256 i; i < unlockedNftsCount; ++i) {
+            unlockedNfts[i] = unlockedNftsRaw[i];
+        }
+
+        return (lockedNfts, unlockedNfts);
+    }
+
+    function _claimNft(uint256 _poolId, uint256[] memory _tokenIds, address _recipient, address _caller) private {
         updatePool(_poolId);
-        uint256 tokenId;
-        uint256 rewardsToBeClaimed;
-        uint256 length = _nfts.length;
-        for (uint256 i; i < length; ) {
-            tokenId = _nfts[i];
-            if (nftContracts[_poolId].ownerOf(tokenId) != msg.sender) revert CallerNotOwner();
+
+        INFTShadow shadowContract = nftContracts[_poolId];
+
+        for (uint256 i; i < _tokenIds.length; ++i) {
+            uint256 tokenId = _tokenIds[i];
+            if (shadowContract.ownerOf(tokenId) != _caller) revert CallerNotOwner();
+
             Position storage position = nftPosition[_poolId][tokenId];
-            rewardsToBeClaimed = _claim(_poolId, position, _recipient);
-            emit ClaimRewardsNft(msg.sender, _poolId, rewardsToBeClaimed, tokenId);
-            unchecked {
-                ++i;
-            }
+            uint256 rewardsToBeClaimed = _claim(_poolId, position, _recipient);
+
+            emit Claim(_caller, _poolId, rewardsToBeClaimed, tokenId);
         }
     }
 
-    function _claimPairNft(uint256 mainTypePoolId, PairNft[] calldata _pairs, address _recipient) private {
-        uint256 length = _pairs.length;
-        uint256 mainTokenId;
-        uint256 bakcTokenId;
-        Position storage position;
-        PairingStatus storage mainToSecond;
-        PairingStatus storage secondToMain;
-        for (uint256 i; i < length; ) {
-            mainTokenId = _pairs[i].mainTokenId;
-            if (nftContracts[mainTypePoolId].ownerOf(mainTokenId) != msg.sender) revert NotOwnerOfMain();
-
-            bakcTokenId = _pairs[i].bakcTokenId;
-            if (nftContracts[BAKC_POOL_ID].ownerOf(bakcTokenId) != msg.sender) revert NotOwnerOfBAKC();
-
-            mainToSecond = mainToBakc[mainTypePoolId][mainTokenId];
-            secondToMain = bakcToMain[bakcTokenId][mainTypePoolId];
-
-            if (
-                mainToSecond.tokenId != bakcTokenId ||
-                !mainToSecond.isPaired ||
-                secondToMain.tokenId != mainTokenId ||
-                !secondToMain.isPaired
-            ) revert ProvidedTokensNotPaired();
-
-            position = nftPosition[BAKC_POOL_ID][bakcTokenId];
-            uint256 rewardsToBeClaimed = _claim(BAKC_POOL_ID, position, _recipient);
-            emit ClaimRewardsPairNft(msg.sender, rewardsToBeClaimed, mainTypePoolId, mainTokenId, bakcTokenId);
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    function _withdraw(uint256 _poolId, Position storage _position, uint256 _amount) private {
-        if (_amount > _position.stakedAmount) revert ExceededStakedAmount();
-
-        Pool storage pool = pools[_poolId];
-
-        _position.stakedAmount -= _amount;
-        pool.stakedAmount -= _amount.toUint96();
-        _position.rewardsDebt -= (_amount * pool.accumulatedRewardsPerShare).toInt256();
-    }
-
-    function _withdrawNft(uint256 _poolId, SingleNft[] calldata _nfts, address _recipient) private {
+    function _withdraw(
+        uint256 _poolId,
+        uint256[] memory _tokenIds,
+        uint256[] memory _amounts,
+        address _recipient,
+        address _caller
+    ) private {
         updatePool(_poolId);
         uint256 tokenId;
         uint256 amount;
-        uint256 length = _nfts.length;
+        uint256 length = _tokenIds.length;
         uint256 totalWithdraw;
         Position storage position;
-        for (uint256 i; i < length; ) {
-            tokenId = _nfts[i].tokenId;
-            if (nftContracts[_poolId].ownerOf(tokenId) != msg.sender) revert CallerNotOwner();
+        for (uint256 i; i < length; ++i) {
+            tokenId = _tokenIds[i];
+            if (nftContracts[_poolId].ownerOf(tokenId) != _caller) revert CallerNotOwner();
 
-            amount = _nfts[i].amount;
+            amount = _amounts[i];
             position = nftPosition[_poolId][tokenId];
             if (amount == position.stakedAmount) {
                 uint256 rewardsToBeClaimed = _claim(_poolId, position, _recipient);
-                emit ClaimRewardsNft(msg.sender, _poolId, rewardsToBeClaimed, tokenId);
+                emit Claim(_caller, _poolId, rewardsToBeClaimed, tokenId);
             }
-            _withdraw(_poolId, position, amount);
-            totalWithdraw += amount;
-            emit WithdrawNft(msg.sender, _poolId, amount, _recipient, tokenId);
+
+            if (amount > position.stakedAmount) revert ExceededStakedAmount();
+
+            Pool storage pool = pools[_poolId];
+
             unchecked {
-                ++i;
+                position.stakedAmount -= amount;
+                pool.stakedAmount -= amount.toUint96();
+                position.rewardsDebt -= (amount * pool.accumulatedRewardsPerShare).toInt256();
+
+                totalWithdraw += amount;
             }
+
+            emit Withdraw(_caller, _poolId, amount, _recipient, tokenId);
         }
-        if (totalWithdraw > 0) apeCoin.transfer(_recipient, totalWithdraw);
+
+        if (totalWithdraw > 0) {
+            (bool success, ) = _recipient.call{value: totalWithdraw}("");
+            if (!success) revert WithdrawFailed();
+        }
     }
 
-    function _withdrawPairNft(uint256 mainTypePoolId, PairNftWithdrawWithAmount[] calldata _nfts) private {
-        address mainTokenOwner;
-        address bakcOwner;
-        PairNftWithdrawWithAmount memory pair;
-        PairingStatus storage mainToSecond;
-        PairingStatus storage secondToMain;
-        Position storage position;
-        uint256 length = _nfts.length;
-        for (uint256 i; i < length; ) {
-            pair = _nfts[i];
-            mainTokenOwner = nftContracts[mainTypePoolId].ownerOf(pair.mainTokenId);
-            bakcOwner = nftContracts[BAKC_POOL_ID].ownerOf(pair.bakcTokenId);
-
-            if (mainTokenOwner != msg.sender) {
-                if (bakcOwner != msg.sender) revert NeitherTokenInPairOwnedByCaller();
-            }
-
-            mainToSecond = mainToBakc[mainTypePoolId][pair.mainTokenId];
-            secondToMain = bakcToMain[pair.bakcTokenId][mainTypePoolId];
-
-            if (
-                mainToSecond.tokenId != pair.bakcTokenId ||
-                !mainToSecond.isPaired ||
-                secondToMain.tokenId != pair.mainTokenId ||
-                !secondToMain.isPaired
-            ) revert ProvidedTokensNotPaired();
-
-            position = nftPosition[BAKC_POOL_ID][pair.bakcTokenId];
-            if (!pair.isUncommit) {
-                if (pair.amount == position.stakedAmount) revert UncommitWrongParameters();
-            }
-            if (mainTokenOwner != bakcOwner) {
-                if (!pair.isUncommit) revert SplitPairCantPartiallyWithdraw();
-            }
-
-            if (pair.isUncommit) {
-                uint256 rewardsToBeClaimed = _claim(BAKC_POOL_ID, position, bakcOwner);
-                mainToBakc[mainTypePoolId][pair.mainTokenId] = PairingStatus(0, false);
-                bakcToMain[pair.bakcTokenId][mainTypePoolId] = PairingStatus(0, false);
-                emit ClaimRewardsPairNft(
-                    msg.sender,
-                    rewardsToBeClaimed,
-                    mainTypePoolId,
-                    pair.mainTokenId,
-                    pair.bakcTokenId
-                );
-            }
-            uint256 finalAmountToWithdraw = pair.isUncommit ? position.stakedAmount : pair.amount;
-            _withdraw(BAKC_POOL_ID, position, finalAmountToWithdraw);
-            apeCoin.transfer(mainTokenOwner, finalAmountToWithdraw);
-            emit WithdrawPairNft(msg.sender, finalAmountToWithdraw, mainTypePoolId, pair.mainTokenId, pair.bakcTokenId);
-            unchecked {
-                ++i;
-            }
+    function _refundIfOver(uint256 valueForFees) private {
+        if (valueForFees > 0) {
+            (bool success, ) = msg.sender.call{value: valueForFees}("");
+            if (!success) revert RefundFailed();
         }
     }
 }

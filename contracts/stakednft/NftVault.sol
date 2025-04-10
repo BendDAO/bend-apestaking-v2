@@ -13,6 +13,7 @@ import {IDelegationRegistry} from "../interfaces/IDelegationRegistry.sol";
 
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 import {VaultLogic} from "./VaultLogic.sol";
+import {IWAPE} from "../interfaces/IWAPE.sol";
 
 contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
@@ -41,17 +42,28 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         _;
     }
 
-    function initialize(IApeCoinStaking apeCoinStaking_, IDelegationRegistry delegationRegistry_) public initializer {
+    function initialize(
+        address wrapApeCoin_,
+        IApeCoinStaking apeCoinStaking_,
+        IDelegationRegistry delegationRegistry_
+    ) public initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
 
         _vaultStorage.apeCoinStaking = apeCoinStaking_;
         _vaultStorage.delegationRegistry = delegationRegistry_;
-        _vaultStorage.apeCoin = IERC20Upgradeable(_vaultStorage.apeCoinStaking.apeCoin());
+        _vaultStorage.wrapApeCoin = IERC20Upgradeable(wrapApeCoin_);
         _vaultStorage.bayc = address(_vaultStorage.apeCoinStaking.bayc());
         _vaultStorage.mayc = address(_vaultStorage.apeCoinStaking.mayc());
         _vaultStorage.bakc = address(_vaultStorage.apeCoinStaking.bakc());
-        _vaultStorage.apeCoin.approve(address(_vaultStorage.apeCoinStaking), type(uint256).max);
+        _vaultStorage.wrapApeCoin.approve(address(_vaultStorage.apeCoinStaking), type(uint256).max);
+    }
+
+    receive() external payable {
+        require(
+            (msg.sender == address(_vaultStorage.wrapApeCoin)) || (msg.sender == address(_vaultStorage.apeCoinStaking)),
+            "nftVault: invalid sender"
+        );
     }
 
     function onERC721Received(
@@ -208,9 +220,7 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address staker_
     ) external override onlyApe(nft_) onlyAuthorized nonReentrant {
         uint256 tokenId_;
-        uint256 poolId_;
         IApeCoinStaking.Position memory position_;
-        IApeCoinStaking.PairingStatus memory pairingStatus_;
 
         // transfer nft and set permission
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -218,13 +228,6 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
             tokenId_ = tokenIds_[i];
             position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, tokenId_);
             require(position_.stakedAmount == 0, "nftVault: nft already staked");
-
-            if (nft_ == _vaultStorage.bayc || nft_ == _vaultStorage.mayc) {
-                poolId_ = _vaultStorage.apeCoinStaking.getNftPoolId(nft_);
-                pairingStatus_ = _vaultStorage.apeCoinStaking.mainToBakc(poolId_, tokenId_);
-                // block bayc & mayc which already paired with bakc
-                require(!pairingStatus_.isPaired, "nftVault: already paired with bakc");
-            }
 
             IERC721Upgradeable(nft_).safeTransferFrom(msg.sender, address(this), tokenIds_[i]);
             _vaultStorage.nfts[nft_][tokenIds_[i]] = NftStatus(msg.sender, staker_);
@@ -238,11 +241,9 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     ) external override onlyApe(nft_) onlyAuthorized nonReentrant {
         require(tokenIds_.length > 0, "nftVault: invalid tokenIds");
         address staker_ = VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[0]);
-        if (nft_ == _vaultStorage.bayc || nft_ == _vaultStorage.mayc) {
-            VaultLogic._refundSinglePool(_vaultStorage, nft_, tokenIds_);
-        } else if (nft_ == _vaultStorage.bakc) {
-            VaultLogic._refundPairingPool(_vaultStorage, tokenIds_);
-        }
+
+        VaultLogic._refundSinglePool(_vaultStorage, nft_, tokenIds_);
+
         // transfer nft to sender
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(
@@ -264,269 +265,174 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         Refund memory _refund = _vaultStorage.refunds[nft_][msg.sender];
         uint256 amount = _refund.principal + _refund.reward;
         delete _vaultStorage.refunds[nft_][msg.sender];
-        _vaultStorage.apeCoin.transfer(msg.sender, amount);
+        _vaultStorage.wrapApeCoin.transfer(msg.sender, amount);
     }
 
-    function stakeBaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override onlyAuthorized nonReentrant {
-        address nft_ = _vaultStorage.bayc;
+    function _stakeNft(
+        uint256 poolId_,
+        address nft_,
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_
+    ) internal {
         uint256 totalStakedAmount = 0;
-        IApeCoinStaking.SingleNft memory singleNft_;
-        for (uint256 i = 0; i < nfts_.length; i++) {
-            singleNft_ = nfts_[i];
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, singleNft_.tokenId),
-                "nftVault: caller must be bayc staker"
+                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[i]),
+                "nftVault: caller must be nft staker"
             );
-            totalStakedAmount += singleNft_.amount;
-            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
+            totalStakedAmount += amounts_[i];
+            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(tokenIds_[i]);
         }
-        _vaultStorage.apeCoin.transferFrom(msg.sender, address(this), totalStakedAmount);
-        _vaultStorage.apeCoinStaking.depositBAYC(nfts_);
+
+        // unwrap ape coin, and deposit nft into staking
+        _vaultStorage.wrapApeCoin.transferFrom(msg.sender, address(this), totalStakedAmount);
+        IWAPE(address(_vaultStorage.wrapApeCoin)).withdraw(totalStakedAmount);
+
+        _vaultStorage.apeCoinStaking.deposit{value: totalStakedAmount}(poolId_, tokenIds_, amounts_);
 
         VaultLogic._increasePosition(_vaultStorage, nft_, msg.sender, totalStakedAmount);
 
-        emit SingleNftStaked(nft_, msg.sender, nfts_);
+        emit SingleNftStaked(nft_, msg.sender, tokenIds_, amounts_);
     }
 
-    function unstakeBaycPool(
-        IApeCoinStaking.SingleNft[] calldata nfts_,
+    function _unstakeNft(
+        uint256 poolId_,
+        address nft_,
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_,
         address recipient_
-    ) external override onlyAuthorized nonReentrant returns (uint256 principal, uint256 rewards) {
-        address nft_ = _vaultStorage.bayc;
-        IApeCoinStaking.SingleNft memory singleNft_;
+    ) internal returns (uint256 principal, uint256 rewards) {
         IApeCoinStaking.Position memory position_;
-        for (uint256 i = 0; i < nfts_.length; i++) {
-            singleNft_ = nfts_[i];
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
             require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, singleNft_.tokenId),
+                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[i]),
                 "nftVault: caller must be nft staker"
             );
-            principal += singleNft_.amount;
-            position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, singleNft_.tokenId);
-            if (position_.stakedAmount == singleNft_.amount) {
-                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(singleNft_.tokenId);
+            principal += amounts_[i];
+            position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, tokenIds_[i]);
+            if (position_.stakedAmount == amounts_[i]) {
+                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(tokenIds_[i]);
             }
         }
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_);
-        _vaultStorage.apeCoinStaking.withdrawBAYC(nfts_, recipient_);
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_) - rewards - principal;
+
+        rewards = _vaultStorage.wrapApeCoin.balanceOf(recipient_);
+
+        // withdraw nft from staking, and wrap ape coin
+        _vaultStorage.apeCoinStaking.withdraw(poolId_, tokenIds_, amounts_, address(this));
+
+        uint256 nativeBalance = address(this).balance;
+        IWAPE(address(_vaultStorage.wrapApeCoin)).deposit{value: nativeBalance}();
+        IERC20Upgradeable(address(_vaultStorage.wrapApeCoin)).transfer(recipient_, nativeBalance);
+
+        rewards = _vaultStorage.wrapApeCoin.balanceOf(recipient_) - rewards - principal;
         if (rewards > 0) {
             VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
         }
 
         VaultLogic._decreasePosition(_vaultStorage, nft_, msg.sender, principal);
 
-        emit SingleNftUnstaked(nft_, msg.sender, nfts_);
+        emit SingleNftUnstaked(nft_, msg.sender, tokenIds_, amounts_);
+    }
+
+    function _claimNft(
+        uint256 poolId_,
+        address nft_,
+        uint256[] calldata tokenIds_,
+        address recipient_
+    ) internal returns (uint256 rewards) {
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            require(
+                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[i]),
+                "nftVault: caller must be nft staker"
+            );
+        }
+
+        rewards = _vaultStorage.wrapApeCoin.balanceOf(address(recipient_));
+
+        // claim rewards from staking, and wrap ape coin
+        _vaultStorage.apeCoinStaking.claim(poolId_, tokenIds_, address(this));
+
+        uint256 nativeBalance = address(this).balance;
+        IWAPE(address(_vaultStorage.wrapApeCoin)).deposit{value: nativeBalance}();
+        IERC20Upgradeable(address(_vaultStorage.wrapApeCoin)).transfer(recipient_, nativeBalance);
+
+        rewards = _vaultStorage.wrapApeCoin.balanceOf(recipient_) - rewards;
+        if (rewards > 0) {
+            VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
+        }
+
+        emit SingleNftClaimed(nft_, msg.sender, tokenIds_, rewards);
+    }
+
+    // BAYC
+
+    function stakeBaycPool(
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_
+    ) external override onlyAuthorized nonReentrant {
+        _stakeNft(ApeStakingLib.BAYC_POOL_ID, _vaultStorage.bayc, tokenIds_, amounts_);
+    }
+
+    function unstakeBaycPool(
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_,
+        address recipient_
+    ) external override onlyAuthorized nonReentrant returns (uint256 principal, uint256 rewards) {
+        return _unstakeNft(ApeStakingLib.BAYC_POOL_ID, _vaultStorage.bayc, tokenIds_, amounts_, recipient_);
     }
 
     function claimBaycPool(
         uint256[] calldata tokenIds_,
         address recipient_
     ) external override onlyAuthorized nonReentrant returns (uint256 rewards) {
-        address nft_ = _vaultStorage.bayc;
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[i]),
-                "nftVault: caller must be nft staker"
-            );
-        }
-        rewards = _vaultStorage.apeCoin.balanceOf(address(recipient_));
-        _vaultStorage.apeCoinStaking.claimBAYC(tokenIds_, recipient_);
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_) - rewards;
-        if (rewards > 0) {
-            VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
-        }
-        emit SingleNftClaimed(nft_, msg.sender, tokenIds_, rewards);
+        return _claimNft(ApeStakingLib.BAYC_POOL_ID, _vaultStorage.bayc, tokenIds_, recipient_);
     }
 
-    function stakeMaycPool(IApeCoinStaking.SingleNft[] calldata nfts_) external override onlyAuthorized nonReentrant {
-        address nft_ = _vaultStorage.mayc;
-        uint256 totalApeCoinAmount = 0;
-        IApeCoinStaking.SingleNft memory singleNft_;
-        for (uint256 i = 0; i < nfts_.length; i++) {
-            singleNft_ = nfts_[i];
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, singleNft_.tokenId),
-                "nftVault: caller must be mayc staker"
-            );
-            totalApeCoinAmount += singleNft_.amount;
-            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(singleNft_.tokenId);
-        }
-        _vaultStorage.apeCoin.transferFrom(msg.sender, address(this), totalApeCoinAmount);
-        _vaultStorage.apeCoinStaking.depositMAYC(nfts_);
-        VaultLogic._increasePosition(_vaultStorage, nft_, msg.sender, totalApeCoinAmount);
+    // MAYC
 
-        emit SingleNftStaked(nft_, msg.sender, nfts_);
+    function stakeMaycPool(
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_
+    ) external override onlyAuthorized nonReentrant {
+        _stakeNft(ApeStakingLib.MAYC_POOL_ID, _vaultStorage.mayc, tokenIds_, amounts_);
     }
 
     function unstakeMaycPool(
-        IApeCoinStaking.SingleNft[] calldata nfts_,
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_,
         address recipient_
     ) external override onlyAuthorized nonReentrant returns (uint256 principal, uint256 rewards) {
-        address nft_ = _vaultStorage.mayc;
-        IApeCoinStaking.SingleNft memory singleNft_;
-        IApeCoinStaking.Position memory position_;
-        for (uint256 i = 0; i < nfts_.length; i++) {
-            singleNft_ = nfts_[i];
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, singleNft_.tokenId),
-                "nftVault: caller must be nft staker"
-            );
-            principal += singleNft_.amount;
-            position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, singleNft_.tokenId);
-            if (position_.stakedAmount == singleNft_.amount) {
-                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(singleNft_.tokenId);
-            }
-        }
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_);
-
-        _vaultStorage.apeCoinStaking.withdrawMAYC(nfts_, recipient_);
-
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_) - rewards - principal;
-        if (rewards > 0) {
-            VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
-        }
-
-        VaultLogic._decreasePosition(_vaultStorage, nft_, msg.sender, principal);
-
-        emit SingleNftUnstaked(nft_, msg.sender, nfts_);
+        return _unstakeNft(ApeStakingLib.MAYC_POOL_ID, _vaultStorage.mayc, tokenIds_, amounts_, recipient_);
     }
 
     function claimMaycPool(
         uint256[] calldata tokenIds_,
         address recipient_
     ) external override onlyAuthorized nonReentrant returns (uint256 rewards) {
-        address nft_ = _vaultStorage.mayc;
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, tokenIds_[i]),
-                "nftVault: caller must be nft staker"
-            );
-        }
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_);
-        _vaultStorage.apeCoinStaking.claimMAYC(tokenIds_, recipient_);
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_) - rewards;
-        if (rewards > 0) {
-            VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
-        }
-        emit SingleNftClaimed(nft_, msg.sender, tokenIds_, rewards);
+        return _claimNft(ApeStakingLib.MAYC_POOL_ID, _vaultStorage.mayc, tokenIds_, recipient_);
     }
 
+    // BAKC
+
     function stakeBakcPool(
-        IApeCoinStaking.PairNftDepositWithAmount[] calldata baycPairs_,
-        IApeCoinStaking.PairNftDepositWithAmount[] calldata maycPairs_
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_
     ) external override onlyAuthorized nonReentrant {
-        uint256 totalStakedAmount = 0;
-        IApeCoinStaking.PairNftDepositWithAmount memory pair;
-        address nft_ = _vaultStorage.bakc;
-        for (uint256 i = 0; i < baycPairs_.length; i++) {
-            pair = baycPairs_[i];
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, _vaultStorage.bayc, pair.mainTokenId) &&
-                    msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, pair.bakcTokenId),
-                "nftVault: caller must be nft staker"
-            );
-            totalStakedAmount += pair.amount;
-            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
-        }
-
-        for (uint256 i = 0; i < maycPairs_.length; i++) {
-            pair = maycPairs_[i];
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, _vaultStorage.mayc, pair.mainTokenId) &&
-                    msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, pair.bakcTokenId),
-                "nftVault: caller must be nft staker"
-            );
-            totalStakedAmount += pair.amount;
-            _vaultStorage.stakingTokenIds[nft_][msg.sender].add(pair.bakcTokenId);
-        }
-        _vaultStorage.apeCoin.transferFrom(msg.sender, address(this), totalStakedAmount);
-        _vaultStorage.apeCoinStaking.depositBAKC(baycPairs_, maycPairs_);
-
-        VaultLogic._increasePosition(_vaultStorage, nft_, msg.sender, totalStakedAmount);
-
-        emit PairedNftStaked(msg.sender, baycPairs_, maycPairs_);
+        _stakeNft(ApeStakingLib.BAKC_POOL_ID, _vaultStorage.bakc, tokenIds_, amounts_);
     }
 
     function unstakeBakcPool(
-        IApeCoinStaking.PairNftWithdrawWithAmount[] calldata baycPairs_,
-        IApeCoinStaking.PairNftWithdrawWithAmount[] calldata maycPairs_,
+        uint256[] calldata tokenIds_,
+        uint256[] calldata amounts_,
         address recipient_
     ) external override onlyAuthorized nonReentrant returns (uint256 principal, uint256 rewards) {
-        address nft_ = _vaultStorage.bakc;
-        IApeCoinStaking.Position memory position_;
-        IApeCoinStaking.PairNftWithdrawWithAmount memory pair;
-        for (uint256 i = 0; i < baycPairs_.length; i++) {
-            pair = baycPairs_[i];
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, _vaultStorage.bayc, pair.mainTokenId) &&
-                    msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, pair.bakcTokenId),
-                "nftVault: caller must be nft staker"
-            );
-            position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, pair.bakcTokenId);
-            principal += (pair.isUncommit ? position_.stakedAmount : pair.amount);
-            if (pair.isUncommit) {
-                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(pair.bakcTokenId);
-            }
-        }
-
-        for (uint256 i = 0; i < maycPairs_.length; i++) {
-            pair = maycPairs_[i];
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, _vaultStorage.mayc, pair.mainTokenId) &&
-                    msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, pair.bakcTokenId),
-                "nftVault: caller must be nft staker"
-            );
-            position_ = _vaultStorage.apeCoinStaking.getNftPosition(nft_, pair.bakcTokenId);
-            principal += (pair.isUncommit ? position_.stakedAmount : pair.amount);
-            if (pair.isUncommit) {
-                _vaultStorage.stakingTokenIds[nft_][msg.sender].remove(pair.bakcTokenId);
-            }
-        }
-        rewards = _vaultStorage.apeCoin.balanceOf(address(this));
-        _vaultStorage.apeCoinStaking.withdrawBAKC(baycPairs_, maycPairs_);
-        rewards = _vaultStorage.apeCoin.balanceOf(address(this)) - rewards - principal;
-        if (rewards > 0) {
-            VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
-        }
-        VaultLogic._decreasePosition(_vaultStorage, nft_, msg.sender, principal);
-
-        _vaultStorage.apeCoin.transfer(recipient_, principal + rewards);
-
-        emit PairedNftUnstaked(msg.sender, baycPairs_, maycPairs_);
+        return _unstakeNft(ApeStakingLib.BAKC_POOL_ID, _vaultStorage.bakc, tokenIds_, amounts_, recipient_);
     }
 
     function claimBakcPool(
-        IApeCoinStaking.PairNft[] calldata baycPairs_,
-        IApeCoinStaking.PairNft[] calldata maycPairs_,
+        uint256[] calldata tokenIds_,
         address recipient_
     ) external override onlyAuthorized nonReentrant returns (uint256 rewards) {
-        address nft_ = _vaultStorage.bakc;
-        IApeCoinStaking.PairNft memory pair;
-        for (uint256 i = 0; i < baycPairs_.length; i++) {
-            pair = baycPairs_[i];
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, _vaultStorage.bayc, pair.mainTokenId) &&
-                    msg.sender == VaultLogic._stakerOf(_vaultStorage, nft_, pair.bakcTokenId),
-                "nftVault: caller must be nft staker"
-            );
-        }
-
-        for (uint256 i = 0; i < maycPairs_.length; i++) {
-            pair = maycPairs_[i];
-            require(
-                msg.sender == VaultLogic._stakerOf(_vaultStorage, _vaultStorage.mayc, pair.mainTokenId) &&
-                    msg.sender == VaultLogic._stakerOf(_vaultStorage, _vaultStorage.bakc, pair.bakcTokenId),
-                "nftVault: caller must be nft staker"
-            );
-        }
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_);
-        _vaultStorage.apeCoinStaking.claimBAKC(baycPairs_, maycPairs_, recipient_);
-        rewards = _vaultStorage.apeCoin.balanceOf(recipient_) - rewards;
-        if (rewards > 0) {
-            VaultLogic._updateRewardsDebt(_vaultStorage, nft_, msg.sender, rewards);
-        }
-
-        emit PairedNftClaimed(msg.sender, baycPairs_, maycPairs_, rewards);
+        return _claimNft(ApeStakingLib.BAKC_POOL_ID, _vaultStorage.bakc, tokenIds_, recipient_);
     }
 }

@@ -78,20 +78,11 @@ interface IStakeManager {
 
     function claimMayc(uint256[] calldata tokenIds_) external;
 
-    function stakeBakc(
-        IApeCoinStaking.PairNft[] calldata baycPairs_,
-        IApeCoinStaking.PairNft[] calldata maycPairs_
-    ) external;
+    function stakeBakc(uint256[] calldata tokenIds_) external;
 
-    function unstakeBakc(
-        IApeCoinStaking.PairNft[] calldata baycPairs_,
-        IApeCoinStaking.PairNft[] calldata maycPairs_
-    ) external;
+    function unstakeBakc(uint256[] calldata tokenIds_) external;
 
-    function claimBakc(
-        IApeCoinStaking.PairNft[] calldata baycPairs_,
-        IApeCoinStaking.PairNft[] calldata maycPairs_
-    ) external;
+    function claimBakc(uint256[] calldata tokenIds_) external;
 
     function withdrawRefund(address nft_) external;
 
@@ -100,8 +91,7 @@ interface IStakeManager {
     struct NftArgs {
         uint256[] bayc;
         uint256[] mayc;
-        IApeCoinStaking.PairNft[] baycPairs;
-        IApeCoinStaking.PairNft[] maycPairs;
+        uint256[] bakc;
     }
 
     struct CompoundArgs {

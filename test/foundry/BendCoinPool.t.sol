@@ -13,10 +13,10 @@ contract BendCoinPoolTest is SetupHelper {
 
         vm.startPrank(testUser);
 
-        mockApeCoin.mint(depositAmount);
-        mockApeCoin.approve(address(coinPool), depositAmount);
+        mockWAPE.deposit{value: depositAmount}();
+        mockWAPE.approve(address(coinPool), depositAmount);
 
-        uint256 poolBalanceBeforeDeposit = mockApeCoin.balanceOf(address(coinPool));
+        uint256 poolBalanceBeforeDeposit = mockWAPE.balanceOf(address(coinPool));
 
         // deposit some coins
         coinPool.deposit(depositAmount, testUser);
@@ -25,10 +25,10 @@ contract BendCoinPoolTest is SetupHelper {
         coinPool.withdraw(depositAmount, testUser, testUser);
 
         // check results
-        uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUser);
+        uint256 userBalanceAfterWithdraw = mockWAPE.balanceOf(testUser);
         assertEq(userBalanceAfterWithdraw, depositAmount, "user balance not match after withdraw");
 
-        uint256 poolBalanceAfterWithdraw = mockApeCoin.balanceOf(address(coinPool));
+        uint256 poolBalanceAfterWithdraw = mockWAPE.balanceOf(address(coinPool));
         assertEq(poolBalanceAfterWithdraw, poolBalanceBeforeDeposit, "pool balance not match after withdraw");
 
         vm.stopPrank();
@@ -36,22 +36,23 @@ contract BendCoinPoolTest is SetupHelper {
 
     function testSingleUserDepositWithdrawHasRewards() public {
         address testUser = testUsers[0];
-        uint256 depositAmount = 1000000 * 10 ** 18;
+        uint256 depositAmount = 100000 * 10 ** 18;
         uint256 rewardsAmount = 200000 * 10 ** 18;
 
-        uint256 poolBalanceBeforeDeposit = mockApeCoin.balanceOf(address(coinPool));
+        uint256 poolBalanceBeforeDeposit = mockWAPE.balanceOf(address(coinPool));
 
         // deposit some coins
         vm.startPrank(testUser);
-        mockApeCoin.mint(depositAmount);
-        mockApeCoin.approve(address(coinPool), depositAmount);
+        mockWAPE.deposit{value: depositAmount}();
+        mockWAPE.approve(address(coinPool), depositAmount);
         coinPool.deposit(depositAmount, testUser);
         vm.stopPrank();
 
         // make some rewards
+        vm.deal(address(stakeManager), rewardsAmount);
         vm.startPrank(address(stakeManager));
-        mockApeCoin.mint(rewardsAmount);
-        mockApeCoin.approve(address(coinPool), rewardsAmount);
+        mockWAPE.deposit{value: rewardsAmount}();
+        mockWAPE.approve(address(coinPool), rewardsAmount);
         coinPool.receiveApeCoin(0, rewardsAmount);
         vm.stopPrank();
 
@@ -63,10 +64,10 @@ contract BendCoinPoolTest is SetupHelper {
         vm.stopPrank();
 
         // check results
-        uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUser);
+        uint256 userBalanceAfterWithdraw = mockWAPE.balanceOf(testUser);
         assertEq(userBalanceAfterWithdraw, expectedUserBalanceAfterWithdraw, "user balance not match after withdraw");
 
-        uint256 poolBalanceAfterWithdraw = mockApeCoin.balanceOf(address(coinPool));
+        uint256 poolBalanceAfterWithdraw = mockWAPE.balanceOf(address(coinPool));
         assertGt(poolBalanceAfterWithdraw, poolBalanceBeforeDeposit, "pool balance not match after withdraw");
     }
 
@@ -79,8 +80,8 @@ contract BendCoinPoolTest is SetupHelper {
             vm.startPrank(testUsers[userIndex]);
 
             depositAmounts[userIndex] = 1000000 * 10 ** 18 * (userIndex + 1);
-            mockApeCoin.mint(depositAmounts[userIndex]);
-            mockApeCoin.approve(address(coinPool), depositAmounts[userIndex]);
+            mockWAPE.deposit{value: depositAmounts[userIndex]}();
+            mockWAPE.approve(address(coinPool), depositAmounts[userIndex]);
 
             coinPool.deposit(depositAmounts[userIndex], testUsers[userIndex]);
 
@@ -98,7 +99,7 @@ contract BendCoinPoolTest is SetupHelper {
 
         // check results
         for (userIndex = 0; userIndex < userCount; userIndex++) {
-            uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUsers[userIndex]);
+            uint256 userBalanceAfterWithdraw = mockWAPE.balanceOf(testUsers[userIndex]);
             assertEq(userBalanceAfterWithdraw, depositAmounts[userIndex], "user balance not match after withdraw");
         }
     }
@@ -116,8 +117,8 @@ contract BendCoinPoolTest is SetupHelper {
             depositAmounts[userIndex] = 1000000 * 10 ** 18 * (userIndex + 1);
             totalDepositAmount += depositAmounts[userIndex];
 
-            mockApeCoin.mint(depositAmounts[userIndex]);
-            mockApeCoin.approve(address(coinPool), depositAmounts[userIndex]);
+            mockWAPE.deposit{value: depositAmounts[userIndex]}();
+            mockWAPE.approve(address(coinPool), depositAmounts[userIndex]);
 
             coinPool.deposit(depositAmounts[userIndex], testUsers[userIndex]);
 
@@ -125,9 +126,10 @@ contract BendCoinPoolTest is SetupHelper {
         }
 
         // make some rewards
+        vm.deal(address(stakeManager), totalRewardsAmount);
         vm.startPrank(address(stakeManager));
-        mockApeCoin.mint(totalRewardsAmount);
-        mockApeCoin.approve(address(coinPool), totalRewardsAmount);
+        mockWAPE.deposit{value: totalRewardsAmount}();
+        mockWAPE.approve(address(coinPool), totalRewardsAmount);
         coinPool.receiveApeCoin(0, totalRewardsAmount);
         vm.stopPrank();
 
@@ -143,7 +145,7 @@ contract BendCoinPoolTest is SetupHelper {
 
         // check results
         for (userIndex = 0; userIndex < userCount; userIndex++) {
-            uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUsers[userIndex]);
+            uint256 userBalanceAfterWithdraw = mockWAPE.balanceOf(testUsers[userIndex]);
             assertGt(userBalanceAfterWithdraw, depositAmounts[userIndex], "user balance not match after withdraw");
         }
     }

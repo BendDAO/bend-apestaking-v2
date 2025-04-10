@@ -8,8 +8,10 @@ makeSuite("PoolViewer", (contracts: Contracts, env: Env, snapshots: Snapshots) =
 
   before(async () => {
     const apeAmountForStakingV1 = makeBNWithDecimals(100000, 18);
-    await contracts.apeCoin.connect(env.admin).mint(apeAmountForStakingV1);
-    await contracts.apeCoin.connect(env.admin).transfer(contracts.mockStakeManagerV1.address, apeAmountForStakingV1);
+    await contracts.wrapApeCoin.connect(env.admin).deposit({ value: apeAmountForStakingV1 });
+    await contracts.wrapApeCoin
+      .connect(env.admin)
+      .transfer(contracts.mockStakeManagerV1.address, apeAmountForStakingV1);
 
     lastRevert = "init";
 
@@ -23,7 +25,7 @@ makeSuite("PoolViewer", (contracts: Contracts, env: Env, snapshots: Snapshots) =
   });
 
   it("deposit: preparing the first deposit", async () => {
-    await contracts.apeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.wrapApeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
     await contracts.bendCoinPool.connect(env.feeRecipient).depositSelf(makeBNWithDecimals(1, 18));
     expect(await contracts.bendCoinPool.totalSupply()).gt(0);
 

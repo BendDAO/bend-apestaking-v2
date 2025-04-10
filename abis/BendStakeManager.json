@@ -202,38 +202,9 @@
   {
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "mainTokenId",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "bakcTokenId",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct IApeCoinStaking.PairNft[]",
-        "name": "baycPairs_",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "mainTokenId",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "bakcTokenId",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct IApeCoinStaking.PairNft[]",
-        "name": "maycPairs_",
-        "type": "tuple[]"
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
       }
     ],
     "name": "claimBakc",
@@ -296,38 +267,9 @@
                 "type": "uint256[]"
               },
               {
-                "components": [
-                  {
-                    "internalType": "uint128",
-                    "name": "mainTokenId",
-                    "type": "uint128"
-                  },
-                  {
-                    "internalType": "uint128",
-                    "name": "bakcTokenId",
-                    "type": "uint128"
-                  }
-                ],
-                "internalType": "struct IApeCoinStaking.PairNft[]",
-                "name": "baycPairs",
-                "type": "tuple[]"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "uint128",
-                    "name": "mainTokenId",
-                    "type": "uint128"
-                  },
-                  {
-                    "internalType": "uint128",
-                    "name": "bakcTokenId",
-                    "type": "uint128"
-                  }
-                ],
-                "internalType": "struct IApeCoinStaking.PairNft[]",
-                "name": "maycPairs",
-                "type": "tuple[]"
+                "internalType": "uint256[]",
+                "name": "bakc",
+                "type": "uint256[]"
               }
             ],
             "internalType": "struct IStakeManager.NftArgs",
@@ -347,38 +289,9 @@
                 "type": "uint256[]"
               },
               {
-                "components": [
-                  {
-                    "internalType": "uint128",
-                    "name": "mainTokenId",
-                    "type": "uint128"
-                  },
-                  {
-                    "internalType": "uint128",
-                    "name": "bakcTokenId",
-                    "type": "uint128"
-                  }
-                ],
-                "internalType": "struct IApeCoinStaking.PairNft[]",
-                "name": "baycPairs",
-                "type": "tuple[]"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "uint128",
-                    "name": "mainTokenId",
-                    "type": "uint128"
-                  },
-                  {
-                    "internalType": "uint128",
-                    "name": "bakcTokenId",
-                    "type": "uint128"
-                  }
-                ],
-                "internalType": "struct IApeCoinStaking.PairNft[]",
-                "name": "maycPairs",
-                "type": "tuple[]"
+                "internalType": "uint256[]",
+                "name": "bakc",
+                "type": "uint256[]"
               }
             ],
             "internalType": "struct IStakeManager.NftArgs",
@@ -398,38 +311,9 @@
                 "type": "uint256[]"
               },
               {
-                "components": [
-                  {
-                    "internalType": "uint128",
-                    "name": "mainTokenId",
-                    "type": "uint128"
-                  },
-                  {
-                    "internalType": "uint128",
-                    "name": "bakcTokenId",
-                    "type": "uint128"
-                  }
-                ],
-                "internalType": "struct IApeCoinStaking.PairNft[]",
-                "name": "baycPairs",
-                "type": "tuple[]"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "uint128",
-                    "name": "mainTokenId",
-                    "type": "uint128"
-                  },
-                  {
-                    "internalType": "uint128",
-                    "name": "bakcTokenId",
-                    "type": "uint128"
-                  }
-                ],
-                "internalType": "struct IApeCoinStaking.PairNft[]",
-                "name": "maycPairs",
-                "type": "tuple[]"
+                "internalType": "uint256[]",
+                "name": "bakc",
+                "type": "uint256[]"
               }
             ],
             "internalType": "struct IStakeManager.NftArgs",
@@ -747,38 +631,9 @@
   {
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "mainTokenId",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "bakcTokenId",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct IApeCoinStaking.PairNft[]",
-        "name": "baycPairs_",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "mainTokenId",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "bakcTokenId",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct IApeCoinStaking.PairNft[]",
-        "name": "maycPairs_",
-        "type": "tuple[]"
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
       }
     ],
     "name": "stakeBakc",
@@ -904,38 +759,9 @@
   {
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "mainTokenId",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "bakcTokenId",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct IApeCoinStaking.PairNft[]",
-        "name": "baycPairs_",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "mainTokenId",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "bakcTokenId",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct IApeCoinStaking.PairNft[]",
-        "name": "maycPairs_",
-        "type": "tuple[]"
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
       }
     ],
     "name": "unstakeBakc",
@@ -1077,5 +903,9 @@
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ]

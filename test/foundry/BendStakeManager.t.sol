@@ -13,8 +13,8 @@ contract BendStakeManagerTest is SetupHelper {
 
         // deposit some coins
         vm.startPrank(testUser);
-        mockApeCoin.mint(depositCoinAmount);
-        mockApeCoin.approve(address(coinPool), depositCoinAmount);
+        mockWAPE.deposit{value: depositCoinAmount}();
+        mockWAPE.approve(address(coinPool), depositCoinAmount);
         coinPool.deposit(depositCoinAmount, testUser);
         vm.stopPrank();
 
@@ -41,9 +41,10 @@ contract BendStakeManagerTest is SetupHelper {
         coinPool.withdraw(userAssetAmount, testUser, testUser);
         vm.stopPrank();
 
-        uint256 userBalanceAfterWithdraw = mockApeCoin.balanceOf(testUser);
+        uint256 userBalanceAfterWithdraw = mockWAPE.balanceOf(testUser);
         assertEq(userBalanceAfterWithdraw, userAssetAmount, "user balance not match after withdraw");
-        assertGt(userAssetAmount, depositCoinAmount, "user asset not greater than deposited amout");
+        // there's no apecoin pool staking & rewards now
+        assertEq(userAssetAmount, depositCoinAmount, "user asset not match deposited amout");
     }
 
     function test_compound_StakeBAYC() public {
@@ -53,8 +54,8 @@ contract BendStakeManagerTest is SetupHelper {
 
         // deposit some coins
         vm.startPrank(testUser);
-        mockApeCoin.mint(depositCoinAmount);
-        mockApeCoin.approve(address(coinPool), depositCoinAmount);
+        mockWAPE.deposit{value: depositCoinAmount}();
+        mockWAPE.approve(address(coinPool), depositCoinAmount);
         coinPool.deposit(depositCoinAmount, testUser);
         vm.stopPrank();
 
@@ -96,7 +97,7 @@ contract BendStakeManagerTest is SetupHelper {
         assertGt(rewardsAmount, 0, "rewards should greater than 0");
 
         nftPool.withdraw(nfts, tokenIds);
-        uint256 balanceAmount = mockApeCoin.balanceOf(testUser);
+        uint256 balanceAmount = mockWAPE.balanceOf(testUser);
         assertEq(balanceAmount, rewardsAmount, "balance not match rewards");
         vm.stopPrank();
     }

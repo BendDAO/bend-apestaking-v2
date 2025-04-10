@@ -23,15 +23,10 @@ library ApeStakingLib {
         uint256 poolId
     ) internal view returns (IApeCoinStaking.TimeRange memory) {
         (
-            IApeCoinStaking.PoolUI memory apeCoinPoolUI,
             IApeCoinStaking.PoolUI memory baycPoolUI,
             IApeCoinStaking.PoolUI memory maycPoolUI,
             IApeCoinStaking.PoolUI memory bakcPoolUI
         ) = apeCoinStaking_.getPoolsUI();
-
-        if (poolId == apeCoinPoolUI.poolId) {
-            return apeCoinPoolUI.currentTimeRange;
-        }
 
         if (poolId == baycPoolUI.poolId) {
             return baycPoolUI.currentTimeRange;

@@ -18,8 +18,11 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     alice = env.accounts[1];
     bob = env.accounts[2];
 
-    await contracts.apeCoin.connect(alice).approve(contracts.bendCoinPool.address, constants.MaxUint256);
-    await contracts.apeCoin.connect(bob).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.wrapApeCoin.connect(alice).deposit({ value: makeBN18(1000000) });
+    await contracts.wrapApeCoin.connect(alice).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+
+    await contracts.wrapApeCoin.connect(bob).deposit({ value: makeBN18(1000000) });
+    await contracts.wrapApeCoin.connect(bob).approve(contracts.bendCoinPool.address, constants.MaxUint256);
 
     await contracts.bendStakeManager.updateBotAdmin(bot.address);
     lastRevert = "init";
@@ -38,7 +41,7 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
   };
 
   it("deposit: preparing the first deposit", async () => {
-    await contracts.apeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.wrapApeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
     await contracts.bendCoinPool.connect(env.feeRecipient).depositSelf(makeBN18(1));
     expect(await contracts.bendCoinPool.totalSupply()).gt(0);
 
@@ -58,7 +61,7 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     let depositAmount = makeBN18(10000);
     let tx = contracts.bendCoinPool.connect(alice).depositSelf(depositAmount);
     await expect(tx).changeTokenBalances(
-      contracts.apeCoin,
+      contracts.wrapApeCoin,
       [alice.address, contracts.bendCoinPool.address],
       [constants.Zero.sub(depositAmount), depositAmount]
     );
@@ -67,7 +70,7 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     depositAmount = makeBN18(100);
     tx = contracts.bendCoinPool.connect(bob).mintSelf(await contracts.bendCoinPool.previewMint(depositAmount));
     await expect(tx).changeTokenBalances(
-      contracts.apeCoin,
+      contracts.wrapApeCoin,
       [bob.address, contracts.bendCoinPool.address],
       [constants.Zero.sub(depositAmount), depositAmount]
     );
@@ -101,7 +104,7 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     const withdrawAmount = await contracts.bendCoinPool.assetBalanceOf(bob.address);
     const tx = contracts.bendCoinPool.connect(bob).withdrawSelf(withdrawAmount);
     await expect(tx).changeTokenBalances(
-      contracts.apeCoin,
+      contracts.wrapApeCoin,
       [bob.address, contracts.bendCoinPool.address],
       [withdrawAmount, constants.Zero.sub(withdrawAmount)]
     );
@@ -113,7 +116,7 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     const apeCoinAmount = await contracts.bendCoinPool.previewRedeem(withdrawAmount);
     const tx = contracts.bendCoinPool.connect(bob).redeemSelf(withdrawAmount);
     await expect(tx).changeTokenBalances(
-      contracts.apeCoin,
+      contracts.wrapApeCoin,
       [bob.address, contracts.bendCoinPool.address],
       [apeCoinAmount, constants.Zero.sub(apeCoinAmount)]
     );
@@ -124,11 +127,11 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     const pullAmount = (await contracts.bendCoinPool.pendingApeCoin()).sub(makeBN18(1));
     const tx = contracts.bendStakeManager.stakeApeCoin(pullAmount);
     await expect(tx).changeTokenBalances(
-      contracts.apeCoin,
-      [contracts.bendCoinPool.address, contracts.bendStakeManager.address, contracts.apeStaking.address],
-      [constants.Zero.sub(pullAmount), constants.Zero, pullAmount]
+      contracts.wrapApeCoin,
+      [contracts.bendCoinPool.address, contracts.bendStakeManager.address],
+      [constants.Zero, constants.Zero]
     );
-    await expectPendingAmountChanged((await tx).blockNumber || 0, constants.Zero.sub(pullAmount));
+    await expectPendingAmountChanged((await tx).blockNumber || 0, constants.Zero);
 
     lastRevert = "pullApeCoin";
     await snapshots.capture(lastRevert);
@@ -138,12 +141,8 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     const pendingApeCoin = await contracts.bendCoinPool.pendingApeCoin();
     const withdrawAmount = await contracts.bendCoinPool.assetBalanceOf(bob.address);
     const tx = contracts.bendCoinPool.connect(bob).withdrawSelf(withdrawAmount);
-    await expect(tx).changeTokenBalances(
-      contracts.apeCoin,
-      [bob.address, contracts.apeStaking.address],
-      [withdrawAmount, pendingApeCoin.sub(withdrawAmount)]
-    );
-    await expectPendingAmountChanged((await tx).blockNumber || 0, constants.Zero.sub(pendingApeCoin));
+    await expect(tx).changeTokenBalances(contracts.wrapApeCoin, [bob.address], [withdrawAmount]);
+    await expectPendingAmountChanged((await tx).blockNumber || 0, constants.Zero.sub(withdrawAmount));
   });
 
   it("redeem: from withdraw strategy", async () => {
@@ -151,11 +150,7 @@ makeSuite("BendCoinPool", (contracts: Contracts, env: Env, snapshots: Snapshots)
     const withdrawAmount = await contracts.bendCoinPool.balanceOf(bob.address);
     const apeCoinAmount = await contracts.bendCoinPool.previewRedeem(withdrawAmount);
     const tx = contracts.bendCoinPool.connect(bob).redeemSelf(withdrawAmount);
-    await expect(tx).changeTokenBalances(
-      contracts.apeCoin,
-      [bob.address, contracts.apeStaking.address],
-      [apeCoinAmount, pendingApeCoin.sub(withdrawAmount)]
-    );
-    await expectPendingAmountChanged((await tx).blockNumber || 0, constants.Zero.sub(pendingApeCoin));
+    await expect(tx).changeTokenBalances(contracts.wrapApeCoin, [bob.address], [apeCoinAmount]);
+    await expectPendingAmountChanged((await tx).blockNumber || 0, constants.Zero.sub(apeCoinAmount));
   });
 });

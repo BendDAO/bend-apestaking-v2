@@ -1,5 +1,12 @@
 [
   {
+    "inputs": [],
+    "name": "initGlobalState",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",

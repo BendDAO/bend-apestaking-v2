@@ -8,10 +8,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721Metad
 
 import "../../contracts/test/MintableERC20.sol";
 import "../../contracts/test/MintableERC721.sol";
-import "../../contracts/test/ApeCoinStaking.sol";
+import {ApeCoinStaking} from "../../contracts/test/ApeCoinStaking.sol";
 import "../../contracts/test/DelegationRegistry.sol";
 import "../../contracts/test/MockBNFTRegistry.sol";
 import "../../contracts/test/MockBNFT.sol";
+import {MockWAPE} from "../../contracts/test/MockWAPE.sol";
+import {MockBeacon} from "../../contracts/test/MockBeacon.sol";
 
 import "../../contracts/interfaces/IDelegationRegistry.sol";
 import "../../contracts/interfaces/IApeCoinStaking.sol";
@@ -32,8 +34,8 @@ import "../../contracts/BendCoinPool.sol";
 import "../../contracts/BendNftPool.sol";
 import "../../contracts/BendStakeManager.sol";
 
-import "../../contracts/strategy/DefaultRewardsStrategy.sol";
-import "../../contracts/strategy/DefaultWithdrawStrategy.sol";
+import {DefaultRewardsStrategy} from "../../contracts/strategy/DefaultRewardsStrategy.sol";
+import {DefaultWithdrawStrategy} from "../../contracts/strategy/DefaultWithdrawStrategy.sol";
 
 import "./UtilitiesHelper.sol";
 
@@ -49,9 +51,9 @@ abstract contract SetupHelper is Test {
     address payable feeRecipient;
 
     // mocked contracts
+    MockWAPE internal mockWAPE;
     MintableERC20 internal mockWETH;
     MintableERC20 internal mockUSDT;
-    MintableERC20 internal mockApeCoin;
     MintableERC721 internal mockBAYC;
     MintableERC721 internal mockMAYC;
     MintableERC721 internal mockBAKC;
@@ -85,6 +87,9 @@ abstract contract SetupHelper is Test {
 
         testUsers = utilsHelper.createUsers(5);
         testUser0 = testUsers[0];
+        for (uint i = 0; i < testUsers.length; i++) {
+            vm.deal(address(testUsers[i]), 10_000_000 ether);
+        }
 
         adminOwners = utilsHelper.createUsers(5);
         poolOwner = adminOwners[0];
@@ -94,9 +99,10 @@ abstract contract SetupHelper is Test {
         mockDelegationRegistry = new DelegationRegistry();
 
         // mocked ERC20 and NFTs
+        mockWAPE = new MockWAPE(1069672766);
+
         mockWETH = new MintableERC20("WETH", "WETH", 18);
         mockUSDT = new MintableERC20("USDT", "USDT", 6);
-        mockApeCoin = new MintableERC20("ApeCoin", "APE", 18);
 
         mockBAYC = new MintableERC721("Mock BAYC", "BAYC");
         mockMAYC = new MintableERC721("Mock MAYC", "MAYC");
@@ -107,8 +113,9 @@ abstract contract SetupHelper is Test {
         vm.roll(100);
 
         // mocked ape staking and config params
+        MockBeacon mockBeacon = new MockBeacon();
         mockApeStaking = new ApeCoinStaking(
-            address(mockApeCoin),
+            address(mockBeacon),
             address(mockBAYC),
             address(mockMAYC),
             address(mockBAKC)
@@ -118,7 +125,7 @@ abstract contract SetupHelper is Test {
         poolConfigs[1] = PoolConfig({id: 1, cap: 10094000000000000000000});
         poolConfigs[2] = PoolConfig({id: 2, cap: 2042000000000000000000});
         poolConfigs[3] = PoolConfig({id: 3, cap: 856000000000000000000});
-        for (uint i = 0; i < poolConfigs.length; i++) {
+        for (uint i = 1; i < poolConfigs.length; i++) {
             uint256 startTime = (block.timestamp / 3600) * 3600;
             uint256 timeRane = 3600 * 24 * 90;
             uint256 poolAmount = 10500000000000000000000000 / (i + 1);
@@ -127,7 +134,13 @@ abstract contract SetupHelper is Test {
                 uint256 endTime = startTime + timeRane;
                 uint256 amount = poolAmount / (j + 1);
 
-                mockApeStaking.addTimeRange(poolConfigs[i].id, amount, startTime, endTime, poolConfigs[i].cap);
+                mockApeStaking.addTimeRange{value: amount}(
+                    poolConfigs[i].id,
+                    amount,
+                    startTime,
+                    endTime,
+                    poolConfigs[i].cap
+                );
 
                 startTime = endTime;
             }
@@ -135,7 +148,11 @@ abstract contract SetupHelper is Test {
 
         // staked nfts
         nftVault = new NftVault();
-        nftVault.initialize(IApeCoinStaking(address(mockApeStaking)), IDelegationRegistry(mockDelegationRegistry));
+        nftVault.initialize(
+            address(mockWAPE),
+            IApeCoinStaking(address(mockApeStaking)),
+            IDelegationRegistry(mockDelegationRegistry)
+        );
         stBAYC = new StBAYC();
         stBAYC.initialize(IERC721MetadataUpgradeable(address(mockBAYC)), nftVault);
         stMAYC = new StMAYC();
@@ -153,6 +170,7 @@ abstract contract SetupHelper is Test {
         nftPool = new BendNftPool();
         stakeManager = new BendStakeManager();
 
+        coinPool.initialize(address(mockWAPE), IApeCoinStaking(address(mockApeStaking)), stakeManager);
         nftPool.initialize(
             mockBNFTRegistry,
             IApeCoinStaking(address(mockApeStaking)),
@@ -171,8 +189,6 @@ abstract contract SetupHelper is Test {
             stMAYC,
             stBAKC
         );
-
-        coinPool.initialize(IApeCoinStaking(address(mockApeStaking)), stakeManager);
 
         // set the strategy contracts
         baycStrategy = new DefaultRewardsStrategy(2400);
@@ -199,11 +215,6 @@ abstract contract SetupHelper is Test {
         nftVault.authorise(address(stMAYC), true);
         nftVault.authorise(address(stBAKC), true);
 
-        // mint some coins
-        uint256 totalCoinRewards = 10000000 * 1e18;
-        mockApeCoin.mint(totalCoinRewards);
-        mockApeCoin.transfer(address(mockApeStaking), totalCoinRewards);
-
         // changing the owner and admin
         vm.startPrank(coinPool.owner());
         coinPool.transferOwnership(poolOwner);
@@ -219,9 +230,8 @@ abstract contract SetupHelper is Test {
 
         uint256 initDeposit = 100 * 1e18;
         vm.startPrank(feeRecipient);
-        mockApeCoin.mint(initDeposit);
-        mockApeCoin.approve(address(coinPool), initDeposit);
-        coinPool.deposit(initDeposit, feeRecipient);
+        mockWAPE.approve(address(coinPool), initDeposit);
+        coinPool.depositNativeSelf{value: initDeposit}();
         vm.stopPrank();
     }
 

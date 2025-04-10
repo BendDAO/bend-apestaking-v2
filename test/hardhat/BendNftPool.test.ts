@@ -38,8 +38,8 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
 
     await impersonateAccount(contracts.bendStakeManager.address);
     stakeManagerSigner = await ethers.getSigner(contracts.bendStakeManager.address);
-    await setBalance(stakeManagerSigner.address, makeBN18(1));
-    await contracts.apeCoin.connect(stakeManagerSigner).mint(makeBN18(10000));
+    await setBalance(stakeManagerSigner.address, makeBN18(100000));
+    await contracts.wrapApeCoin.connect(stakeManagerSigner).deposit({ value: makeBN18(10000) });
 
     lastRevert = "init";
     await snapshots.capture(lastRevert);
@@ -52,7 +52,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
   });
 
   it("deposit: preparing the first deposit", async () => {
-    await contracts.apeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.wrapApeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
     await contracts.bendCoinPool.connect(env.feeRecipient).depositSelf(makeBN18(1));
     expect(await contracts.bendCoinPool.totalSupply()).gt(0);
 
@@ -234,7 +234,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     const tx = contracts.bendNftPool.connect(owner).claim([nft], [tokenIds]);
     await expect(tx)
       .changeTokenBalances(
-        contracts.apeCoin,
+        contracts.wrapApeCoin,
         [owner.address, contracts.bendNftPool.address],
         [claimable, constants.Zero.sub(pendingApeCoin)]
       )
@@ -290,7 +290,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
       );
     await expect(tx)
       .changeTokenBalances(
-        contracts.apeCoin,
+        contracts.wrapApeCoin,
         [owner.address, contracts.bendNftPool.address],
         [claimable, constants.Zero.sub(pendingApeCoin)]
       )
@@ -327,7 +327,7 @@ makeSuite("BendNftPool", (contracts: Contracts, env: Env, snapshots: Snapshots) 
     const tx = contracts.bendNftPool.connect(owner).withdraw([nft.address], [tokenIds]);
     await expect(tx)
       .changeTokenBalances(
-        contracts.apeCoin,
+        contracts.wrapApeCoin,
         [owner.address, contracts.bendNftPool.address],
         [claimable, constants.Zero.sub(poolState.pendingApeCoin)]
       )

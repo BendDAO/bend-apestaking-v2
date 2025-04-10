@@ -12,8 +12,10 @@ makeSuite("CompoudV1Migrator", (contracts: Contracts, env: Env, snapshots: Snaps
     owner = env.accounts[1];
 
     const apeAmountForStakingV1 = makeBNWithDecimals(100000, 18);
-    await contracts.apeCoin.connect(env.admin).mint(apeAmountForStakingV1);
-    await contracts.apeCoin.connect(env.admin).transfer(contracts.mockStakeManagerV1.address, apeAmountForStakingV1);
+    await contracts.wrapApeCoin.connect(env.admin).deposit({ value: apeAmountForStakingV1 });
+    await contracts.wrapApeCoin
+      .connect(env.admin)
+      .transfer(contracts.mockStakeManagerV1.address, apeAmountForStakingV1);
 
     lastRevert = "init";
 
@@ -27,7 +29,7 @@ makeSuite("CompoudV1Migrator", (contracts: Contracts, env: Env, snapshots: Snaps
   });
 
   it("deposit: preparing the first deposit", async () => {
-    await contracts.apeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+    await contracts.wrapApeCoin.connect(env.feeRecipient).approve(contracts.bendCoinPool.address, constants.MaxUint256);
     await contracts.bendCoinPool.connect(env.feeRecipient).depositSelf(makeBNWithDecimals(1, 18));
     expect(await contracts.bendCoinPool.totalSupply()).gt(0);
 
@@ -36,7 +38,7 @@ makeSuite("CompoudV1Migrator", (contracts: Contracts, env: Env, snapshots: Snaps
   });
 
   it("claim v1 and deposit", async () => {
-    await contracts.apeCoin.connect(owner).approve(contracts.compoudV1Migrator.address, constants.MaxUint256);
+    await contracts.wrapApeCoin.connect(owner).approve(contracts.compoudV1Migrator.address, constants.MaxUint256);
     const rewardsAmount = await contracts.mockStakeManagerV1.REWARDS_AMOUNT();
 
     await contracts.compoudV1Migrator.connect(owner).claimV1AndDeposit([owner.address]);
@@ -45,7 +47,7 @@ makeSuite("CompoudV1Migrator", (contracts: Contracts, env: Env, snapshots: Snaps
   });
 
   it("withdraw v1 and deposit", async () => {
-    await contracts.apeCoin.connect(owner).approve(contracts.mockCoinPoolV1.address, constants.MaxUint256);
+    await contracts.wrapApeCoin.connect(owner).approve(contracts.mockCoinPoolV1.address, constants.MaxUint256);
     const apeAmountForStakingV1 = makeBNWithDecimals(123, 18);
     await contracts.mockCoinPoolV1.connect(owner).deposit(apeAmountForStakingV1, owner.address);
     expect(await contracts.mockCoinPoolV1.assetBalanceOf(owner.address)).eq(apeAmountForStakingV1);

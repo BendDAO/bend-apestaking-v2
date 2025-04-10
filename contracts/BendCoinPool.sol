@@ -11,6 +11,7 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/
 import {IApeCoinStaking} from "./interfaces/IApeCoinStaking.sol";
 import {ICoinPool} from "./interfaces/ICoinPool.sol";
 import {IStakeManager} from "./interfaces/IStakeManager.sol";
+import {IWAPE} from "./interfaces/IWAPE.sol";
 
 contract BendCoinPool is
     ICoinPool,
@@ -23,7 +24,7 @@ contract BendCoinPool is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     IApeCoinStaking public apeCoinStaking;
-    IERC20Upgradeable public apeCoin;
+    IERC20Upgradeable public wrapApeCoin;
     IStakeManager public staker;
 
     uint256 public override pendingApeCoin;
@@ -33,16 +34,20 @@ contract BendCoinPool is
         _;
     }
 
-    function initialize(IApeCoinStaking apeStaking_, IStakeManager staker_) external initializer {
-        apeCoin = IERC20Upgradeable(apeStaking_.apeCoin());
+    function initialize(address wrapApeCoin_, IApeCoinStaking apeStaking_, IStakeManager staker_) external initializer {
+        wrapApeCoin = IERC20Upgradeable(wrapApeCoin_);
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
         __ERC20_init("Bend Auto-compound ApeCoin", "bacAPE");
-        __ERC4626_init(apeCoin);
+        __ERC4626_init(wrapApeCoin);
 
         apeCoinStaking = apeStaking_;
         staker = staker_;
+    }
+
+    function getWrapApeCoin() external view override returns (address) {
+        return address(wrapApeCoin);
     }
 
     function totalAssets() public view override(ERC4626Upgradeable, IERC4626Upgradeable) returns (uint256) {
@@ -51,6 +56,24 @@ contract BendCoinPool is
         amount += staker.totalStakedApeCoin();
         amount += principal;
         return amount;
+    }
+
+    receive() external payable {
+        depositNativeSelf();
+    }
+
+    function depositNativeSelf() public payable override returns (uint256) {
+        IWAPE(address(wrapApeCoin)).deposit{value: msg.value}();
+        IERC20Upgradeable(address(wrapApeCoin)).transfer(msg.sender, msg.value);
+
+        return deposit(msg.value, msg.sender);
+    }
+
+    function withdrawNativeSelf(uint256 assets) public override returns (uint256) {
+        uint256 shares = withdraw(assets, msg.sender, msg.sender);
+        IWAPE(address(wrapApeCoin)).withdraw(assets);
+        payable(msg.sender).transfer(assets);
+        return shares;
     }
 
     function mintSelf(uint256 shares) external override returns (uint256) {
@@ -115,7 +138,7 @@ contract BendCoinPool is
 
     function receiveApeCoin(uint256 principalAmount, uint256 rewardsAmount_) external override onlyStaker {
         uint256 totalAmount = principalAmount + rewardsAmount_;
-        apeCoin.safeTransferFrom(msg.sender, address(this), totalAmount);
+        wrapApeCoin.safeTransferFrom(msg.sender, address(this), totalAmount);
         pendingApeCoin += totalAmount;
         if (rewardsAmount_ > 0) {
             emit RewardDistributed(rewardsAmount_);
@@ -124,7 +147,7 @@ contract BendCoinPool is
 
     function pullApeCoin(uint256 amount_) external override onlyStaker {
         pendingApeCoin -= amount_;
-        apeCoin.safeTransfer(address(staker), amount_);
+        wrapApeCoin.safeTransfer(address(staker), amount_);
     }
 
     function setPause(bool flag) public onlyOwner {

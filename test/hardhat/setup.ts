@@ -31,6 +31,7 @@ import {
   BendApeCoinStakedVoting,
   MockDelegationRegistryV2,
   MockAddressProviderV2,
+  MockWAPE,
 } from "../../typechain-types";
 import { Contract, BigNumber, constants } from "ethers";
 import { parseEther } from "ethers/lib/utils";
@@ -56,7 +57,8 @@ export interface Contracts {
   mayc: MintableERC721;
   bakc: MintableERC721;
   // ape staking
-  apeCoin: MintableERC20;
+  wrapApeCoin: MockWAPE;
+  // apeCoin: MintableERC20;
   apeStaking: ApeCoinStaking;
   // staked nft
   nftVault: NftVault;
@@ -106,11 +108,9 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   env.chainId = (await ethers.provider.getNetwork()).chainId;
 
   for (const user of env.accounts) {
-    // Each user gets 100K ape coin
-    await contracts.apeCoin.connect(user).mint(parseEther("100000"));
+    // Each user gets 10M ape coin
+    await contracts.wrapApeCoin.connect(user).deposit({ value: parseEther("10000000") });
   }
-  await contracts.apeCoin.connect(env.admin).mint(parseEther("100000000"));
-  await contracts.apeCoin.connect(env.admin).transfer(contracts.apeStaking.address, parseEther("100000000"));
 
   // ApeCoin pool
   const latestBlockTime = await latest();
@@ -136,6 +136,10 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   });
 
   for (const poolConfig of poolConfigs) {
+    if (poolConfig.id === 0) {
+      continue;
+    }
+
     let startTime = latestBlockTime - 3600 * 24 * 30;
     startTime = Math.floor(startTime / 3600) * 3600;
     let timeRage = 3600 * 24 * 90;
@@ -145,7 +149,9 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
       let endTime = startTime + timeRage;
       const amount = poolAmount.div(timeIdx + 1);
 
-      await contracts.apeStaking.addTimeRange(poolConfig.id, amount, startTime, endTime, poolConfig.cap);
+      await contracts.apeStaking.addTimeRange(poolConfig.id, amount, startTime, endTime, poolConfig.cap, {
+        value: amount,
+      });
 
       startTime = endTime;
     }
@@ -157,6 +163,13 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.mockBendLendPoolAddressesProvider.setLendPool(contracts.mockBendLendPool.address);
   await contracts.mockBendLendPoolAddressesProvider.setLendPoolLoan(contracts.mockBendLendPoolLoan.address);
   await contracts.mockBendLendPool.setAddressesProvider(contracts.mockBendLendPoolAddressesProvider.address);
+
+  await contracts.wrapApeCoin.connect(env.admin).approve(contracts.bendCoinPool.address, constants.MaxUint256);
+  await (contracts.bendCoinPool as Contract).initialize(
+    contracts.wrapApeCoin.address,
+    contracts.apeStaking.address,
+    contracts.bendStakeManager.address
+  );
 
   await (contracts.bendStakeManager as Contract).initialize(
     contracts.apeStaking.address,
@@ -176,12 +189,6 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
     contracts.stBayc.address,
     contracts.stMayc.address,
     contracts.stBakc.address
-  );
-
-  await contracts.apeCoin.connect(env.admin).approve(contracts.bendCoinPool.address, constants.MaxUint256);
-  await (contracts.bendCoinPool as Contract).initialize(
-    contracts.apeStaking.address,
-    contracts.bendStakeManager.address
   );
 
   await contracts.lendingMigrator.initialize(
@@ -221,7 +228,7 @@ export async function setupEnv(env: Env, contracts: Contracts): Promise<void> {
   await contracts.nftVault.setDelegationRegistryV2Contract(contracts.mockDelegationRegistryV2.address);
 
   await contracts.compoudV1Migrator.initialize(
-    contracts.apeCoin.address,
+    contracts.wrapApeCoin.address,
     contracts.mockStakeManagerV1.address,
     contracts.mockCoinPoolV1.address,
     contracts.bendCoinPool.address
@@ -238,9 +245,12 @@ export async function setupContracts(): Promise<Contracts> {
   const bakc = await deployContract<MintableERC721>("MintableERC721", ["BAKC", "BAKC"]);
 
   // ape staking
-  const apeCoin = await deployContract<MintableERC20>("MintableERC20", ["ApeCoin", "ApeCoin", 18]);
+  // const apeCoin = await deployContract<MintableERC20>("MintableERC20", ["ApeCoin", "ApeCoin", 18]);
+  const wrapApeCoin = await deployContract<MockWAPE>("MockWAPE", [1069672766]);
+
+  const mockBeacon = await deployContract("MockBeacon", []);
   const apeStaking = await deployContract<ApeCoinStaking>("ApeCoinStaking", [
-    apeCoin.address,
+    mockBeacon.address,
     bayc.address,
     mayc.address,
     bakc.address,
@@ -249,7 +259,7 @@ export async function setupContracts(): Promise<Contracts> {
   //  staked nft
   const vaultLogic = await deployContract("VaultLogic", []);
   const nftVault = await deployContract<NftVault>("NftVault", [], { VaultLogic: vaultLogic.address });
-  await nftVault.initialize(apeStaking.address, delegateCash.address);
+  await nftVault.initialize(wrapApeCoin.address, apeStaking.address, delegateCash.address);
   const stBayc = await deployContract<StBAYC>("StBAYC", []);
   await stBayc.initialize(bayc.address, nftVault.address);
   const stMayc = await deployContract<StMAYC>("StMAYC", []);
@@ -297,8 +307,8 @@ export async function setupContracts(): Promise<Contracts> {
   const lendingMigrator = await deployContract<LendingMigrator>("LendingMigrator", []);
 
   // v1 staking
-  const mockCoinPoolV1 = await deployContract<MockBendApeCoinV1>("MockBendApeCoinV1", [apeCoin.address]);
-  const mockStakeManagerV1 = await deployContract<MockStakeManagerV1>("MockStakeManagerV1", [apeCoin.address]);
+  const mockCoinPoolV1 = await deployContract<MockBendApeCoinV1>("MockBendApeCoinV1", [wrapApeCoin.address]);
+  const mockStakeManagerV1 = await deployContract<MockStakeManagerV1>("MockStakeManagerV1", [wrapApeCoin.address]);
   const compoudV1Migrator = await deployContract<CompoudV1Migrator>("CompoudV1Migrator", []);
 
   // v2 lending
@@ -329,7 +339,8 @@ export async function setupContracts(): Promise<Contracts> {
     bayc,
     mayc,
     bakc,
-    apeCoin,
+    wrapApeCoin,
+    // apeCoin,
     apeStaking,
     nftVault,
     stBayc,

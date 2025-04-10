@@ -214,19 +214,6 @@
   },
   {
     "inputs": [],
-    "name": "apeCoin",
-    "outputs": [
-      {
-        "internalType": "contract IERC20Upgradeable",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "apeCoinStaking",
     "outputs": [
       {
@@ -413,6 +400,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "depositNativeSelf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -429,6 +429,19 @@
       }
     ],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getWrapApeCoin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -457,6 +470,11 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "wrapApeCoin_",
+        "type": "address"
+      },
       {
         "internalType": "contract IApeCoinStaking",
         "name": "apeStaking_",
@@ -974,6 +992,25 @@
         "type": "uint256"
       }
     ],
+    "name": "withdrawNativeSelf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "assets",
+        "type": "uint256"
+      }
+    ],
     "name": "withdrawSelf",
     "outputs": [
       {
@@ -984,5 +1021,22 @@
     ],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "wrapApeCoin",
+    "outputs": [
+      {
+        "internalType": "contract IERC20Upgradeable",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ]

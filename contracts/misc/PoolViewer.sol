@@ -87,7 +87,7 @@ contract PoolViewer {
         uint256 poolId = apeCoinStaking.getNftPoolId(nft_);
         uint256 reward;
         for (uint256 i; i < tokenIds_.length; i++) {
-            reward = apeCoinStaking.pendingRewards(poolId, address(0), tokenIds_[i]);
+            reward = apeCoinStaking.pendingRewards(poolId, tokenIds_[i]);
             rewards += reward;
         }
         rewards -= staker.calculateFee(rewards);
@@ -96,17 +96,17 @@ contract PoolViewer {
     function viewBakcPairingStatus(
         uint256[] calldata baycTokenIds_,
         uint256[] calldata maycTokenIds_
-    ) external view returns (bool[] memory baycPairs, bool[] memory maycPairs) {
+    ) external pure returns (bool[] memory baycPairs, bool[] memory maycPairs) {
         baycPairs = new bool[](baycTokenIds_.length);
         maycPairs = new bool[](maycTokenIds_.length);
         uint256 tokenId_;
         for (uint256 i = 0; i < baycTokenIds_.length; i++) {
             tokenId_ = baycTokenIds_[i];
-            baycPairs[i] = apeCoinStaking.mainToBakc(ApeStakingLib.BAYC_POOL_ID, tokenId_).isPaired;
+            //baycPairs[i] = apeCoinStaking.mainToBakc(ApeStakingLib.BAYC_POOL_ID, tokenId_).isPaired;
         }
         for (uint256 i = 0; i < maycTokenIds_.length; i++) {
             tokenId_ = maycTokenIds_[i];
-            maycPairs[i] = apeCoinStaking.mainToBakc(ApeStakingLib.MAYC_POOL_ID, tokenId_).isPaired;
+            //maycPairs[i] = apeCoinStaking.mainToBakc(ApeStakingLib.MAYC_POOL_ID, tokenId_).isPaired;
         }
     }
 
