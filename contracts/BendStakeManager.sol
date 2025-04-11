@@ -352,7 +352,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
 
     function _stakeBayc(uint256[] calldata tokenIds_) internal {
         uint256[] memory amounts_ = new uint256[](tokenIds_.length);
-        uint256 maxCap = ApeStakingLib.BAYC_MAX_CAP;
+        uint256 maxCap = _stakerStorage.apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAYC_POOL_ID).capPerPosition;
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             amounts_[i] = maxCap;
@@ -411,7 +411,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
 
     function _stakeMayc(uint256[] calldata tokenIds_) internal {
         uint256[] memory amounts_ = new uint256[](tokenIds_.length);
-        uint256 maxCap = ApeStakingLib.MAYC_MAX_CAP;
+        uint256 maxCap = _stakerStorage.apeCoinStaking.getCurrentTimeRange(ApeStakingLib.MAYC_POOL_ID).capPerPosition;
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             amounts_[i] = maxCap;
@@ -473,7 +473,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
 
     function _stakeBakc(uint256[] calldata tokenIds_) internal {
         uint256[] memory amounts_ = new uint256[](tokenIds_.length);
-        uint256 maxCap = ApeStakingLib.BAKC_MAX_CAP;
+        uint256 maxCap = _stakerStorage.apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAKC_POOL_ID).capPerPosition;
         uint256 apeCoinAmount = 0;
 
         for (uint256 i = 0; i < tokenIds_.length; i++) {

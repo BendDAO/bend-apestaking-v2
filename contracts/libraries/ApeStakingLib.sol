@@ -14,9 +14,9 @@ library ApeStakingLib {
     uint256 internal constant MAYC_POOL_ID = 2;
     uint256 internal constant BAKC_POOL_ID = 3;
 
-    uint256 internal constant BAYC_MAX_CAP = 10094e18;
-    uint256 internal constant MAYC_MAX_CAP = 2042e18;
-    uint256 internal constant BAKC_MAX_CAP = 856e18;
+    // uint256 internal constant BAYC_MAX_CAP = 10094e18;
+    // uint256 internal constant MAYC_MAX_CAP = 2042e18;
+    // uint256 internal constant BAKC_MAX_CAP = 856e18;
 
     function getCurrentTimeRange(
         IApeCoinStaking apeCoinStaking_,

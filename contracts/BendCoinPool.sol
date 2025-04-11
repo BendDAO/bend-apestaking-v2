@@ -59,7 +59,9 @@ contract BendCoinPool is
     }
 
     receive() external payable {
-        depositNativeSelf();
+        if (address(wrapApeCoin) != msg.sender) {
+            depositNativeSelf();
+        }
     }
 
     function depositNativeSelf() public payable override returns (uint256) {
@@ -70,9 +72,12 @@ contract BendCoinPool is
     }
 
     function withdrawNativeSelf(uint256 assets) public override returns (uint256) {
-        uint256 shares = withdraw(assets, msg.sender, msg.sender);
+        uint256 shares = withdraw(assets, address(this), msg.sender);
+
         IWAPE(address(wrapApeCoin)).withdraw(assets);
-        payable(msg.sender).transfer(assets);
+        (bool success, ) = msg.sender.call{value: assets}("");
+        if (!success) revert("BendCoinPool: NativeTransferFailed");
+
         return shares;
     }
 

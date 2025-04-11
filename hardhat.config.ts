@@ -46,9 +46,9 @@ const config: HardhatUserConfig = {
         accountsBalance: "100000000000000000000000000", // 100000K ETH
       },
     },
-    sepolia: {
-      gasPrice: 25 * GWEI,
-      url: NETWORKS_RPC_URL[Network.sepolia],
+    curtis: {
+      // gasPrice: 1 * GWEI,
+      url: NETWORKS_RPC_URL[Network.curtis],
       accounts: PRIVATE_KEY
         ? [PRIVATE_KEY]
         : {
@@ -58,20 +58,9 @@ const config: HardhatUserConfig = {
             count: 20,
           },
     },
-    goerli: {
-      url: NETWORKS_RPC_URL[Network.goerli],
-      accounts: PRIVATE_KEY
-        ? [PRIVATE_KEY]
-        : {
-            mnemonic: MNEMONIC,
-            path: MNEMONIC_PATH,
-            initialIndex: 0,
-            count: 20,
-          },
-    },
-    mainnet: {
-      // gasPrice: 7 * GWEI,
-      url: NETWORKS_RPC_URL[Network.mainnet],
+    apechain: {
+      // gasPrice: 1 * GWEI,
+      url: NETWORKS_RPC_URL[Network.apechain],
       accounts: PRIVATE_KEY
         ? [PRIVATE_KEY]
         : {
@@ -82,8 +71,33 @@ const config: HardhatUserConfig = {
           },
     },
   },
+  // sourcify: {
+  //   enabled: false,
+  //   apiUrl: "https://sourcify.dev/server",
+  //   browserUrl: "https://repo.sourcify.dev",
+  // },
   etherscan: {
-    apiKey: ETHERSCAN_KEY,
+    apiKey: {
+      curtis: ETHERSCAN_KEY,
+    },
+    customChains: [
+      {
+        network: "ApeChain",
+        chainId: 33139,
+        urls: {
+          apiURL: "https://apechain.calderachain.xyz/http",
+          browserURL: "https://apechain.calderachain.xyz/http",
+        },
+      },
+      {
+        network: "curtis",
+        chainId: 33111,
+        urls: {
+          apiURL: "https://curtis.explorer.caldera.xyz/api",
+          browserURL: "https://curtis.explorer.caldera.xyz/",
+        },
+      },
+    ],
   },
   solidity: {
     compilers: [

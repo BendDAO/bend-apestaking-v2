@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.18;
+
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -16,7 +18,7 @@ import {IAddressProviderV2, IPoolLensV2} from "../interfaces/IBendV2Interfaces.s
 
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
-contract PoolViewer {
+contract PoolViewer is Ownable {
     using ApeStakingLib for IApeCoinStaking;
     using Math for uint256;
     uint256 public constant PERCENTAGE_FACTOR = 1e4;
@@ -56,7 +58,7 @@ contract PoolViewer {
         IStakeManager staker_,
         IBNFTRegistry bnftRegistry_,
         IAddressProviderV2 v2AddressProvider_
-    ) {
+    ) Ownable() {
         apeCoinStaking = apeCoinStaking_;
         coinPool = coinPool_;
         staker = staker_;
@@ -67,17 +69,36 @@ contract PoolViewer {
         bakc = address(apeCoinStaking.bakc());
 
         v2AddressProvider = v2AddressProvider_;
-        v2PoolManager = v2AddressProvider.getPoolManager();
-        v2PoolLens = IPoolLensV2(v2AddressProvider.getPoolModuleProxy(MODULEID__POOL_LENS));
+        if (v2AddressProvider != IAddressProviderV2(address(0))) {
+            v2PoolManager = v2AddressProvider.getPoolManager();
+            v2PoolLens = IPoolLensV2(v2AddressProvider.getPoolModuleProxy(MODULEID__POOL_LENS));
+        }
+    }
+
+    function setBendV2AddressProvider(IAddressProviderV2 v2AddressProvider_) public onlyOwner {
+        v2AddressProvider = v2AddressProvider_;
+        if (v2AddressProvider != IAddressProviderV2(address(0))) {
+            v2PoolManager = v2AddressProvider.getPoolManager();
+            v2PoolLens = IPoolLensV2(v2AddressProvider.getPoolModuleProxy(MODULEID__POOL_LENS));
+        } else {
+            v2PoolManager = address(0);
+            v2PoolLens = IPoolLensV2(address(0));
+        }
     }
 
     function viewPool() external view returns (PoolState memory poolState) {
         poolState.coinPoolPendingApeCoin = coinPool.pendingApeCoin();
         poolState.coinPoolPendingRewards = staker.pendingRewards(0);
         poolState.coinPoolStakedAmount = staker.stakedApeCoin(0);
-        poolState.baycPoolMaxCap = ApeStakingLib.BAYC_MAX_CAP;
-        poolState.maycPoolMaxCap = ApeStakingLib.MAYC_MAX_CAP;
-        poolState.bakcPoolMaxCap = ApeStakingLib.BAKC_MAX_CAP;
+
+        (
+            IApeCoinStaking.PoolUI memory baycPoolUI,
+            IApeCoinStaking.PoolUI memory maycPoolUI,
+            IApeCoinStaking.PoolUI memory bakcPoolUI
+        ) = apeCoinStaking.getPoolsUI();
+        poolState.baycPoolMaxCap = baycPoolUI.currentTimeRange.capPerPosition;
+        poolState.maycPoolMaxCap = maycPoolUI.currentTimeRange.capPerPosition;
+        poolState.bakcPoolMaxCap = bakcPoolUI.currentTimeRange.capPerPosition;
     }
 
     function viewNftPoolPendingRewards(
@@ -195,6 +216,11 @@ contract PoolViewer {
                 count += 1;
             }
         }
+
+        if (bnftRegistry == IBNFTRegistry(address(0))) {
+            return count;
+        }
+
         (address bnftProxy, ) = bnftRegistry.getBNFTAddresses(address(nft_));
         if (bnftProxy != address(0)) {
             IERC721Enumerable bnft = IERC721Enumerable(bnftProxy);
@@ -212,6 +238,10 @@ contract PoolViewer {
         uint32[] calldata v2PoolIds_
     ) public view returns (uint256 count) {
         count = getStakedNftCount(nft_, userAddr_);
+
+        if (v2PoolLens == IPoolLensV2(address(0))) {
+            return count;
+        }
 
         for (uint i = 0; i < v2PoolIds_.length; i++) {
             (uint256 totalCrossSupply, uint256 totalIsolateSupply, , ) = v2PoolLens.getUserAssetData(
@@ -272,6 +302,10 @@ contract PoolViewer {
     }
 
     function getPoolUIByID(uint256 poolId_) public view returns (IApeCoinStaking.PoolUI memory) {
+        if (poolId_ == ApeStakingLib.APE_COIN_POOL_ID) {
+            return IApeCoinStaking.PoolUI(poolId_, 0, IApeCoinStaking.TimeRange(0, 0, 0, 0));
+        }
+
         IApeCoinStaking.PoolWithoutTimeRange memory poolNoTR = apeCoinStaking.pools(poolId_);
         IApeCoinStaking.TimeRange memory tr = apeCoinStaking.getTimeRangeBy(poolId_, poolNoTR.lastRewardsRangeIndex);
         return IApeCoinStaking.PoolUI(poolId_, poolNoTR.stakedAmount, tr);

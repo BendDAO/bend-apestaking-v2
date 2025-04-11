@@ -3,12 +3,13 @@ import { task } from "hardhat/config";
 import { BendCoinPool, BendNftPool, BendStakeManager, INftVault, IStakedNft } from "../typechain-types";
 import {
   AAVE_ADDRESS_PROVIDER,
-  APE_COIN,
+  WAPE_COIN,
   APE_STAKING,
   BAKC,
   BAKC_REWARDS_SHARE_RATIO,
   BAYC,
   BAYC_REWARDS_SHARE_RATIO,
+  BEACON,
   BEND_ADDRESS_PROVIDER,
   BENDV2_ADDRESS_PROVIDER,
   BNFT_REGISTRY,
@@ -33,6 +34,41 @@ import {
 } from "./utils/helpers";
 import { verifyEtherscanContract } from "./utils/verification";
 
+task("deploy:mock:Tokens", "Deploy Mock ApeCoinStaking").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  const wape = await deployContract("MockWAPE", [1069672766], true);
+  console.log("WAPE at:", wape.address);
+
+  const bayc = await deployContract("MintableERC721", ["MockBAYC", "BAYC"], true, "MockBAYC");
+  const mayc = await deployContract("MintableERC721", ["MockMAYC", "MAYC"], true, "MockMAYC");
+  const bakc = await deployContract("MintableERC721", ["MockBAKC", "BAKC"], true, "MockBAKC");
+
+  console.log("MockBAYC at:", bayc.address);
+  console.log("MockMAYC at:", mayc.address);
+  console.log("MockBAKC at:", bakc.address);
+});
+
+task("deploy:mock:ApeCoinStaking", "Deploy Mock ApeCoinStaking").setAction(async (_, { network, run }) => {
+  await run("set-DRE");
+  await run("compile");
+
+  const bayc = getParams(BAYC, network.name);
+  const mayc = getParams(MAYC, network.name);
+  const bakc = getParams(BAKC, network.name);
+
+  // const beacon = await deployContract("MockBeacon", [], true);
+  // console.log("Beacon at:", beacon.address);
+
+  const apeStaking = await deployContract(
+    "ApeCoinStaking",
+    ["0x554309B0888c37139D6E31aBAe30B4502915B5DB", bayc, mayc, bakc],
+    true
+  );
+  console.log("ApeCoinStaking at:", apeStaking.address);
+});
+
 task("deploy:full:StakedNFT", "Deploy all contracts for staked nfts").setAction(async (_, { run }) => {
   await run("set-DRE");
   await run("compile");
@@ -47,13 +83,14 @@ task("deploy:NftVault", "Deploy NftVault").setAction(async (_, { network, run })
   await run("set-DRE");
   await run("compile");
 
+  const wape = getParams(WAPE_COIN, network.name);
   const apeStaking = getParams(APE_STAKING, network.name);
   const delegateCash = getParams(DELEAGATE_CASH, network.name);
 
   await deployContract("VaultLogic", [], true);
   const vaultLogic = await getContractAddressFromDB("VaultLogic");
 
-  await deployProxyContract("NftVault", [apeStaking, delegateCash], true, undefined, { VaultLogic: vaultLogic });
+  await deployProxyContract("NftVault", [wape, apeStaking, delegateCash], true, undefined, { VaultLogic: vaultLogic });
 });
 
 task("deploy:StBAYC", "Deploy StBAYC").setAction(async (_, { network, run }) => {
@@ -192,7 +229,7 @@ task("deploy:CompoudV1Migrator", "Deploy CompoudV1Migrator").setAction(async (_,
   await run("set-DRE");
   await run("compile");
 
-  const apeCoin = getParams(APE_COIN, network.name);
+  const apeCoin = getParams(WAPE_COIN, network.name);
   const stakeManagerV1 = getParams(STAKER_MANAGER_V1, network.name);
   const coinPoolV1 = getParams(COIN_POOL_V1, network.name);
   const coinPoolV2 = await getContractAddressFromDB("BendCoinPool");
@@ -231,10 +268,11 @@ task("deploy:config:BendCoinPool", "Coinfig BendCoinPool").setAction(async (_, {
   const deployer = await getDeploySigner();
   const coinPool = await getContractFromDB<BendCoinPool>("BendCoinPool");
 
+  const wape = getParams(WAPE_COIN, network.name);
   const apeStaking = getParams(APE_STAKING, network.name);
   const stakeManager = await getContractAddressFromDB("BendStakeManager");
 
-  await waitForTx(await coinPool.connect(deployer).initialize(apeStaking, stakeManager));
+  await waitForTx(await coinPool.connect(deployer).initialize(wape, apeStaking, stakeManager));
 
   console.log("ok");
 });
@@ -475,7 +513,7 @@ task("forceImport:NftVault", "force import implmentation to proxy").setAction(as
   await upgrades.forceImport(proxy, upgradeable);
 });
 
-task("verify:Implementation", "verify implmentation")
+task("verify:Impl", "verify implmentation")
   .addParam("impl", "The contract implementation address")
   .setAction(async ({ impl }, { run }) => {
     await run("set-DRE");
