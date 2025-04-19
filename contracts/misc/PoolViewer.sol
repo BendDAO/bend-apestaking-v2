@@ -75,9 +75,9 @@ contract PoolViewer {
         poolState.coinPoolPendingApeCoin = coinPool.pendingApeCoin();
         poolState.coinPoolPendingRewards = staker.pendingRewards(0);
         poolState.coinPoolStakedAmount = staker.stakedApeCoin(0);
-        poolState.baycPoolMaxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAYC_POOL_ID).capPerPosition;
-        poolState.maycPoolMaxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.MAYC_POOL_ID).capPerPosition;
-        poolState.bakcPoolMaxCap = apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAKC_POOL_ID).capPerPosition;
+        poolState.baycPoolMaxCap = ApeStakingLib.BAYC_MAX_CAP;
+        poolState.maycPoolMaxCap = ApeStakingLib.MAYC_MAX_CAP;
+        poolState.bakcPoolMaxCap = ApeStakingLib.BAKC_MAX_CAP;
     }
 
     function viewNftPoolPendingRewards(
@@ -263,5 +263,35 @@ contract PoolViewer {
         if (totalStakedNft > 0) {
             rewards.bakcPoolRewards = rewards.bakcPoolRewards.mulDiv(bakcNum, totalStakedNft, Math.Rounding.Down);
         }
+    }
+
+    function getPoolUIByIndex(uint256 poolId_, uint256 index_) public view returns (IApeCoinStaking.PoolUI memory) {
+        IApeCoinStaking.PoolWithoutTimeRange memory poolNoTR = apeCoinStaking.pools(poolId_);
+        IApeCoinStaking.TimeRange memory tr = apeCoinStaking.getTimeRangeBy(poolId_, index_);
+        return IApeCoinStaking.PoolUI(poolId_, poolNoTR.stakedAmount, tr);
+    }
+
+    function getPoolUIByID(uint256 poolId_) public view returns (IApeCoinStaking.PoolUI memory) {
+        IApeCoinStaking.PoolWithoutTimeRange memory poolNoTR = apeCoinStaking.pools(poolId_);
+        IApeCoinStaking.TimeRange memory tr = apeCoinStaking.getTimeRangeBy(poolId_, poolNoTR.lastRewardsRangeIndex);
+        return IApeCoinStaking.PoolUI(poolId_, poolNoTR.stakedAmount, tr);
+    }
+
+    function getPoolsUI()
+        public
+        view
+        returns (
+            IApeCoinStaking.PoolUI memory,
+            IApeCoinStaking.PoolUI memory,
+            IApeCoinStaking.PoolUI memory,
+            IApeCoinStaking.PoolUI memory
+        )
+    {
+        return (
+            getPoolUIByID(ApeStakingLib.APE_COIN_POOL_ID),
+            getPoolUIByID(ApeStakingLib.BAYC_POOL_ID),
+            getPoolUIByID(ApeStakingLib.MAYC_POOL_ID),
+            getPoolUIByID(ApeStakingLib.BAKC_POOL_ID)
+        );
     }
 }

@@ -338,7 +338,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
 
     function _stakeBayc(uint256[] calldata tokenIds_) internal {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
-        uint256 maxCap = _stakerStorage.apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAYC_POOL_ID).capPerPosition;
+        uint256 maxCap = ApeStakingLib.BAYC_MAX_CAP;
         uint256 tokenId_;
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < nfts_.length; i++) {
@@ -398,7 +398,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
 
     function _stakeMayc(uint256[] calldata tokenIds_) internal {
         IApeCoinStaking.SingleNft[] memory nfts_ = new IApeCoinStaking.SingleNft[](tokenIds_.length);
-        uint256 maxCap = _stakerStorage.apeCoinStaking.getCurrentTimeRange(ApeStakingLib.MAYC_POOL_ID).capPerPosition;
+        uint256 maxCap = ApeStakingLib.MAYC_MAX_CAP;
         uint256 tokenId_;
         uint256 apeCoinAmount = 0;
         for (uint256 i = 0; i < nfts_.length; i++) {
@@ -468,7 +468,7 @@ contract BendStakeManager is IStakeManager, OwnableUpgradeable, ReentrancyGuardU
         IApeCoinStaking.PairNftDepositWithAmount[]
             memory maycPairsWithAmount_ = new IApeCoinStaking.PairNftDepositWithAmount[](maycPairs_.length);
 
-        uint256 maxCap = _stakerStorage.apeCoinStaking.getCurrentTimeRange(ApeStakingLib.BAKC_POOL_ID).capPerPosition;
+        uint256 maxCap = ApeStakingLib.BAKC_MAX_CAP;
         uint256 apeCoinAmount = 0;
         IApeCoinStaking.PairNft memory pair_;
         for (uint256 i = 0; i < baycPairsWithAmount_.length; i++) {

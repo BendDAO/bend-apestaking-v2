@@ -158,6 +158,311 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "poolId_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPoolUIByID",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "poolId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "stakedAmount",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint48",
+                "name": "startTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint48",
+                "name": "endTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint96",
+                "name": "rewardsPerHour",
+                "type": "uint96"
+              },
+              {
+                "internalType": "uint96",
+                "name": "capPerPosition",
+                "type": "uint96"
+              }
+            ],
+            "internalType": "struct IApeCoinStaking.TimeRange",
+            "name": "currentTimeRange",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PoolUI",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "poolId_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "index_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPoolUIByIndex",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "poolId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "stakedAmount",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint48",
+                "name": "startTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint48",
+                "name": "endTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint96",
+                "name": "rewardsPerHour",
+                "type": "uint96"
+              },
+              {
+                "internalType": "uint96",
+                "name": "capPerPosition",
+                "type": "uint96"
+              }
+            ],
+            "internalType": "struct IApeCoinStaking.TimeRange",
+            "name": "currentTimeRange",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PoolUI",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getPoolsUI",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "poolId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "stakedAmount",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint48",
+                "name": "startTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint48",
+                "name": "endTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint96",
+                "name": "rewardsPerHour",
+                "type": "uint96"
+              },
+              {
+                "internalType": "uint96",
+                "name": "capPerPosition",
+                "type": "uint96"
+              }
+            ],
+            "internalType": "struct IApeCoinStaking.TimeRange",
+            "name": "currentTimeRange",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PoolUI",
+        "name": "",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "poolId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "stakedAmount",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint48",
+                "name": "startTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint48",
+                "name": "endTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint96",
+                "name": "rewardsPerHour",
+                "type": "uint96"
+              },
+              {
+                "internalType": "uint96",
+                "name": "capPerPosition",
+                "type": "uint96"
+              }
+            ],
+            "internalType": "struct IApeCoinStaking.TimeRange",
+            "name": "currentTimeRange",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PoolUI",
+        "name": "",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "poolId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "stakedAmount",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint48",
+                "name": "startTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint48",
+                "name": "endTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint96",
+                "name": "rewardsPerHour",
+                "type": "uint96"
+              },
+              {
+                "internalType": "uint96",
+                "name": "capPerPosition",
+                "type": "uint96"
+              }
+            ],
+            "internalType": "struct IApeCoinStaking.TimeRange",
+            "name": "currentTimeRange",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PoolUI",
+        "name": "",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "poolId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "stakedAmount",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint48",
+                "name": "startTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint48",
+                "name": "endTimestampHour",
+                "type": "uint48"
+              },
+              {
+                "internalType": "uint96",
+                "name": "rewardsPerHour",
+                "type": "uint96"
+              },
+              {
+                "internalType": "uint96",
+                "name": "capPerPosition",
+                "type": "uint96"
+              }
+            ],
+            "internalType": "struct IApeCoinStaking.TimeRange",
+            "name": "currentTimeRange",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct IApeCoinStaking.PoolUI",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "contract IStakedNft",
         "name": "nft_",
         "type": "address"
