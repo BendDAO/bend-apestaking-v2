@@ -4,6 +4,7 @@ import { advanceHours, makeBN18, mintNft, randomUint } from "../utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, constants } from "ethers";
 import { ApeCoinStaking, MintableERC721 } from "../../../typechain-types";
+import { arrayify } from "ethers/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const _ = require("lodash");
@@ -218,7 +219,7 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
       await contracts.nftVault
         .connect(owner)
         .setDelegateCashV2(owner.address, contracts.bayc.address, baycTokenIds, true);
-      const delegates = await contracts.nftVault.getDelegateCashForTokenV2(contracts.bayc.address, baycTokenIds);
+      const { delegates } = await contracts.nftVault.getDelegateCashForTokenV2(contracts.bayc.address, baycTokenIds);
       expect(delegates.length).eq(baycTokenIds.length);
       for (let i = 0; i < delegates.length; i++) {
         expect(delegates[i].length).eq(1);
@@ -229,7 +230,34 @@ makeSuite("NftVault", (contracts: Contracts, env: Env, snapshots: Snapshots) => 
     await contracts.nftVault
       .connect(owner)
       .setDelegateCashV2(owner.address, contracts.bayc.address, baycTokenIds, false);
-    const delegates = await contracts.nftVault.getDelegateCashForTokenV2(contracts.bayc.address, baycTokenIds);
+    const { delegates } = await contracts.nftVault.getDelegateCashForTokenV2(contracts.bayc.address, baycTokenIds);
+    expect(delegates.length).eq(baycTokenIds.length);
+    for (let i = 0; i < delegates.length; i++) {
+      expect(delegates[i].length).eq(0);
+    }
+
+    lastRevert = "depositNft";
+  });
+
+  it("setDelegateCashV2WithRights", async () => {
+    const rights = arrayify("0x000000000000000000000000000000000000000000000000000000ffffffffff");
+
+    {
+      await contracts.nftVault
+        .connect(owner)
+        .setDelegateCashV2WithRights(owner.address, contracts.bayc.address, baycTokenIds, rights, true);
+      const { delegates } = await contracts.nftVault.getDelegateCashForTokenV2(contracts.bayc.address, baycTokenIds);
+      expect(delegates.length).eq(baycTokenIds.length);
+      for (let i = 0; i < delegates.length; i++) {
+        expect(delegates[i].length).eq(1);
+        expect(delegates[i][0]).eq(owner.address);
+      }
+    }
+
+    await contracts.nftVault
+      .connect(owner)
+      .setDelegateCashV2WithRights(owner.address, contracts.bayc.address, baycTokenIds, rights, false);
+    const { delegates } = await contracts.nftVault.getDelegateCashForTokenV2(contracts.bayc.address, baycTokenIds);
     expect(delegates.length).eq(baycTokenIds.length);
     for (let i = 0; i < delegates.length; i++) {
       expect(delegates[i].length).eq(0);

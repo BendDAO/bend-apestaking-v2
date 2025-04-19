@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IApeCoinStaking} from "../interfaces/IApeCoinStaking.sol";
 import {INftVault} from "../interfaces/INftVault.sol";
@@ -16,7 +17,7 @@ import {IAddressProviderV2, IPoolLensV2} from "../interfaces/IBendV2Interfaces.s
 
 import {ApeStakingLib} from "../libraries/ApeStakingLib.sol";
 
-contract PoolViewer {
+contract PoolViewer is Ownable {
     using ApeStakingLib for IApeCoinStaking;
     using Math for uint256;
     uint256 public constant PERCENTAGE_FACTOR = 1e4;
@@ -49,6 +50,7 @@ contract PoolViewer {
     IAddressProviderV2 public v2AddressProvider;
     address public v2PoolManager;
     IPoolLensV2 public v2PoolLens;
+    mapping(uint256 => uint256) poolRewardsPerHours;
 
     constructor(
         IApeCoinStaking apeCoinStaking_,
@@ -56,7 +58,7 @@ contract PoolViewer {
         IStakeManager staker_,
         IBNFTRegistry bnftRegistry_,
         IAddressProviderV2 v2AddressProvider_
-    ) {
+    ) Ownable() {
         apeCoinStaking = apeCoinStaking_;
         coinPool = coinPool_;
         staker = staker_;
@@ -274,6 +276,10 @@ contract PoolViewer {
     function getPoolUIByID(uint256 poolId_) public view returns (IApeCoinStaking.PoolUI memory) {
         IApeCoinStaking.PoolWithoutTimeRange memory poolNoTR = apeCoinStaking.pools(poolId_);
         IApeCoinStaking.TimeRange memory tr = apeCoinStaking.getTimeRangeBy(poolId_, poolNoTR.lastRewardsRangeIndex);
+        uint256 rewardsPerHour_ = poolRewardsPerHours[poolId_];
+        if ((rewardsPerHour_ > 0) && (rewardsPerHour_ < 10)) {
+            tr.rewardsPerHour = 0;
+        }
         return IApeCoinStaking.PoolUI(poolId_, poolNoTR.stakedAmount, tr);
     }
 
@@ -293,5 +299,9 @@ contract PoolViewer {
             getPoolUIByID(ApeStakingLib.MAYC_POOL_ID),
             getPoolUIByID(ApeStakingLib.BAKC_POOL_ID)
         );
+    }
+
+    function setPoolRewardsPerHour(uint256 poolId_, uint256 rewards_) public onlyOwner {
+        poolRewardsPerHours[poolId_] = rewards_;
     }
 }

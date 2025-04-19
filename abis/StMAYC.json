@@ -277,6 +277,11 @@
         "internalType": "address[][]",
         "name": "delegates",
         "type": "address[][]"
+      },
+      {
+        "internalType": "bytes32[][]",
+        "name": "rights",
+        "type": "bytes32[][]"
       }
     ],
     "stateMutability": "view",
@@ -578,6 +583,34 @@
       }
     ],
     "name": "setDelegateCashV2",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "delegate_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds_",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "rights",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bool",
+        "name": "value_",
+        "type": "bool"
+      }
+    ],
+    "name": "setDelegateCashV2WithRights",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

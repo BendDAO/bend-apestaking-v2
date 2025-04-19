@@ -159,6 +159,26 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256[] calldata tokenIds_,
         bool value_
     ) external override onlyAuthorized onlyApe(nft_) {
+        _setDelegateCashV2(delegate_, nft_, tokenIds_, "", value_);
+    }
+
+    function setDelegateCashV2WithRights(
+        address delegate_,
+        address nft_,
+        uint256[] calldata tokenIds_,
+        bytes32 rights,
+        bool value_
+    ) external override onlyAuthorized onlyApe(nft_) {
+        _setDelegateCashV2(delegate_, nft_, tokenIds_, rights, value_);
+    }
+
+    function _setDelegateCashV2(
+        address delegate_,
+        address nft_,
+        uint256[] calldata tokenIds_,
+        bytes32 rights,
+        bool value_
+    ) internal {
         require(delegate_ != address(0), "nftVault: invalid delegate");
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
@@ -167,19 +187,20 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 msg.sender == VaultLogic._ownerOf(_vaultStorage, nft_, tokenId_),
                 "nftVault: only owner can delegate"
             );
-            _vaultStorage.delegationRegistryV2.delegateERC721(delegate_, nft_, tokenId_, "", value_);
+            _vaultStorage.delegationRegistryV2.delegateERC721(delegate_, nft_, tokenId_, rights, value_);
         }
     }
 
     function getDelegateCashForTokenV2(
         address nft_,
         uint256[] calldata tokenIds_
-    ) external view override returns (address[][] memory delegates) {
+    ) external view override returns (address[][] memory delegates, bytes32[][] memory rights) {
         IDelegateRegistryV2.Delegation[] memory allDelegations = _vaultStorage
             .delegationRegistryV2
             .getOutgoingDelegations(address(this));
 
         delegates = new address[][](tokenIds_.length);
+        rights = new bytes32[][](tokenIds_.length);
         uint256 tokenId_;
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             tokenId_ = tokenIds_[i];
@@ -192,10 +213,12 @@ contract NftVault is INftVault, OwnableUpgradeable, ReentrancyGuardUpgradeable {
             }
 
             delegates[i] = new address[](tokenDelegatesNum);
+            rights[i] = new bytes32[](tokenDelegatesNum);
             uint256 tokenDelegateIdx;
             for (uint256 j = 0; j < allDelegations.length; j++) {
                 if (allDelegations[j].contract_ == nft_ && allDelegations[j].tokenId == tokenId_) {
                     delegates[i][tokenDelegateIdx] = allDelegations[j].to;
+                    rights[i][tokenDelegateIdx] = allDelegations[j].rights;
                     tokenDelegateIdx++;
                 }
             }
