@@ -44,7 +44,7 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
     },
     sepolia: {
-      gasPrice: 25 * GWEI,
+      // gasPrice: 1 * GWEI,
       url: NETWORKS_RPC_URL[Network.sepolia],
       accounts: PRIVATE_KEY
         ? [PRIVATE_KEY]
@@ -56,6 +56,7 @@ const config: HardhatUserConfig = {
           },
     },
     goerli: {
+      // gasPrice: 25 * GWEI,
       url: NETWORKS_RPC_URL[Network.goerli],
       accounts: PRIVATE_KEY
         ? [PRIVATE_KEY]
@@ -67,7 +68,7 @@ const config: HardhatUserConfig = {
           },
     },
     mainnet: {
-      // gasPrice: 7 * GWEI,
+      // gasPrice: 1 * GWEI,
       url: NETWORKS_RPC_URL[Network.mainnet],
       accounts: PRIVATE_KEY
         ? [PRIVATE_KEY]
